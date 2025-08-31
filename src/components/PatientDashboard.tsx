@@ -4,111 +4,79 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Calendar,
-  FileText,
-  CreditCard,
-  Settings,
-  Clock,
-  MapPin,
-  User,
-  Phone,
-  Mail,
-  Download,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  AlertCircle
-} from 'lucide-react';
-
+import { Calendar, FileText, CreditCard, Settings, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
-
-  const appointments = [
-    {
-      id: 1,
-      doctor: 'Dr. Priya Sharma',
-      specialization: 'Cardiologist',
-      date: '2024-09-15',
-      time: '10:30 AM',
-      status: 'confirmed',
-      branch: 'Main Hospital',
-      payment: 'Paid - $150'
-    },
-    {
-      id: 2,
-      doctor: 'Dr. Marcus Johnson',
-      specialization: 'Orthopedic Surgeon',
-      date: '2024-09-10',
-      time: '2:00 PM',
-      status: 'completed',
-      branch: 'Orthopedic Center',
-      payment: 'Paid - $200'
-    },
-    {
-      id: 3,
-      doctor: 'Dr. Carlos Rodriguez',
-      specialization: 'Neurologist',
-      date: '2024-09-05',
-      time: '9:00 AM',
-      status: 'cancelled',
-      branch: 'Neurology Wing',
-      payment: 'Refunded - $175'
-    }
-  ];
-
-  const labReports = [
-    {
-      id: 1,
-      testName: 'Complete Blood Count',
-      date: '2024-09-08',
-      status: 'Ready',
-      doctor: 'Dr. Priya Sharma'
-    },
-    {
-      id: 2,
-      testName: 'Lipid Profile',
-      date: '2024-09-08',
-      status: 'Ready',
-      doctor: 'Dr. Priya Sharma'
-    },
-    {
-      id: 3,
-      testName: 'Thyroid Function Test',
-      date: '2024-08-25',
-      status: 'Ready',
-      doctor: 'Dr. Emily Wilson'
-    }
-  ];
-
-  const payments = [
-    {
-      id: 1,
-      description: 'Consultation - Dr. Priya Sharma',
-      amount: '$150',
-      date: '2024-09-15',
-      status: 'Paid',
-      method: 'Credit Card'
-    },
-    {
-      id: 2,
-      description: 'Lab Tests - Complete Blood Work',
-      amount: '$85',
-      date: '2024-09-08',
-      status: 'Paid',
-      method: 'Insurance'
-    },
-    {
-      id: 3,
-      description: 'Consultation - Dr. Marcus Johnson',
-      amount: '$200',
-      date: '2024-09-10',
-      status: 'Paid',
-      method: 'Cash'
-    }
-  ];
-
+  const appointments = [{
+    id: 1,
+    doctor: 'Dr. Priya Sharma',
+    specialization: 'Cardiologist',
+    date: '2024-09-15',
+    time: '10:30 AM',
+    status: 'confirmed',
+    branch: 'Main Hospital',
+    payment: 'Paid - $150'
+  }, {
+    id: 2,
+    doctor: 'Dr. Marcus Johnson',
+    specialization: 'Orthopedic Surgeon',
+    date: '2024-09-10',
+    time: '2:00 PM',
+    status: 'completed',
+    branch: 'Orthopedic Center',
+    payment: 'Paid - $200'
+  }, {
+    id: 3,
+    doctor: 'Dr. Carlos Rodriguez',
+    specialization: 'Neurologist',
+    date: '2024-09-05',
+    time: '9:00 AM',
+    status: 'cancelled',
+    branch: 'Neurology Wing',
+    payment: 'Refunded - $175'
+  }];
+  const labReports = [{
+    id: 1,
+    testName: 'Complete Blood Count',
+    date: '2024-09-08',
+    status: 'Ready',
+    doctor: 'Dr. Priya Sharma'
+  }, {
+    id: 2,
+    testName: 'Lipid Profile',
+    date: '2024-09-08',
+    status: 'Ready',
+    doctor: 'Dr. Priya Sharma'
+  }, {
+    id: 3,
+    testName: 'Thyroid Function Test',
+    date: '2024-08-25',
+    status: 'Ready',
+    doctor: 'Dr. Emily Wilson'
+  }];
+  const payments = [{
+    id: 1,
+    description: 'Consultation - Dr. Priya Sharma',
+    amount: '$150',
+    date: '2024-09-15',
+    status: 'Paid',
+    method: 'Credit Card'
+  }, {
+    id: 2,
+    description: 'Lab Tests - Complete Blood Work',
+    amount: '$85',
+    date: '2024-09-08',
+    status: 'Paid',
+    method: 'Insurance'
+  }, {
+    id: 3,
+    description: 'Consultation - Dr. Marcus Johnson',
+    amount: '$200',
+    date: '2024-09-10',
+    status: 'Paid',
+    method: 'Cash'
+  }];
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -123,7 +91,6 @@ const PatientDashboard = () => {
         return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -138,9 +105,7 @@ const PatientDashboard = () => {
         return 'secondary';
     }
   };
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-gradient-primary text-primary-foreground shadow-hero">
         <div className="container mx-auto px-6 py-6">
@@ -150,29 +115,17 @@ const PatientDashboard = () => {
               <p className="opacity-90">Welcome back, John Doe</p>
             </div>
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                onClick={() => window.location.href = '/'}
-              >
+              <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground hover:bg-primary-foreground text-slate-950">
                 <Settings className="w-4 h-4 mr-2" />
                 Account Settings
               </Button>
-              <Button 
-                variant="outline" 
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                onClick={() => window.location.href = '/'}
-              >
+              <Button variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" onClick={() => window.location.href = '/'}>
                 Home
               </Button>
-              <Button 
-                variant="outline" 
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                onClick={() => {
-                  // Handle logout logic here
-                  window.location.href = '/';
-                }}
-              >
+              <Button variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" onClick={() => {
+              // Handle logout logic here
+              window.location.href = '/';
+            }}>
                 Log Out
               </Button>
             </div>
@@ -218,8 +171,7 @@ const PatientDashboard = () => {
                 </Select>
               </div>
 
-              {activeEChannelTab === 'book' && (
-                <Card className="shadow-card">
+              {activeEChannelTab === 'book' && <Card className="shadow-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-primary" />
@@ -261,11 +213,9 @@ const PatientDashboard = () => {
                       Start Booking Process
                     </Button>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
-              {activeEChannelTab === 'reschedule' && (
-                <Card className="shadow-card">
+              {activeEChannelTab === 'reschedule' && <Card className="shadow-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <RefreshCw className="w-5 h-5 text-primary" />
@@ -279,8 +229,7 @@ const PatientDashboard = () => {
                       <p className="text-muted-foreground">You don't have any pending reschedule requests at the moment.</p>
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
             </div>
           </TabsContent>
 
@@ -296,8 +245,7 @@ const PatientDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {appointments.map((appointment) => (
-                    <div key={appointment.id} className="border rounded-lg p-4 space-y-2">
+                  {appointments.map(appointment => <div key={appointment.id} className="border rounded-lg p-4 space-y-2">
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold">{appointment.doctor}</h4>
@@ -315,14 +263,11 @@ const PatientDashboard = () => {
                       <div className="text-sm font-medium text-primary">
                         {appointment.payment}
                       </div>
-                      {appointment.status === 'confirmed' && (
-                        <Button size="sm" variant="outline" className="w-full">
+                      {appointment.status === 'confirmed' && <Button size="sm" variant="outline" className="w-full">
                           <RefreshCw className="w-3 h-3 mr-2" />
                           Request Reschedule
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                        </Button>}
+                    </div>)}
                 </CardContent>
               </Card>
 
@@ -335,8 +280,7 @@ const PatientDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {labReports.map((report) => (
-                    <div key={report.id} className="border rounded-lg p-4 space-y-2">
+                  {labReports.map(report => <div key={report.id} className="border rounded-lg p-4 space-y-2">
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold">{report.testName}</h4>
@@ -354,8 +298,7 @@ const PatientDashboard = () => {
                         <Download className="w-3 h-3 mr-2" />
                         Download Report
                       </Button>
-                    </div>
-                  ))}
+                    </div>)}
                 </CardContent>
               </Card>
             </div>
@@ -371,8 +314,7 @@ const PatientDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {payments.map((payment) => (
-                  <div key={payment.id} className="border rounded-lg p-4 space-y-2">
+                {payments.map(payment => <div key={payment.id} className="border rounded-lg p-4 space-y-2">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold">{payment.description}</h4>
@@ -389,8 +331,7 @@ const PatientDashboard = () => {
                     <div className="text-sm text-muted-foreground">
                       Transaction Date: {payment.date}
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </CardContent>
             </Card>
           </TabsContent>
@@ -449,8 +390,6 @@ const PatientDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default PatientDashboard;
