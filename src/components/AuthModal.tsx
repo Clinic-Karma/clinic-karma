@@ -34,12 +34,6 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
   const roles = [
     {
-      value: 'patient',
-      label: 'Patient',
-      icon: UserCheck,
-      description: 'Access your appointments and medical records'
-    },
-    {
       value: 'doctor',
       label: 'Doctor',
       icon: Stethoscope,

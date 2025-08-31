@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, FileText, CreditCard, History, Users, TrendingUp, Star, MapPin, Phone, Mail } from 'lucide-react';
 import AuthModal from './AuthModal';
 import SignUpModal from './SignUpModal';
+import PatientLoginModal from './PatientLoginModal';
 import heroImage from '@/assets/medical-hero.jpg';
 import doctor1 from '@/assets/doctor-1.jpg';
 import doctor2 from '@/assets/doctor-2.jpg';
@@ -12,6 +13,7 @@ import doctor3 from '@/assets/doctor-3.jpg';
 const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
+  const [isPatientLoginOpen, setIsPatientLoginOpen] = useState(false);
   const benefits = [{
     icon: Calendar,
     title: "Easy Appointment Scheduling",
@@ -79,7 +81,7 @@ const LandingPage = () => {
             <Button onClick={() => setIsAuthModalOpen(true)} variant="outline" className="shadow-button">
               Admin Portal
             </Button>
-            <Button onClick={() => setIsSignUpModalOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
+            <Button onClick={() => setIsPatientLoginOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
               Patient Login
             </Button>
           </div>
@@ -104,7 +106,7 @@ const LandingPage = () => {
             <Button size="lg" onClick={() => setIsSignUpModalOpen(true)} className="bg-white text-primary hover:bg-white/90 shadow-hero">
               Get Started Today
             </Button>
-            <Button size="lg" variant="outline" onClick={() => setIsAuthModalOpen(true)} className="border-white text-blue-800 bg-slate-400 hover:bg-slate-300">
+            <Button size="lg" variant="outline" onClick={() => setIsPatientLoginOpen(true)} className="border-white text-blue-800 bg-slate-400 hover:bg-slate-300">
               Login to Your Account
             </Button>
           </div>
@@ -288,6 +290,7 @@ const LandingPage = () => {
       {/* Modals */}
       <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
       <SignUpModal open={isSignUpModalOpen} onOpenChange={setIsSignUpModalOpen} />
+      <PatientLoginModal open={isPatientLoginOpen} onOpenChange={setIsPatientLoginOpen} />
     </div>;
 };
 export default LandingPage;

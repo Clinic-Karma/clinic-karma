@@ -57,28 +57,6 @@ const DoctorDashboard = () => {
     }
   ];
 
-  const rescheduleRequests = [
-    {
-      id: 1,
-      patient: 'Sarah Wilson',
-      patientId: 'PT321654987',
-      originalDate: '2024-09-16',
-      originalTime: '11:00 AM',
-      requestedDate: '2024-09-18',
-      requestedTime: '3:00 PM',
-      reason: 'Work conflict'
-    },
-    {
-      id: 2,
-      patient: 'Robert Brown',
-      patientId: 'PT654987321',
-      originalDate: '2024-09-17',
-      originalTime: '2:30 PM',
-      requestedDate: '2024-09-19',
-      requestedTime: '10:00 AM',
-      reason: 'Family emergency'
-    }
-  ];
 
   const patients = [
     {
@@ -161,10 +139,6 @@ const DoctorDashboard = () => {
     patient.patientId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleRescheduleApproval = (requestId: number, approved: boolean) => {
-    // Here you would handle the approval/denial logic
-    console.log(`Reschedule request ${requestId} ${approved ? 'approved' : 'denied'}`);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -227,107 +201,51 @@ const DoctorDashboard = () => {
 
           {/* Appointments Tab */}
           <TabsContent value="appointments" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Today's Appointments */}
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    Today's Appointments
-                    <Badge variant="secondary">{upcomingAppointments.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {upcomingAppointments.map((appointment) => (
-                    <div key={appointment.id} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{appointment.patient}</h4>
-                          <p className="text-sm text-muted-foreground">ID: {appointment.patientId}</p>
-                        </div>
-                        <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1">
-                          {getStatusIcon(appointment.status)}
-                          {appointment.status}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {appointment.time}
-                        </span>
-                        <span className="text-primary font-medium">{appointment.type}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Phone className="w-3 h-3" />
-                        {appointment.contact}
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90">
-                          View Details
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex-1">
-                          Contact Patient
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Reschedule Requests */}
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-orange-500" />
-                    Reschedule Requests
-                    <Badge variant="secondary">{rescheduleRequests.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {rescheduleRequests.map((request) => (
-                    <div key={request.id} className="border rounded-lg p-4 space-y-3">
+            {/* Today's Appointments */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Today's Appointments
+                  <Badge variant="secondary">{upcomingAppointments.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {upcomingAppointments.map((appointment) => (
+                  <div key={appointment.id} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-semibold">{request.patient}</h4>
-                        <p className="text-sm text-muted-foreground">ID: {request.patientId}</p>
+                        <h4 className="font-semibold">{appointment.patient}</h4>
+                        <p className="text-sm text-muted-foreground">ID: {appointment.patientId}</p>
                       </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Original:</span>
-                          <span>{request.originalDate} at {request.originalTime}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Requested:</span>
-                          <span className="text-primary font-medium">{request.requestedDate} at {request.requestedTime}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Reason:</span>
-                          <span className="italic">{request.reason}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-success hover:bg-success/90"
-                          onClick={() => handleRescheduleApproval(request.id, true)}
-                        >
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Approve
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
-                          className="flex-1"
-                          onClick={() => handleRescheduleApproval(request.id, false)}
-                        >
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Deny
-                        </Button>
-                      </div>
+                      <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1">
+                        {getStatusIcon(appointment.status)}
+                        {appointment.status}
+                      </Badge>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        {appointment.time}
+                      </span>
+                      <span className="text-primary font-medium">{appointment.type}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Phone className="w-3 h-3" />
+                      {appointment.contact}
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90">
+                        View Details
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1">
+                        Contact Patient
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Patients Tab */}
