@@ -153,7 +153,7 @@ const DoctorDashboard = () => {
             <div className="flex gap-3">
               <Button 
                 variant="outline" 
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                className="border-primary-foreground text-foreground hover:bg-primary-foreground hover:text-primary"
                 onClick={() => window.location.href = '/'}
               >
                 <Settings className="w-4 h-4 mr-2" />
@@ -161,14 +161,14 @@ const DoctorDashboard = () => {
               </Button>
               <Button 
                 variant="outline" 
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                className="border-primary-foreground text-foreground hover:bg-primary-foreground hover:text-primary"
                 onClick={() => window.location.href = '/'}
               >
                 Home
               </Button>
               <Button 
                 variant="outline" 
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                className="border-primary-foreground text-foreground hover:bg-primary-foreground hover:text-primary"
                 onClick={() => {
                   // Handle logout logic here
                   window.location.href = '/';
