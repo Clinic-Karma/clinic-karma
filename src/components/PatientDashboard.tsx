@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Calendar,
   FileText,
@@ -22,6 +23,7 @@ import {
 
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
+  const [activeEChannelTab, setActiveEChannelTab] = useState('book');
 
   const appointments = [
     {
@@ -202,49 +204,84 @@ const PatientDashboard = () => {
 
           {/* E-Channel Tab */}
           <TabsContent value="echannel" className="space-y-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Book New Appointment
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="hover:shadow-lg transition-all">
-                    <CardContent className="p-4 text-center">
-                      <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
-                      <h3 className="font-semibold">Select Branch</h3>
-                      <p className="text-sm text-muted-foreground">Choose hospital location</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="hover:shadow-lg transition-all">
-                    <CardContent className="p-4 text-center">
-                      <FileText className="w-8 h-8 mx-auto mb-2 text-primary" />
-                      <h3 className="font-semibold">Specialization</h3>
-                      <p className="text-sm text-muted-foreground">Select medical specialty</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="hover:shadow-lg transition-all">
-                    <CardContent className="p-4 text-center">
-                      <User className="w-8 h-8 mx-auto mb-2 text-primary" />
-                      <h3 className="font-semibold">Choose Doctor</h3>
-                      <p className="text-sm text-muted-foreground">Select preferred doctor</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="hover:shadow-lg transition-all">
-                    <CardContent className="p-4 text-center">
-                      <Calendar className="w-8 h-8 mx-auto mb-2 text-primary" />
-                      <h3 className="font-semibold">Pick Date</h3>
-                      <p className="text-sm text-muted-foreground">Available time slots</p>
-                    </CardContent>
-                  </Card>
-                </div>
-                <Button className="mt-6 w-full bg-gradient-primary hover:opacity-90">
-                  Start Booking Process
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">E-Channel Services</h2>
+                <Select value={activeEChannelTab} onValueChange={setActiveEChannelTab}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="book">Book Appointment</SelectItem>
+                    <SelectItem value="reschedule">Reschedule Request</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {activeEChannelTab === 'book' && (
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      Book New Appointment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <Card className="hover:shadow-lg transition-all">
+                        <CardContent className="p-4 text-center">
+                          <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
+                          <h3 className="font-semibold">Select Branch</h3>
+                          <p className="text-sm text-muted-foreground">Choose hospital location</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="hover:shadow-lg transition-all">
+                        <CardContent className="p-4 text-center">
+                          <FileText className="w-8 h-8 mx-auto mb-2 text-primary" />
+                          <h3 className="font-semibold">Specialization</h3>
+                          <p className="text-sm text-muted-foreground">Select medical specialty</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="hover:shadow-lg transition-all">
+                        <CardContent className="p-4 text-center">
+                          <User className="w-8 h-8 mx-auto mb-2 text-primary" />
+                          <h3 className="font-semibold">Choose Doctor</h3>
+                          <p className="text-sm text-muted-foreground">Select preferred doctor</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="hover:shadow-lg transition-all">
+                        <CardContent className="p-4 text-center">
+                          <Calendar className="w-8 h-8 mx-auto mb-2 text-primary" />
+                          <h3 className="font-semibold">Pick Date</h3>
+                          <p className="text-sm text-muted-foreground">Available time slots</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    <Button className="mt-6 w-full bg-gradient-primary hover:opacity-90">
+                      Start Booking Process
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {activeEChannelTab === 'reschedule' && (
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <RefreshCw className="w-5 h-5 text-primary" />
+                      Reschedule Requests
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg font-semibold mb-2">No Reschedule Requests</h3>
+                      <p className="text-muted-foreground">You don't have any pending reschedule requests at the moment.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           {/* Activities Tab */}

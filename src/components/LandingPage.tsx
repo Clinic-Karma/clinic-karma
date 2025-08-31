@@ -76,8 +76,11 @@ const LandingPage = () => {
             <Button onClick={() => setIsSignUpModalOpen(true)} variant="outline" className="shadow-button">
               Sign Up
             </Button>
-            <Button onClick={() => setIsAuthModalOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
-              Log In
+            <Button onClick={() => setIsAuthModalOpen(true)} variant="outline" className="shadow-button">
+              Admin Portal
+            </Button>
+            <Button onClick={() => setIsSignUpModalOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
+              Patient Login
             </Button>
           </div>
         </div>
@@ -160,6 +163,48 @@ const LandingPage = () => {
                   </div>
                 </CardContent>
               </Card>)}
+          </div>
+        </div>
+      </section>
+
+      {/* Trending New Section */}
+      <section className="py-20 bg-gradient-subtle">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-gradient-primary text-primary-foreground">Trending Now</Badge>
+            <h2 className="text-4xl font-bold mb-4">Latest Healthcare Innovations</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Discover the newest features and improvements we've added to enhance your healthcare experience
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="shadow-card hover:shadow-lg transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">AI-Powered Diagnostics</h3>
+                <p className="text-muted-foreground">Advanced AI assistance for more accurate and faster diagnosis</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card hover:shadow-lg transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Users className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Telemedicine Integration</h3>
+                <p className="text-muted-foreground">Connect with your healthcare providers from anywhere</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card hover:shadow-lg transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <FileText className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Smart Health Records</h3>
+                <p className="text-muted-foreground">Intelligent organization and insights from your medical data</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

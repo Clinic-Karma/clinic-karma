@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,6 +41,13 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
   const [dateOfBirth, setDateOfBirth] = useState<Date>();
   const { toast } = useToast();
 
+  // Auto-generate patient ID when component mounts
+  useEffect(() => {
+    if (open && !formData.patientId) {
+      generatePatientId();
+    }
+  }, [open]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -49,17 +56,11 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
   };
 
   const generatePatientId = () => {
+    const prefix = 'PAT';
     const timestamp = Date.now().toString().slice(-6);
     const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `PT${timestamp}${randomNum}`;
-  };
-
-  const handleGenerateId = () => {
-    const newId = generatePatientId();
-    setFormData(prev => ({
-      ...prev,
-      patientId: newId
-    }));
+    const newId = `${prefix}${timestamp}${randomNum}`;
+    setFormData(prev => ({ ...prev, patientId: newId }));
   };
 
   const handleSignUp = () => {
@@ -146,23 +147,13 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
 
             <div>
               <Label htmlFor="patientId">Patient ID</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  id="patientId"
-                  value={formData.patientId}
-                  onChange={(e) => handleInputChange('patientId', e.target.value)}
-                  placeholder="Auto-generated"
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={handleGenerateId}
-                  className="shrink-0"
-                >
-                  Generate
-                </Button>
-              </div>
+              <Input
+                id="patientId"
+                value={formData.patientId}
+                placeholder="Auto-generated ID"
+                className="mt-1 bg-muted"
+                readOnly
+              />
             </div>
           </div>
 
