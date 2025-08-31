@@ -147,10 +147,33 @@ const PatientDashboard = () => {
               <h1 className="text-2xl font-bold">Patient Dashboard</h1>
               <p className="opacity-90">Welcome back, John Doe</p>
             </div>
-            <Button variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-              <Settings className="w-4 h-4 mr-2" />
-              Account Settings
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                onClick={() => window.location.href = '/'}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Account Settings
+              </Button>
+              <Button 
+                variant="outline" 
+                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                onClick={() => window.location.href = '/'}
+              >
+                Home
+              </Button>
+              <Button 
+                variant="outline" 
+                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                onClick={() => {
+                  // Handle logout logic here
+                  window.location.href = '/';
+                }}
+              >
+                Log Out
+              </Button>
+            </div>
           </div>
         </div>
       </header>
