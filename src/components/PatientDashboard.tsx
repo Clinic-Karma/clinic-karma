@@ -119,13 +119,13 @@ const PatientDashboard = () => {
                 <Settings className="w-4 h-4 mr-2" />
                 Account Settings
               </Button>
-              <Button variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" onClick={() => window.location.href = '/'}>
+              <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground bg-slate-50 text-slate-950">
                 Home
               </Button>
-              <Button variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" onClick={() => {
+              <Button variant="outline" onClick={() => {
               // Handle logout logic here
               window.location.href = '/';
-            }}>
+            }} className="border-primary-foreground bg-slate-50 text-slate-950">
                 Log Out
               </Button>
             </div>
