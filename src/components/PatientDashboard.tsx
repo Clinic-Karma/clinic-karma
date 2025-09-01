@@ -115,7 +115,7 @@ const PatientDashboard = () => {
               <p className="opacity-90">Welcome back, John Doe</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground hover:bg-primary-foreground text-slate-950">
+              <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground bg-slate-50 text-slate-950">
                 <Settings className="w-4 h-4 mr-2" />
                 Account Settings
               </Button>
