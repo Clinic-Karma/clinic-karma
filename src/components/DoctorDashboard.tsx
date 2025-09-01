@@ -440,6 +440,7 @@ const DoctorDashboard = () => {
         patient={selectedPatient}
         open={showPatientMessaging}
         onOpenChange={setShowPatientMessaging}
+        hideAppointments={true}
       />
     </div>
   );

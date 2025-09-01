@@ -207,12 +207,6 @@ const LandingPage = () => {
             {(showAllDoctors ? doctors : doctors.slice(0, 3)).map((doctor, index) => <Card key={index} className="shadow-card hover:shadow-lg transition-all duration-300 group overflow-hidden">
                 <div className="relative">
                   <img src={doctor.image} alt={doctor.name} className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300" />
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-success text-success-foreground">
-                      <Star className="w-3 h-3 mr-1 fill-current" />
-                      {doctor.rating}
-                    </Badge>
-                  </div>
                 </div>
                 <CardContent className="p-6">
                   <h3 className="text-xl font-semibold mb-2">{doctor.name}</h3>
@@ -381,34 +375,8 @@ const LandingPage = () => {
               </div>
             </div>
           </div>
-          <div className="border-t border-primary-foreground/20 mt-8 pt-8">
-            <div className="grid md:grid-cols-2 gap-8 mb-6">
-              <div>
-                <h4 className="font-semibold mb-4">Quick Links</h4>
-                <div className="grid grid-cols-2 gap-2 opacity-90">
-                  <a href="#" className="hover:text-white/80 transition-colors">Patient Portal</a>
-                  <a href="#" className="hover:text-white/80 transition-colors">Doctor Login</a>
-                  <a href="#" className="hover:text-white/80 transition-colors">Admin Portal</a>
-                  <a href="#" className="hover:text-white/80 transition-colors">Staff Login</a>
-                  <a href="#" className="hover:text-white/80 transition-colors">Appointment Booking</a>
-                  <a href="#" className="hover:text-white/80 transition-colors">Lab Reports</a>
-                  <a href="#" className="hover:text-white/80 transition-colors">Billing & Insurance</a>
-                  <a href="#" className="hover:text-white/80 transition-colors">Emergency Contact</a>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Support</h4>
-                <div className="space-y-2 opacity-90">
-                  <a href="#" className="block hover:text-white/80 transition-colors">Help Center</a>
-                  <a href="#" className="block hover:text-white/80 transition-colors">FAQ</a>
-                  <a href="#" className="block hover:text-white/80 transition-colors">Privacy Policy</a>
-                  <a href="#" className="block hover:text-white/80 transition-colors">Terms of Service</a>
-                </div>
-              </div>
-            </div>
-            <div className="text-center opacity-90">
+          <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center opacity-90">
               <p>&copy; 2024 CATMS. All rights reserved.</p>
-            </div>
           </div>
         </div>
       </footer>

@@ -12,9 +12,10 @@ interface PatientMessagingProps {
   patient: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  hideAppointments?: boolean;
 }
 
-const PatientMessaging = ({ patient, open, onOpenChange }: PatientMessagingProps) => {
+const PatientMessaging = ({ patient, open, onOpenChange, hideAppointments = false }: PatientMessagingProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState([
     {
@@ -109,10 +110,12 @@ const PatientMessaging = ({ patient, open, onOpenChange }: PatientMessagingProps
         </DialogHeader>
 
         <Tabs defaultValue="messaging" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="messaging">Messaging</TabsTrigger>
-            <TabsTrigger value="appointments">Past Appointments</TabsTrigger>
-          </TabsList>
+          {!hideAppointments && (
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="messaging">Messaging</TabsTrigger>
+              <TabsTrigger value="appointments">Past Appointments</TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="messaging">
             <div className="grid gap-6">
@@ -221,47 +224,49 @@ const PatientMessaging = ({ patient, open, onOpenChange }: PatientMessagingProps
             </div>
           </TabsContent>
 
-          <TabsContent value="appointments">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Past Appointments with {patient.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {pastAppointments.map((appointment) => (
-                    <div key={appointment.id} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{appointment.type}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {appointment.date} at {appointment.time}
-                          </p>
+          {!hideAppointments && (
+            <TabsContent value="appointments">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    Past Appointments with {patient.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pastAppointments.map((appointment) => (
+                      <div key={appointment.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold">{appointment.type}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {appointment.date} at {appointment.time}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            {appointment.status}
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          {appointment.status}
-                        </Badge>
+                        
+                        <div className="space-y-2">
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Notes:</label>
+                            <p className="text-sm">{appointment.notes}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Prescription:</label>
+                            <p className="text-sm font-medium">{appointment.prescription}</p>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Notes:</label>
-                          <p className="text-sm">{appointment.notes}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Prescription:</label>
-                          <p className="text-sm font-medium">{appointment.prescription}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </DialogContent>
     </Dialog>
