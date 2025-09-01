@@ -106,7 +106,7 @@ const LandingPage = () => {
             <Button size="lg" onClick={() => setIsSignUpModalOpen(true)} className="bg-white text-primary hover:bg-white/90 shadow-hero">
               Get Started Today
             </Button>
-            <Button size="lg" variant="outline" onClick={() => setIsPatientLoginOpen(true)} className="border-white text-blue-800 bg-slate-400 hover:bg-slate-300">
+            <Button size="lg" variant="outline" onClick={() => setIsPatientLoginOpen(true)} className="border-white text-blue-800 bg-slate-50">
               Login to Your Account
             </Button>
           </div>
