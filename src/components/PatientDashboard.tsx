@@ -116,10 +116,6 @@ const PatientDashboard = () => {
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground bg-slate-50 text-slate-950">
-                <Settings className="w-4 h-4 mr-2" />
-                Account Settings
-              </Button>
-              <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground bg-slate-50 text-slate-950">
                 Home
               </Button>
               <Button variant="outline" onClick={() => {
@@ -209,7 +205,7 @@ const PatientDashboard = () => {
                         </CardContent>
                       </Card>
                     </div>
-                    <Button className="mt-6 w-full bg-gradient-primary hover:opacity-90">
+                    <Button className="mt-6 w-full bg-gradient-primary hover:opacity-90" onClick={() => window.location.href = '/appointment-booking'}>
                       Start Booking Process
                     </Button>
                   </CardContent>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, FileText, CreditCard, History, Users, TrendingUp, Star, MapPin, Phone, Mail } from 'lucide-react';
+import { Calendar, FileText, CreditCard, History, Users, TrendingUp, Star, MapPin, Phone, Mail, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import AuthModal from './AuthModal';
 import SignUpModal from './SignUpModal';
 import PatientLoginModal from './PatientLoginModal';
@@ -14,22 +14,29 @@ const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isPatientLoginOpen, setIsPatientLoginOpen] = useState(false);
+  const [expandedBenefit, setExpandedBenefit] = useState<number | null>(null);
+  const [showAllDoctors, setShowAllDoctors] = useState(false);
+  const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
   const benefits = [{
     icon: Calendar,
     title: "Easy Appointment Scheduling",
-    description: "Book appointments with your preferred doctors in just a few clicks"
+    description: "Book appointments with your preferred doctors in just a few clicks",
+    expandedDescription: "Our advanced booking system allows you to select your preferred doctor, choose available time slots, and receive instant confirmation. You can also reschedule or cancel appointments with ease, and receive automated reminders via SMS and email."
   }, {
     icon: FileText,
     title: "Centralized Patient Records",
-    description: "Access all your medical records, prescriptions, and treatment history in one place"
+    description: "Access all your medical records, prescriptions, and treatment history in one place",
+    expandedDescription: "Your complete medical journey is stored securely in our digital platform. View past consultations, download prescriptions, track medication schedules, and share your medical history with new healthcare providers instantly."
   }, {
     icon: CreditCard,
     title: "Transparent Billing & Insurance",
-    description: "Clear billing statements with insurance integration for hassle-free payments"
+    description: "Clear billing statements with insurance integration for hassle-free payments",
+    expandedDescription: "Receive detailed billing statements with itemized charges, insurance coverage details, and co-payment information. Our system integrates with major insurance providers for direct billing and claim processing."
   }, {
     icon: History,
     title: "Lab Reports & Treatment History",
-    description: "Digital access to all your lab reports and complete treatment history"
+    description: "Digital access to all your lab reports and complete treatment history",
+    expandedDescription: "Access all your lab results, X-rays, and diagnostic reports online. Compare historical data with charts and graphs, and share reports with specialists. All reports are available 24/7 from any device."
   }];
   const doctors = [{
     name: "Dr. Priya Sharma",
@@ -49,7 +56,53 @@ const LandingPage = () => {
     image: doctor3,
     availability: "Mon-Thu 8AM-4PM",
     rating: 4.9
+  }, {
+    name: "Dr. Sarah Chen",
+    specialization: "Pediatrician",
+    image: doctor1,
+    availability: "Mon-Fri 8AM-6PM",
+    rating: 4.9
+  }, {
+    name: "Dr. Robert Kim",
+    specialization: "Dermatologist",
+    image: doctor2,
+    availability: "Wed-Sun 9AM-5PM",
+    rating: 4.7
+  }, {
+    name: "Dr. Maria Lopez",
+    specialization: "Gynecologist",
+    image: doctor3,
+    availability: "Mon-Fri 10AM-4PM",
+    rating: 4.8
   }];
+
+  const newsItems = [
+    {
+      title: "AI-Powered Diagnostics",
+      description: "Advanced AI assistance for more accurate and faster diagnosis",
+      icon: TrendingUp
+    },
+    {
+      title: "Telemedicine Integration",
+      description: "Connect with your healthcare providers from anywhere",
+      icon: Users
+    },
+    {
+      title: "Smart Health Records",
+      description: "Intelligent organization and insights from your medical data",
+      icon: FileText
+    },
+    {
+      title: "24/7 Emergency Support",
+      description: "Round-the-clock medical support for urgent healthcare needs",
+      icon: Phone
+    },
+    {
+      title: "Preventive Care Alerts",
+      description: "Automated reminders for checkups, vaccinations, and screenings",
+      icon: Calendar
+    }
+  ];
   const stats = [{
     label: "Active Patients",
     value: "12,458",
@@ -102,12 +155,9 @@ const LandingPage = () => {
             CATMS - Clinic Appointment & Treatment Management System provides seamless healthcare management 
             for patients, doctors, and medical staff.
           </p>
-          <div className="flex gap-4 justify-center flex-wrap">
+          <div className="flex justify-center">
             <Button size="lg" onClick={() => setIsSignUpModalOpen(true)} className="bg-white text-primary hover:bg-white/90 shadow-hero">
               Get Started Today
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => setIsPatientLoginOpen(true)} className="border-white text-blue-800 bg-slate-50">
-              Login to Your Account
             </Button>
           </div>
         </div>
@@ -123,13 +173,21 @@ const LandingPage = () => {
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {benefits.map((benefit, index) => <Card key={index} className="shadow-card hover:shadow-lg transition-all duration-300 group">
+            {benefits.map((benefit, index) => <Card key={index} className="shadow-card hover:shadow-lg transition-all duration-300 group cursor-pointer" onClick={() => setExpandedBenefit(expandedBenefit === index ? null : index)}>
                 <CardContent className="p-6 text-center">
                   <div className="bg-gradient-primary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                     <benefit.icon className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <h3 className="text-xl font-semibold mb-3">{benefit.title}</h3>
-                  <p className="text-muted-foreground">{benefit.description}</p>
+                  <p className="text-muted-foreground mb-3">{benefit.description}</p>
+                  {expandedBenefit === index && (
+                    <div className="border-t pt-3 mt-3">
+                      <p className="text-sm text-foreground">{benefit.expandedDescription}</p>
+                    </div>
+                  )}
+                  <div className="flex justify-center mt-3">
+                    {expandedBenefit === index ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />}
+                  </div>
                 </CardContent>
               </Card>)}
           </div>
@@ -146,7 +204,7 @@ const LandingPage = () => {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {doctors.map((doctor, index) => <Card key={index} className="shadow-card hover:shadow-lg transition-all duration-300 group overflow-hidden">
+            {(showAllDoctors ? doctors : doctors.slice(0, 3)).map((doctor, index) => <Card key={index} className="shadow-card hover:shadow-lg transition-all duration-300 group overflow-hidden">
                 <div className="relative">
                   <img src={doctor.image} alt={doctor.name} className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300" />
                   <div className="absolute top-4 right-4">
@@ -166,6 +224,21 @@ const LandingPage = () => {
                 </CardContent>
               </Card>)}
           </div>
+          {doctors.length > 3 && (
+            <div className="text-center mt-8">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAllDoctors(!showAllDoctors)}
+                className="shadow-button"
+              >
+                {showAllDoctors ? (
+                  <>Show Less <ChevronUp className="w-4 h-4 ml-2" /></>
+                ) : (
+                  <>View All Doctors <ChevronDown className="w-4 h-4 ml-2" /></>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -179,34 +252,43 @@ const LandingPage = () => {
               Discover the newest features and improvements we've added to enhance your healthcare experience
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="shadow-card hover:shadow-lg transition-all duration-300 group">
-              <CardContent className="p-6">
-                <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">AI-Powered Diagnostics</h3>
-                <p className="text-muted-foreground">Advanced AI assistance for more accurate and faster diagnosis</p>
-              </CardContent>
-            </Card>
-            <Card className="shadow-card hover:shadow-lg transition-all duration-300 group">
-              <CardContent className="p-6">
-                <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Users className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Telemedicine Integration</h3>
-                <p className="text-muted-foreground">Connect with your healthcare providers from anywhere</p>
-              </CardContent>
-            </Card>
-            <Card className="shadow-card hover:shadow-lg transition-all duration-300 group">
-              <CardContent className="p-6">
-                <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <FileText className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Smart Health Records</h3>
-                <p className="text-muted-foreground">Intelligent organization and insights from your medical data</p>
-              </CardContent>
-            </Card>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex-1"></div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCurrentNewsIndex(Math.max(0, currentNewsIndex - 1))}
+                  disabled={currentNewsIndex === 0}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCurrentNewsIndex(Math.min(newsItems.length - 3, currentNewsIndex + 1))}
+                  disabled={currentNewsIndex >= newsItems.length - 3}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              {newsItems.slice(currentNewsIndex, currentNewsIndex + 3).map((news, index) => (
+                <Card key={currentNewsIndex + index} className="shadow-card hover:shadow-lg transition-all duration-300 group">
+                  <CardContent className="p-6">
+                    <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <news.icon className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">{news.title}</h3>
+                    <p className="text-muted-foreground">{news.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -268,21 +350,65 @@ const LandingPage = () => {
               <div className="space-y-2 opacity-90">
                 <div className="flex items-center">
                   <MapPin className="w-4 h-4 mr-2" />
-                  <span>123 Medical Center Dr.</span>
+                  <a 
+                    href="https://maps.google.com/?q=123+Medical+Center+Dr" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center hover:text-white/80 transition-colors"
+                  >
+                    123 Medical Center Dr.
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                  </a>
                 </div>
                 <div className="flex items-center">
                   <Phone className="w-4 h-4 mr-2" />
-                  <span>+1 (555) 123-4567</span>
+                  <a 
+                    href="tel:+15551234567" 
+                    className="hover:text-white/80 transition-colors"
+                  >
+                    +1 (555) 123-4567
+                  </a>
                 </div>
                 <div className="flex items-center">
                   <Mail className="w-4 h-4 mr-2" />
-                  <span>info@catms.com</span>
+                  <a 
+                    href="mailto:info@catms.com" 
+                    className="hover:text-white/80 transition-colors"
+                  >
+                    info@catms.com
+                  </a>
                 </div>
               </div>
             </div>
           </div>
-          <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center opacity-90">
-            <p>&copy; 2024 CATMS. All rights reserved.</p>
+          <div className="border-t border-primary-foreground/20 mt-8 pt-8">
+            <div className="grid md:grid-cols-2 gap-8 mb-6">
+              <div>
+                <h4 className="font-semibold mb-4">Quick Links</h4>
+                <div className="grid grid-cols-2 gap-2 opacity-90">
+                  <a href="#" className="hover:text-white/80 transition-colors">Patient Portal</a>
+                  <a href="#" className="hover:text-white/80 transition-colors">Doctor Login</a>
+                  <a href="#" className="hover:text-white/80 transition-colors">Admin Portal</a>
+                  <a href="#" className="hover:text-white/80 transition-colors">Staff Login</a>
+                  <a href="#" className="hover:text-white/80 transition-colors">Appointment Booking</a>
+                  <a href="#" className="hover:text-white/80 transition-colors">Lab Reports</a>
+                  <a href="#" className="hover:text-white/80 transition-colors">Billing & Insurance</a>
+                  <a href="#" className="hover:text-white/80 transition-colors">Emergency Contact</a>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-4">Support</h4>
+                <div className="space-y-2 opacity-90">
+                  <a href="#" className="block hover:text-white/80 transition-colors">Help Center</a>
+                  <a href="#" className="block hover:text-white/80 transition-colors">FAQ</a>
+                  <a href="#" className="block hover:text-white/80 transition-colors">Privacy Policy</a>
+                  <a href="#" className="block hover:text-white/80 transition-colors">Terms of Service</a>
+                </div>
+              </div>
+            </div>
+            <div className="text-center opacity-90">
+              <p>&copy; 2024 CATMS. All rights reserved.</p>
+            </div>
           </div>
         </div>
       </footer>

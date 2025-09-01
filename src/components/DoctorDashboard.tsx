@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import PatientDetails from './PatientDetails';
+import PatientMessaging from './PatientMessaging';
 import { 
   Calendar,
   Users,
@@ -23,6 +25,9 @@ import {
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [showPatientDetails, setShowPatientDetails] = useState(false);
+  const [showPatientMessaging, setShowPatientMessaging] = useState(false);
 
   const upcomingAppointments = [
     {
@@ -156,14 +161,6 @@ const DoctorDashboard = () => {
                 className="border-primary-foreground text-foreground hover:bg-primary-foreground hover:text-primary"
                 onClick={() => window.location.href = '/'}
               >
-                <Settings className="w-4 h-4 mr-2" />
-                Profile Settings
-              </Button>
-              <Button 
-                variant="outline" 
-                className="border-primary-foreground text-foreground hover:bg-primary-foreground hover:text-primary"
-                onClick={() => window.location.href = '/'}
-              >
                 Home
               </Button>
               <Button 
@@ -235,10 +232,27 @@ const DoctorDashboard = () => {
                       {appointment.contact}
                     </div>
                     <div className="flex gap-2 pt-2">
-                      <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90">
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-gradient-primary hover:opacity-90"
+                        onClick={() => {
+                          const patient = patients.find(p => p.patientId === appointment.patientId);
+                          setSelectedPatient(patient);
+                          setShowPatientDetails(true);
+                        }}
+                      >
                         View Details
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => {
+                          const patient = patients.find(p => p.patientId === appointment.patientId);
+                          setSelectedPatient(patient);
+                          setShowPatientMessaging(true);
+                        }}
+                      >
                         Contact Patient
                       </Button>
                     </div>
@@ -413,6 +427,20 @@ const DoctorDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Patient Details Modal */}
+      <PatientDetails 
+        patient={selectedPatient}
+        open={showPatientDetails}
+        onOpenChange={setShowPatientDetails}
+      />
+
+      {/* Patient Messaging Modal */}
+      <PatientMessaging 
+        patient={selectedPatient}
+        open={showPatientMessaging}
+        onOpenChange={setShowPatientMessaging}
+      />
     </div>
   );
 };
