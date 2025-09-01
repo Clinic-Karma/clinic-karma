@@ -9,9 +9,10 @@ interface PatientDetailsProps {
   patient: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  showOnlyOverview?: boolean;
 }
 
-const PatientDetails = ({ patient, open, onOpenChange }: PatientDetailsProps) => {
+const PatientDetails = ({ patient, open, onOpenChange, showOnlyOverview = false }: PatientDetailsProps) => {
   if (!patient) return null;
 
   const medicalHistory = [
@@ -133,12 +134,14 @@ const PatientDetails = ({ patient, open, onOpenChange }: PatientDetailsProps) =>
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="history">Medical History</TabsTrigger>
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            <TabsTrigger value="reports">Lab Reports</TabsTrigger>
-          </TabsList>
+          {!showOnlyOverview && (
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="history">Medical History</TabsTrigger>
+              <TabsTrigger value="appointments">Appointments</TabsTrigger>
+              <TabsTrigger value="reports">Lab Reports</TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="overview">
             <div className="grid md:grid-cols-2 gap-6">
@@ -215,101 +218,107 @@ const PatientDetails = ({ patient, open, onOpenChange }: PatientDetailsProps) =>
             </div>
           </TabsContent>
 
-          <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-primary" />
-                  Medical History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {medicalHistory.map((record) => (
-                    <div key={record.id} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{record.diagnosis}</h4>
-                          <p className="text-sm text-muted-foreground">By {record.doctor}</p>
+          {!showOnlyOverview && (
+            <TabsContent value="history">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Medical History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {medicalHistory.map((record) => (
+                      <div key={record.id} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold">{record.diagnosis}</h4>
+                            <p className="text-sm text-muted-foreground">By {record.doctor}</p>
+                          </div>
+                          <Badge variant={getStatusColor(record.status) as any} className="flex items-center gap-1">
+                            {getStatusIcon(record.status)}
+                            {record.status}
+                          </Badge>
                         </div>
-                        <Badge variant={getStatusColor(record.status) as any} className="flex items-center gap-1">
-                          {getStatusIcon(record.status)}
-                          {record.status}
-                        </Badge>
+                        <p className="text-sm">{record.treatment}</p>
+                        <p className="text-xs text-muted-foreground">Date: {record.date}</p>
                       </div>
-                      <p className="text-sm">{record.treatment}</p>
-                      <p className="text-xs text-muted-foreground">Date: {record.date}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-          <TabsContent value="appointments">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Appointment History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {appointments.map((appointment) => (
-                    <div key={appointment.id} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{appointment.type}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {appointment.date} at {appointment.time}
-                          </p>
+          {!showOnlyOverview && (
+            <TabsContent value="appointments">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    Appointment History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {appointments.map((appointment) => (
+                      <div key={appointment.id} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold">{appointment.type}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {appointment.date} at {appointment.time}
+                            </p>
+                          </div>
+                          <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1">
+                            {getStatusIcon(appointment.status)}
+                            {appointment.status}
+                          </Badge>
                         </div>
-                        <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1">
-                          {getStatusIcon(appointment.status)}
-                          {appointment.status}
-                        </Badge>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-          <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  Laboratory Reports
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {labReports.map((report) => (
-                    <div key={report.id} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{report.testName}</h4>
-                          <p className="text-sm text-muted-foreground">Date: {report.date}</p>
+          {!showOnlyOverview && (
+            <TabsContent value="reports">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    Laboratory Reports
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {labReports.map((report) => (
+                      <div key={report.id} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold">{report.testName}</h4>
+                            <p className="text-sm text-muted-foreground">Date: {report.date}</p>
+                          </div>
+                          <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1">
+                            {getStatusIcon(report.status)}
+                            {report.status}
+                          </Badge>
                         </div>
-                        <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1">
-                          {getStatusIcon(report.status)}
-                          {report.status}
-                        </Badge>
+                        <p className="text-sm">{report.results}</p>
+                        <Button size="sm" variant="outline" className="mt-2">
+                          <Download className="w-3 h-3 mr-2" />
+                          Download Report
+                        </Button>
                       </div>
-                      <p className="text-sm">{report.results}</p>
-                      <Button size="sm" variant="outline" className="mt-2">
-                        <Download className="w-3 h-3 mr-2" />
-                        Download Report
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </DialogContent>
     </Dialog>

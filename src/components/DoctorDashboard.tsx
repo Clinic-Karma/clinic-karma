@@ -433,6 +433,7 @@ const DoctorDashboard = () => {
         patient={selectedPatient}
         open={showPatientDetails}
         onOpenChange={setShowPatientDetails}
+        showOnlyOverview={true}
       />
 
       {/* Patient Messaging Modal */}
