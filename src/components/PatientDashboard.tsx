@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, FileText, CreditCard, Settings, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import EditProfileModal from './EditProfileModal';
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const appointments = [{
     id: 1,
     doctor: 'Dr. Priya Sharma',
@@ -348,8 +350,8 @@ const PatientDashboard = () => {
                     <p className="text-lg">John Doe</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Patient ID</label>
-                    <p className="text-lg">PT123456789</p>
+                    <label className="text-sm font-medium">NIC</label>
+                    <p className="text-lg">123456789V</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Email</label>
@@ -378,7 +380,10 @@ const PatientDashboard = () => {
                   <label className="text-sm font-medium">Address</label>
                   <p className="text-lg">123 Main Street, Anytown, ST 12345</p>
                 </div>
-                <Button className="bg-gradient-primary hover:opacity-90">
+                <Button 
+                  onClick={() => setIsEditProfileOpen(true)}
+                  className="bg-gradient-primary hover:opacity-90"
+                >
                   Edit Profile Information
                 </Button>
               </CardContent>
@@ -386,6 +391,9 @@ const PatientDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen} />
     </div>;
 };
 export default PatientDashboard;

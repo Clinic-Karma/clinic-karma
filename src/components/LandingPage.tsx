@@ -6,6 +6,8 @@ import { Calendar, FileText, CreditCard, History, Users, TrendingUp, Star, MapPi
 import AuthModal from './AuthModal';
 import SignUpModal from './SignUpModal';
 import PatientLoginModal from './PatientLoginModal';
+import AboutUsModal from './AboutUsModal';
+import BranchDetailsModal from './BranchDetailsModal';
 import heroImage from '@/assets/medical-hero.jpg';
 import doctor1 from '@/assets/doctor-1.jpg';
 import doctor2 from '@/assets/doctor-2.jpg';
@@ -14,6 +16,8 @@ const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isPatientLoginOpen, setIsPatientLoginOpen] = useState(false);
+  const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
+  const [isBranchDetailsOpen, setIsBranchDetailsOpen] = useState(false);
   const [expandedBenefit, setExpandedBenefit] = useState<number | null>(null);
   const [showAllDoctors, setShowAllDoctors] = useState(false);
   const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
@@ -125,9 +129,9 @@ const LandingPage = () => {
       <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            CATMS
+            MedSync
           </div>
-          <div className="flex gap-4">
+          <div className="hidden md:flex gap-4">
             <Button onClick={() => setIsSignUpModalOpen(true)} variant="outline" className="shadow-button">
               Sign Up
             </Button>
@@ -136,6 +140,15 @@ const LandingPage = () => {
             </Button>
             <Button onClick={() => setIsPatientLoginOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
               Patient Login
+            </Button>
+          </div>
+          {/* Mobile Menu */}
+          <div className="md:hidden flex gap-2">
+            <Button onClick={() => setIsSignUpModalOpen(true)} size="sm" variant="outline" className="shadow-button">
+              Sign Up
+            </Button>
+            <Button onClick={() => setIsPatientLoginOpen(true)} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button">
+              Login
             </Button>
           </div>
         </div>
@@ -152,8 +165,8 @@ const LandingPage = () => {
             Your Health, <span className="text-white">Our Priority</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
-            CATMS - Clinic Appointment & Treatment Management System provides seamless healthcare management 
-            for patients, doctors, and medical staff.
+            MedSync provides seamless healthcare management 
+            for patients, doctors, and medical staff with modern technology.
           </p>
           <div className="flex justify-center">
             <Button size="lg" onClick={() => setIsSignUpModalOpen(true)} className="bg-white text-primary hover:bg-white/90 shadow-hero">
@@ -167,7 +180,7 @@ const LandingPage = () => {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose CATMS?</h2>
+            <h2 className="text-4xl font-bold mb-4">Why Choose MedSync?</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Experience healthcare management like never before with our comprehensive platform
             </p>
@@ -291,7 +304,7 @@ const LandingPage = () => {
       <section className="py-20 bg-gradient-card">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">CATMS by the Numbers</h2>
+            <h2 className="text-4xl font-bold mb-4">MedSync by the Numbers</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Join thousands of satisfied patients and healthcare professionals
             </p>
@@ -316,7 +329,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">CATMS</h3>
+              <h3 className="text-2xl font-bold mb-4">MedSync</h3>
               <p className="opacity-90 mb-4">
                 Revolutionizing healthcare management with innovative technology and compassionate care.
               </p>
@@ -324,10 +337,11 @@ const LandingPage = () => {
             <div>
               <h4 className="font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 opacity-90">
-                <li>About Us</li>
-                <li>Services</li>
-                <li>Doctors</li>
-                <li>Contact</li>
+                <li><button onClick={() => setIsAboutUsOpen(true)} className="hover:text-white/80 transition-colors">About Us</button></li>
+                <li><button className="hover:text-white/80 transition-colors">Services</button></li>
+                <li><button className="hover:text-white/80 transition-colors">Doctors</button></li>
+                <li><button onClick={() => setIsBranchDetailsOpen(true)} className="hover:text-white/80 transition-colors">Branch Details</button></li>
+                <li><button className="hover:text-white/80 transition-colors">Contact</button></li>
               </ul>
             </div>
             <div>
@@ -366,17 +380,17 @@ const LandingPage = () => {
                 <div className="flex items-center">
                   <Mail className="w-4 h-4 mr-2" />
                   <a 
-                    href="mailto:info@catms.com" 
+                    href="mailto:info@medsync.com" 
                     className="hover:text-white/80 transition-colors"
                   >
-                    info@catms.com
+                    info@medsync.com
                   </a>
                 </div>
               </div>
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center opacity-90">
-              <p>&copy; 2024 CATMS. All rights reserved.</p>
+              <p>&copy; 2024 MedSync. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -385,6 +399,8 @@ const LandingPage = () => {
       <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
       <SignUpModal open={isSignUpModalOpen} onOpenChange={setIsSignUpModalOpen} />
       <PatientLoginModal open={isPatientLoginOpen} onOpenChange={setIsPatientLoginOpen} />
+      <AboutUsModal open={isAboutUsOpen} onOpenChange={setIsAboutUsOpen} />
+      <BranchDetailsModal open={isBranchDetailsOpen} onOpenChange={setIsBranchDetailsOpen} />
     </div>;
 };
 export default LandingPage;

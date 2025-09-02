@@ -1,52 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-interface SignUpModalProps {
+interface EditProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
+const EditProfileModal = ({ open, onOpenChange }: EditProfileModalProps) => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    nic: '',
-    contactNumber: '',
-    email: '',
-    gender: '',
-    address: ''
+    fullName: 'John Doe',
+    nic: '123456789V', // Read-only
+    email: 'john.doe@email.com',
+    contactNumber: '+1 (555) 123-4567',
+    gender: 'male',
+    address: '123 Main Street, Anytown, ST 12345'
   });
-  const [dateOfBirth, setDateOfBirth] = useState<Date>();
+  const [dateOfBirth, setDateOfBirth] = useState<Date>(new Date('1985-01-15'));
   const { toast } = useToast();
-
-  // Clear form when modal opens
-  useEffect(() => {
-    if (open) {
-      resetForm();
-    }
-  }, [open]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -55,27 +36,11 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
     }));
   };
 
-  const validateNIC = (nic: string) => {
-    // Basic NIC validation - can be enhanced based on country requirements
-    const nicRegex = /^[0-9]{9}[vVxX]$|^[0-9]{12}$/;
-    return nicRegex.test(nic.replace(/\s/g, ''));
-  };
-
-  const handleSignUp = () => {
-    if (!formData.fullName || !formData.nic || !formData.contactNumber || !formData.gender || !dateOfBirth) {
+  const handleSave = () => {
+    if (!formData.fullName || !formData.contactNumber || !formData.gender || !dateOfBirth) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // NIC validation
-    if (!validateNIC(formData.nic)) {
-      toast({
-        title: "Invalid NIC",
-        description: "Please enter a valid National Identity Card number.",
         variant: "destructive",
       });
       return;
@@ -105,44 +70,25 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
       return;
     }
 
-    // Simulate successful registration
+    // Simulate successful update
     toast({
-      title: "Registration Successful!",
-      description: `Welcome ${formData.fullName}! Your account has been created successfully.`,
+      title: "Profile Updated!",
+      description: "Your profile information has been successfully updated.",
     });
 
     setTimeout(() => {
       onOpenChange(false);
-      resetForm();
-    }, 2000);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      fullName: '',
-      nic: '',
-      contactNumber: '',
-      email: '',
-      gender: '',
-      address: ''
-    });
-    setDateOfBirth(undefined);
+    }, 1500);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      onOpenChange(open);
-      if (!open) resetForm();
-    }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-center">Join MedSync</DialogTitle>
-          <DialogDescription className="text-center">
-            Create your patient account to start managing your healthcare
-          </DialogDescription>
+          <DialogTitle className="text-2xl text-center">Edit Profile Information</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="fullName">Full Name *</Label>
@@ -156,14 +102,16 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
             </div>
 
             <div>
-              <Label htmlFor="nic">National Identity Card (NIC) *</Label>
+              <Label htmlFor="nic">National Identity Card (NIC)</Label>
               <Input
                 id="nic"
                 value={formData.nic}
-                onChange={(e) => handleInputChange('nic', e.target.value)}
-                placeholder="Enter your NIC number"
-                className="mt-1"
+                placeholder="NIC cannot be changed"
+                className="mt-1 bg-muted"
+                readOnly
+                disabled
               />
+              <p className="text-xs text-muted-foreground mt-1">NIC cannot be modified for security reasons</p>
             </div>
           </div>
 
@@ -256,28 +204,23 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
               <strong>Note:</strong> Fields marked with * are required.
             </p>
             <p className="text-xs text-muted-foreground">
-              Your information is secure and will only be used for healthcare management purposes.
+              Your NIC cannot be changed for security and verification purposes.
             </p>
           </div>
 
-          <Button 
-            onClick={handleSignUp}
-            className="w-full bg-gradient-primary hover:opacity-90 shadow-button"
-          >
-            Create Patient Account
-          </Button>
-
-          <div className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <button 
-              className="text-primary hover:text-primary-dark font-medium"
-              onClick={() => {
-                onOpenChange(false);
-                // You could emit an event or use a callback to open auth modal
-              }}
+          <div className="flex gap-3 justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
             >
-              Sign in here
-            </button>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSave}
+              className="bg-gradient-primary hover:opacity-90 shadow-button"
+            >
+              Save Changes
+            </Button>
           </div>
         </div>
       </DialogContent>
@@ -285,4 +228,4 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
   );
 };
 
-export default SignUpModal;
+export default EditProfileModal;
