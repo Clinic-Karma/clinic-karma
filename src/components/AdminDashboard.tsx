@@ -91,10 +91,32 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Login as {roleTitle}</CardTitle>
+          <CardTitle className="text-2xl">Admin Portal Login</CardTitle>
           <CardDescription>Enter your credentials to continue</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Select Role</label>
+            <Select onValueChange={setSelectedRole} value={selectedRole}>
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Choose your role" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border shadow-lg z-50">
+                <SelectItem value="top-manager" className="cursor-pointer hover:bg-accent">
+                  <div className="flex items-center">
+                    <UserCog className="w-4 h-4 mr-2" />
+                    Top Manager
+                  </div>
+                </SelectItem>
+                <SelectItem value="branch-manager" className="cursor-pointer hover:bg-accent">
+                  <div className="flex items-center">
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Branch Manager
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Username</label>
             <input 
@@ -112,10 +134,10 @@ const AdminDashboard = () => {
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setSelectedRole("")} className="flex-1">
+            <Button variant="outline" onClick={() => setSelectedPortal("")} className="flex-1">
               Back
             </Button>
-            <Button onClick={() => setIsLoggedIn(true)} className="flex-1">
+            <Button onClick={() => setIsLoggedIn(true)} disabled={!selectedRole} className="flex-1">
               Login
             </Button>
           </div>
@@ -188,8 +210,8 @@ const AdminDashboard = () => {
     return renderRoleSelection();
   }
 
-  if (selectedPortal === "admin" && !selectedRole) {
-    return renderAdminRoleSelection();
+  if (selectedPortal === "admin" && !isLoggedIn) {
+    return renderLoginForm("Administrator");
   }
 
   if (selectedPortal === "staff" && !selectedRole) {
