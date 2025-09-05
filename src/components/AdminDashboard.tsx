@@ -96,7 +96,7 @@ const AdminDashboard = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Select Role</label>
+            <label className="text-sm font-medium">Login As</label>
             <Select onValueChange={setSelectedRole} value={selectedRole}>
               <SelectTrigger className="w-full bg-background">
                 <SelectValue placeholder="Choose your role" />
@@ -118,7 +118,7 @@ const AdminDashboard = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Username</label>
+            <label className="text-sm font-medium">Email Address</label>
             <input 
               type="text" 
               className="w-full px-3 py-2 border border-border rounded-md bg-background"
