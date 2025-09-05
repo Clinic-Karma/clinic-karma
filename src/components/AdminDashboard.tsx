@@ -11,6 +11,8 @@ const AdminDashboard = () => {
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedPortal, setSelectedPortal] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const renderRoleSelection = () => (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -43,142 +45,94 @@ const AdminDashboard = () => {
     </div>
   );
 
-  const renderAdminRoleSelection = () => (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Admin Portal</CardTitle>
-          <CardDescription>Select your administrative role</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Select onValueChange={setSelectedRole}>
-            <SelectTrigger className="w-full bg-background">
-              <SelectValue placeholder="Choose your role" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border border-border shadow-lg z-50">
-              <SelectItem value="top-manager" className="cursor-pointer hover:bg-accent">
-                <div className="flex items-center">
-                  <UserCog className="w-4 h-4 mr-2" />
-                  Top Manager
-                </div>
-              </SelectItem>
-              <SelectItem value="branch-manager" className="cursor-pointer hover:bg-accent">
-                <div className="flex items-center">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Branch Manager
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setSelectedPortal("")} className="flex-1">
-              Back
-            </Button>
-            <Button 
-              onClick={() => setSelectedRole(selectedRole)} 
-              disabled={!selectedRole}
-              className="flex-1"
-            >
-              Continue
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const renderLoginForm = () => {
+    const isAdminPortal = selectedPortal === "admin";
+    const title = isAdminPortal ? "Administrator Login" : "Staff Login";
+    const roleOptions = isAdminPortal 
+      ? [
+          { value: "top-manager", label: "Top Manager", icon: UserCog },
+          { value: "branch-manager", label: "Branch Manager", icon: Building2 }
+        ]
+      : [
+          { value: "receptionist", label: "Receptionist", icon: Users },
+          { value: "lab-coordinator", label: "Lab Coordinator", icon: UserCog }
+        ];
 
-  const renderLoginForm = (roleTitle: string) => (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Admin Portal Login</CardTitle>
-          <CardDescription>Enter your credentials to continue</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Login As</label>
-            <Select onValueChange={setSelectedRole} value={selectedRole}>
-              <SelectTrigger className="w-full bg-background">
-                <SelectValue placeholder="Choose your role" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border border-border shadow-lg z-50">
-                <SelectItem value="top-manager" className="cursor-pointer hover:bg-accent">
-                  <div className="flex items-center">
-                    <UserCog className="w-4 h-4 mr-2" />
-                    Top Manager
-                  </div>
-                </SelectItem>
-                <SelectItem value="branch-manager" className="cursor-pointer hover:bg-accent">
-                  <div className="flex items-center">
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Branch Manager
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email Address</label>
-            <input 
-              type="text" 
-              className="w-full px-3 py-2 border border-border rounded-md bg-background"
-              placeholder="Enter username"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Password</label>
-            <input 
-              type="password" 
-              className="w-full px-3 py-2 border border-border rounded-md bg-background"
-              placeholder="Enter password"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setSelectedPortal("")} className="flex-1">
-              Back
-            </Button>
-            <Button onClick={() => setIsLoggedIn(true)} disabled={!selectedRole} className="flex-1">
-              Login
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderStaffRoleSelection = () => (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Staff Portal</CardTitle>
-          <CardDescription>Select your staff role</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full h-12 justify-start"
-              onClick={() => setSelectedRole("receptionist")}
-            >
-              <Users className="w-5 h-5 mr-3" />
-              Receptionist
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-12 justify-start"
-              onClick={() => setSelectedRole("lab-coordinator")}
-            >
-              <UserCog className="w-5 h-5 mr-3" />
-              Lab Coordinator
-            </Button>
-          </div>
-          <Button variant="outline" onClick={() => setSelectedPortal("")} className="w-full">
-            Back
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">{title}</CardTitle>
+            <CardDescription>Enter your credentials to continue</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Login As</label>
+              <Select onValueChange={setSelectedRole} value={selectedRole}>
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue placeholder="Choose your role" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border shadow-lg z-50">
+                  {roleOptions.map((option) => {
+                    const IconComponent = option.icon;
+                    return (
+                      <SelectItem key={option.value} value={option.value} className="cursor-pointer hover:bg-accent">
+                        <div className="flex items-center">
+                          <IconComponent className="w-4 h-4 mr-2" />
+                          {option.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                placeholder="Enter email address"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Password</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                placeholder="Enter password"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSelectedPortal("");
+                  setSelectedRole("");
+                  setEmail("");
+                  setPassword("");
+                }} 
+                className="flex-1"
+              >
+                Back
+              </Button>
+              <Button 
+                onClick={() => setIsLoggedIn(true)} 
+                disabled={!selectedRole || !email || !password} 
+                className="flex-1"
+              >
+                Login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   const renderDashboard = () => {
     if (selectedRole === "top-manager") {
@@ -210,16 +164,8 @@ const AdminDashboard = () => {
     return renderRoleSelection();
   }
 
-  if (selectedPortal === "admin" && !isLoggedIn) {
-    return renderLoginForm("Administrator");
-  }
-
-  if (selectedPortal === "staff" && !selectedRole) {
-    return renderStaffRoleSelection();
-  }
-
-  if (selectedRole && !isLoggedIn) {
-    return renderLoginForm(getRoleTitle());
+  if ((selectedPortal === "admin" || selectedPortal === "staff") && !isLoggedIn) {
+    return renderLoginForm();
   }
 
   if (isLoggedIn) {
@@ -238,6 +184,8 @@ const AdminDashboard = () => {
                   setSelectedRole("");
                   setSelectedPortal("");
                   setIsLoggedIn(false);
+                  setEmail("");
+                  setPassword("");
                 }}
               >
                 Logout
