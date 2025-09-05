@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TopManagerDashboard from "./TopManagerDashboard";
 import BranchManagerDashboard from "./BranchManagerDashboard";
 import StaffDashboard from "./StaffDashboard";
@@ -50,27 +51,37 @@ const AdminDashboard = () => {
           <CardDescription>Select your administrative role</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full h-12 justify-start"
-              onClick={() => setSelectedRole("top-manager")}
-            >
-              <UserCog className="w-5 h-5 mr-3" />
-              Top Manager
+          <Select onValueChange={setSelectedRole}>
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue placeholder="Choose your role" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border border-border shadow-lg z-50">
+              <SelectItem value="top-manager" className="cursor-pointer hover:bg-accent">
+                <div className="flex items-center">
+                  <UserCog className="w-4 h-4 mr-2" />
+                  Top Manager
+                </div>
+              </SelectItem>
+              <SelectItem value="branch-manager" className="cursor-pointer hover:bg-accent">
+                <div className="flex items-center">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Branch Manager
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setSelectedPortal("")} className="flex-1">
+              Back
             </Button>
             <Button 
-              variant="outline" 
-              className="w-full h-12 justify-start"
-              onClick={() => setSelectedRole("branch-manager")}
+              onClick={() => setSelectedRole(selectedRole)} 
+              disabled={!selectedRole}
+              className="flex-1"
             >
-              <Building2 className="w-5 h-5 mr-3" />
-              Branch Manager
+              Continue
             </Button>
           </div>
-          <Button variant="outline" onClick={() => setSelectedPortal("")} className="w-full">
-            Back
-          </Button>
         </CardContent>
       </Card>
     </div>
