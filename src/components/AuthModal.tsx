@@ -93,7 +93,11 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     setTimeout(() => {
       onOpenChange(false);
       // Navigate to appropriate dashboard based on role
-      window.location.href = `/${selectedRole}-dashboard`;
+      if (selectedRole === 'admin' && adminRole === 'top-manager') {
+        window.location.href = '/top-manager-dashboard';
+      } else {
+        window.location.href = `/${selectedRole}-dashboard`;
+      }
     }, 1500);
   };
 
