@@ -30,6 +30,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [staffRole, setStaffRole] = useState('');
+  const [adminRole, setAdminRole] = useState('');
   const { toast } = useToast();
 
   const roles = [
@@ -72,6 +73,15 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       return;
     }
 
+    if (selectedRole === 'admin' && !adminRole) {
+      toast({
+        title: "Admin Role Required",
+        description: "Please select your admin role.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Simulate login success
     toast({
       title: "Login Successful",
@@ -92,6 +102,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     setEmail('');
     setPassword('');
     setStaffRole('');
+    setAdminRole('');
   };
 
   return (
@@ -155,6 +166,20 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
               </div>
 
               <div className="space-y-3">
+                {selectedRole === 'admin' && (
+                  <div>
+                    <Label htmlFor="adminRole">Admin Role</Label>
+                    <Select value={adminRole} onValueChange={setAdminRole}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select your admin role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top-manager">Top Manager</SelectItem>
+                        <SelectItem value="branch-manager">Branch Manager</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="email">Email Address</Label>
                   <Input
