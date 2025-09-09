@@ -812,11 +812,13 @@ const ReceptionistDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* Generate Bill */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="flex items-center gap-2 h-20 flex-col">
                         <FileText className="h-6 w-6" />
-                        Generate Bills
+                        Generate Bill
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
@@ -826,35 +828,107 @@ const ReceptionistDashboard = () => {
                       </DialogHeader>
                       <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Bill Generation");}} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="billPatient">Patient Name</Label>
-                          <Input id="billPatient" placeholder="Enter patient name" required />
+                          <Label htmlFor="billId">Bill ID</Label>
+                          <Input id="billId" placeholder="B001 (Auto-generated)" disabled />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="billService">Service Type</Label>
+                          <Label htmlFor="appointmentId">Appointment ID</Label>
                           <Select required>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select service" />
+                              <SelectValue placeholder="Select appointment" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="consultation">Consultation</SelectItem>
-                              <SelectItem value="treatment">Treatment</SelectItem>
-                              <SelectItem value="procedure">Procedure</SelectItem>
-                              <SelectItem value="lab">Lab Tests</SelectItem>
+                              <SelectItem value="A001">A001 - John Doe - Dr. Smith</SelectItem>
+                              <SelectItem value="A002">A002 - Jane Smith - Dr. Johnson</SelectItem>
+                              <SelectItem value="A003">A003 - Bob Johnson - Dr. Williams</SelectItem>
+                              <SelectItem value="A004">A004 - Mary Wilson - Dr. Brown</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="billAmount">Amount</Label>
-                          <Input id="billAmount" type="number" placeholder="Enter amount" required />
+                          <Label htmlFor="totalAmount">Total Amount</Label>
+                          <Input id="totalAmount" type="number" placeholder="Enter total amount" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="insuredAmount">Insured Amount</Label>
+                          <Input id="insuredAmount" type="number" placeholder="Enter insured amount" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="patientAmount">Patient Amount</Label>
+                          <Input id="patientAmount" type="number" placeholder="Enter patient amount" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dueDate">Due Date</Label>
+                          <Input id="dueDate" type="date" required />
                         </div>
                         <Button type="submit" className="w-full">Generate Bill</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
-                  <Button className="flex items-center gap-2 h-20 flex-col">
-                    <CreditCard className="h-6 w-6" />
-                    Mark Payment Status
-                  </Button>
+
+                  {/* Mark Payment Status */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col">
+                        <CreditCard className="h-6 w-6" />
+                        Mark Payment Status
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Mark Payment Status</DialogTitle>
+                        <DialogDescription>Record payment details and update status</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Payment Status Update");}} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentId">Payment ID</Label>
+                          <Input id="paymentId" placeholder="PAY001 (Auto-generated)" disabled />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="billIdPayment">Bill ID</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bill to mark payment" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="B001">B001 - John Doe - $150.00</SelectItem>
+                              <SelectItem value="B002">B002 - Jane Smith - $250.00</SelectItem>
+                              <SelectItem value="B003">B003 - Bob Johnson - $300.00</SelectItem>
+                              <SelectItem value="B004">B004 - Mary Wilson - $180.00</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="amountPaid">Amount Paid</Label>
+                          <Input id="amountPaid" type="number" placeholder="Enter amount paid" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentDateTime">Date & Time</Label>
+                          <Input 
+                            id="paymentDateTime" 
+                            type="datetime-local" 
+                            value={new Date().toISOString().slice(0, 16)} 
+                            disabled 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentMethod">Payment Method</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select payment method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cash">Cash</SelectItem>
+                              <SelectItem value="card">Card</SelectItem>
+                              <SelectItem value="online">Online</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button type="submit" className="w-full">Mark Payment</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>
