@@ -508,14 +508,164 @@ const ReceptionistDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button className="flex items-center gap-2 h-20 flex-col">
-                    <User className="h-6 w-6" />
-                    View Doctor List
-                  </Button>
-                  <Button className="flex items-center gap-2 h-20 flex-col">
-                    <Clock className="h-6 w-6" />
-                    See Schedules
-                  </Button>
+                  
+                  {/* View Doctor List */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col">
+                        <User className="h-6 w-6" />
+                        View Doctor List
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Doctor List</DialogTitle>
+                        <DialogDescription>Complete list of doctors and their information</DialogDescription>
+                      </DialogHeader>
+                      <div className="mt-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Doctor ID</TableHead>
+                              <TableHead>Name</TableHead>
+                              <TableHead>NIC</TableHead>
+                              <TableHead>Role</TableHead>
+                              <TableHead>Specialization</TableHead>
+                              <TableHead>Contact Number</TableHead>
+                              <TableHead>Email</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell>D001</TableCell>
+                              <TableCell>Dr. John Smith</TableCell>
+                              <TableCell>123456789V</TableCell>
+                              <TableCell>Senior Consultant</TableCell>
+                              <TableCell>Cardiology</TableCell>
+                              <TableCell>+94 77 123 4567</TableCell>
+                              <TableCell>j.smith@hospital.com</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D002</TableCell>
+                              <TableCell>Dr. Sarah Johnson</TableCell>
+                              <TableCell>987654321V</TableCell>
+                              <TableCell>Consultant</TableCell>
+                              <TableCell>Neurology</TableCell>
+                              <TableCell>+94 77 234 5678</TableCell>
+                              <TableCell>s.johnson@hospital.com</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D003</TableCell>
+                              <TableCell>Dr. Michael Williams</TableCell>
+                              <TableCell>456789123V</TableCell>
+                              <TableCell>Specialist</TableCell>
+                              <TableCell>Orthopedics</TableCell>
+                              <TableCell>+94 77 345 6789</TableCell>
+                              <TableCell>m.williams@hospital.com</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D004</TableCell>
+                              <TableCell>Dr. Emily Brown</TableCell>
+                              <TableCell>789123456V</TableCell>
+                              <TableCell>Consultant</TableCell>
+                              <TableCell>Pediatrics</TableCell>
+                              <TableCell>+94 77 456 7890</TableCell>
+                              <TableCell>e.brown@hospital.com</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D005</TableCell>
+                              <TableCell>Dr. David Lee</TableCell>
+                              <TableCell>321654987V</TableCell>
+                              <TableCell>Senior Specialist</TableCell>
+                              <TableCell>Oncology</TableCell>
+                              <TableCell>+94 77 567 8901</TableCell>
+                              <TableCell>d.lee@hospital.com</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* See Doctor Schedules */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col">
+                        <Clock className="h-6 w-6" />
+                        See Doctor Schedules
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Doctor Schedules</DialogTitle>
+                        <DialogDescription>Current appointments and patient assignments</DialogDescription>
+                      </DialogHeader>
+                      <div className="mt-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Doctor ID</TableHead>
+                              <TableHead>Appointment Date & Time</TableHead>
+                              <TableHead>Patient Assigned</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell>D001</TableCell>
+                              <TableCell>2024-01-15 09:00 AM</TableCell>
+                              <TableCell>John Doe (P001)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D001</TableCell>
+                              <TableCell>2024-01-15 10:30 AM</TableCell>
+                              <TableCell>Mary Wilson (P004)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D002</TableCell>
+                              <TableCell>2024-01-15 08:00 AM</TableCell>
+                              <TableCell>Jane Smith (P002)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D002</TableCell>
+                              <TableCell>2024-01-15 11:00 AM</TableCell>
+                              <TableCell>Robert Davis (P005)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D003</TableCell>
+                              <TableCell>2024-01-15 10:00 AM</TableCell>
+                              <TableCell>Bob Johnson (P003)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D003</TableCell>
+                              <TableCell>2024-01-15 02:00 PM</TableCell>
+                              <TableCell>Lisa Anderson (P006)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D004</TableCell>
+                              <TableCell>2024-01-15 09:30 AM</TableCell>
+                              <TableCell>Tommy Garcia (P007)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D004</TableCell>
+                              <TableCell>2024-01-15 01:00 PM</TableCell>
+                              <TableCell>Sophie Martin (P008)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D005</TableCell>
+                              <TableCell>2024-01-15 11:30 AM</TableCell>
+                              <TableCell>Mark Taylor (P009)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>D005</TableCell>
+                              <TableCell>2024-01-15 03:30 PM</TableCell>
+                              <TableCell>Emma Thompson (P010)</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>
