@@ -8,6 +8,7 @@ import PatientDashboard from "./components/PatientDashboard";
 import DoctorDashboard from "./components/DoctorDashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import TopManagerDashboard from "./components/TopManagerDashboard";
+import BranchManagerDashboard from "./components/BranchManagerDashboard";
 import AppointmentBooking from "./components/AppointmentBooking";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/staff-dashboard" element={<div className="min-h-screen bg-background flex items-center justify-center"><div className="text-center"><h1 className="text-2xl font-bold mb-4">Staff Dashboard</h1><p className="text-muted-foreground">Coming Soon - Staff features will be implemented here</p></div></div>} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/top-manager-dashboard" element={<TopManagerDashboard />} />
+          <Route path="/branch-manager-dashboard" element={<BranchManagerDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
