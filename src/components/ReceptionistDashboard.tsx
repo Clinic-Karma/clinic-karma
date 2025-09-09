@@ -682,49 +682,120 @@ const ReceptionistDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* Submit Claim */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="flex items-center gap-2 h-20 flex-col">
                         <FileText className="h-6 w-6" />
-                        Submit Claims
+                        Submit Claim
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
                         <DialogTitle>Submit Insurance Claim</DialogTitle>
-                        <DialogDescription>Enter claim details</DialogDescription>
+                        <DialogDescription>Enter claim details for processing</DialogDescription>
                       </DialogHeader>
                       <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Insurance Claim Submission");}} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="claimPatient">Patient Name</Label>
-                          <Input id="claimPatient" placeholder="Enter patient name" required />
+                          <Label htmlFor="claimId">Claim ID</Label>
+                          <Input id="claimId" placeholder="IC001 (Auto-generated)" disabled />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="billId">Bill ID</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bill from billing" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="B001">B001 - John Doe - $150.00</SelectItem>
+                              <SelectItem value="B002">B002 - Jane Smith - $250.00</SelectItem>
+                              <SelectItem value="B003">B003 - Bob Johnson - $300.00</SelectItem>
+                              <SelectItem value="B004">B004 - Mary Wilson - $180.00</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="insuranceId">Insurance ID</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select patient insurance" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="INS001">INS001 - HealthCare Plus (John Doe)</SelectItem>
+                              <SelectItem value="INS002">INS002 - MediCover Pro (Jane Smith)</SelectItem>
+                              <SelectItem value="INS003">INS003 - WellnessCare (Bob Johnson)</SelectItem>
+                              <SelectItem value="INS004">INS004 - LifeGuard Insurance (Mary Wilson)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="claimAmount">Claim Amount</Label>
                           <Input id="claimAmount" type="number" placeholder="Enter claim amount" required />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="claimType">Claim Type</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select claim type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="consultation">Consultation</SelectItem>
-                              <SelectItem value="procedure">Procedure</SelectItem>
-                              <SelectItem value="medication">Medication</SelectItem>
-                              <SelectItem value="lab">Lab Tests</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="submittedDate">Submitted Date</Label>
+                          <Input id="submittedDate" type="date" value={new Date().toISOString().split('T')[0]} disabled />
                         </div>
                         <Button type="submit" className="w-full">Submit Claim</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
-                  <Button className="flex items-center gap-2 h-20 flex-col">
-                    <Edit className="h-6 w-6" />
-                    Update Status
-                  </Button>
+
+                  {/* Update Claim Status */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col">
+                        <Edit className="h-6 w-6" />
+                        Update Claim Status
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Update Claim Status</DialogTitle>
+                        <DialogDescription>Search and update insurance claim status</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Claim Status Update");}} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="searchClaimId">Search Claim ID</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select claim to update" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="IC001">IC001 - John Doe - $150.00</SelectItem>
+                              <SelectItem value="IC002">IC002 - Jane Smith - $250.00</SelectItem>
+                              <SelectItem value="IC003">IC003 - Bob Johnson - $300.00</SelectItem>
+                              <SelectItem value="IC004">IC004 - Mary Wilson - $180.00</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="currentStatus">Current Status</Label>
+                          <Input id="currentStatus" placeholder="Pending" disabled />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="claimStatus">New Claim Status</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select new status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="approved">Approved</SelectItem>
+                              <SelectItem value="rejected">Rejected</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="statusReason">Status Update Reason</Label>
+                          <Input id="statusReason" placeholder="Enter reason for status change" />
+                        </div>
+                        <Button type="submit" className="w-full">Update Status</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>
