@@ -95,9 +95,15 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       // Navigate to appropriate dashboard based on role
       if (selectedRole === 'admin') {
         if (adminRole === 'top-manager') {
-          window.location.href = '/top-manager-dashboard';
+          window.location.href = '/top-manager';
         } else if (adminRole === 'branch-manager') {
-          window.location.href = '/branch-manager-dashboard';
+          window.location.href = '/branch-manager';
+        }
+      } else if (selectedRole === 'staff') {
+        if (staffRole === 'receptionist') {
+          window.location.href = '/receptionist';
+        } else if (staffRole === 'lab-coordinator') {
+          window.location.href = '/lab-coordinator';
         }
       } else {
         window.location.href = `/${selectedRole}-dashboard`;
