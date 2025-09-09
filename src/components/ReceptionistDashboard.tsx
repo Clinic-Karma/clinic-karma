@@ -230,6 +230,8 @@ const ReceptionistDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  
+                  {/* Register Patient */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="flex items-center gap-2 h-20 flex-col">
@@ -237,22 +239,39 @@ const ReceptionistDashboard = () => {
                         Register Patient
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
+                    <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Register New Patient</DialogTitle>
                         <DialogDescription>Enter patient details to register</DialogDescription>
                       </DialogHeader>
                       <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Patient Registration");}} className="space-y-4">
                         <div className="space-y-2">
+                          <Label htmlFor="patientId">Patient ID</Label>
+                          <Input id="patientId" placeholder="P001 (Auto-generated)" disabled />
+                        </div>
+                        <div className="space-y-2">
                           <Label htmlFor="patientName">Full Name</Label>
                           <Input id="patientName" placeholder="Enter patient name" required />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="patientAge">Age</Label>
-                          <Input id="patientAge" type="number" placeholder="Enter age" required />
+                          <Label htmlFor="patientDOB">Date of Birth</Label>
+                          <Input id="patientDOB" type="date" required />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="patientPhone">Phone Number</Label>
+                          <Label htmlFor="patientGender">Gender</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="patientPhone">Contact Number</Label>
                           <Input id="patientPhone" placeholder="Enter phone number" required />
                         </div>
                         <div className="space-y-2">
@@ -263,18 +282,216 @@ const ReceptionistDashboard = () => {
                           <Label htmlFor="patientAddress">Address</Label>
                           <Input id="patientAddress" placeholder="Enter address" required />
                         </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="patientNIC">NIC/Passport Number</Label>
+                          <Input id="patientNIC" placeholder="Enter NIC or Passport number" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="emergencyContact">Emergency Contact</Label>
+                          <Input id="emergencyContact" placeholder="Enter emergency contact number" required />
+                        </div>
                         <Button type="submit" className="w-full">Register Patient</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
-                  <Button className="flex items-center gap-2 h-20 flex-col">
-                    <Edit className="h-6 w-6" />
-                    Update Patient Details
-                  </Button>
-                  <Button className="flex items-center gap-2 h-20 flex-col">
-                    <Search className="h-6 w-6" />
-                    Search Patient History
-                  </Button>
+
+                  {/* Update Patient Details */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col">
+                        <Edit className="h-6 w-6" />
+                        Update Patient Details
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Update Patient Details</DialogTitle>
+                        <DialogDescription>Search and update patient information</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Patient Update");}} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="searchPatient">Search Patient</Label>
+                          <Select required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Search by Patient ID or NIC" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="P001">P001 - John Doe (NIC: 123456789V)</SelectItem>
+                              <SelectItem value="P002">P002 - Jane Smith (NIC: 987654321V)</SelectItem>
+                              <SelectItem value="P003">P003 - Bob Johnson (NIC: 456789123V)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientId">Patient ID</Label>
+                          <Input id="updatePatientId" placeholder="P001" disabled />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientName">Full Name</Label>
+                          <Input id="updatePatientName" placeholder="John Doe" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientDOB">Date of Birth</Label>
+                          <Input id="updatePatientDOB" type="date" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientGender">Gender</Label>
+                          <Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Male" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientPhone">Contact Number</Label>
+                          <Input id="updatePatientPhone" placeholder="+1234567890" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientEmail">Email</Label>
+                          <Input id="updatePatientEmail" type="email" placeholder="john.doe@email.com" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientAddress">Address</Label>
+                          <Input id="updatePatientAddress" placeholder="123 Main St, City" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updatePatientNIC">NIC/Passport Number</Label>
+                          <Input id="updatePatientNIC" placeholder="123456789V" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="updateEmergencyContact">Emergency Contact</Label>
+                          <Input id="updateEmergencyContact" placeholder="+1234567890" />
+                        </div>
+                        <Button type="submit" className="w-full">Update Patient</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Search Patient History */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col">
+                        <Search className="h-6 w-6" />
+                        Search Patient History
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Patient History</DialogTitle>
+                        <DialogDescription>View comprehensive patient medical history</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="historySearch">Search Patient</Label>
+                          <Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select patient to view history" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="P001">P001 - John Doe</SelectItem>
+                              <SelectItem value="P002">P002 - Jane Smith</SelectItem>
+                              <SelectItem value="P003">P003 - Bob Johnson</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Appointment History */}
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Appointment History</h4>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Doctor</TableHead>
+                                <TableHead>Status</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell>2024-01-15</TableCell>
+                                <TableCell>Dr. Smith - Cardiology</TableCell>
+                                <TableCell>Completed</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell>2024-01-22</TableCell>
+                                <TableCell>Dr. Johnson - Neurology</TableCell>
+                                <TableCell>Completed</TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Consultation Notes */}
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Consultation Notes</h4>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Diagnosis</TableHead>
+                                <TableHead>Prescription</TableHead>
+                                <TableHead>Notes</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell>2024-01-15</TableCell>
+                                <TableCell>Hypertension</TableCell>
+                                <TableCell>Amlodipine 5mg</TableCell>
+                                <TableCell>Follow up in 2 weeks</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell>2024-01-22</TableCell>
+                                <TableCell>Migraine</TableCell>
+                                <TableCell>Sumatriptan 50mg</TableCell>
+                                <TableCell>Avoid stress triggers</TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Lab Reports */}
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Lab Reports</h4>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Test Type</TableHead>
+                                <TableHead>Report Link</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell>2024-01-10</TableCell>
+                                <TableCell>Blood Work - Complete Panel</TableCell>
+                                <TableCell>
+                                  <Button variant="link" className="p-0 h-auto">
+                                    View Report
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell>2024-01-20</TableCell>
+                                <TableCell>MRI Brain Scan</TableCell>
+                                <TableCell>
+                                  <Button variant="link" className="p-0 h-auto">
+                                    View Report
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>
