@@ -234,7 +234,7 @@ const BranchManagerDashboard = () => {
                           <SelectValue placeholder="All specializations" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All specializations</SelectItem>
+                          <SelectItem value="all">All specializations</SelectItem>
                           <SelectItem value="Cardiology">Cardiology</SelectItem>
                           <SelectItem value="Pediatrics">Pediatrics</SelectItem>
                           <SelectItem value="Orthopedics">Orthopedics</SelectItem>
@@ -318,7 +318,7 @@ const BranchManagerDashboard = () => {
                           <SelectValue placeholder="All roles" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All roles</SelectItem>
+                          <SelectItem value="all">All roles</SelectItem>
                           <SelectItem value="Receptionist">Receptionist</SelectItem>
                           <SelectItem value="Lab Coordinator">Lab Coordinator</SelectItem>
                         </SelectContent>
