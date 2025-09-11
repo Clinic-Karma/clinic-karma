@@ -103,6 +103,16 @@ const TopManagerDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
+        <div className="mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/admin")}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Back to Admin Login
+          </Button>
+        </div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Top Manager Dashboard</h1>
           <p className="text-muted-foreground mt-2">System-wide oversight and management</p>
