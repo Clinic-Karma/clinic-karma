@@ -111,7 +111,7 @@ const TopManagerDashboard = () => {
             </div>
             <Button 
               variant="outline" 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/admin')}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
