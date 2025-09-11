@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
   Plus,
   Settings,
   Database,
-  Eye
+  Eye,
+  ArrowLeft
 } from "lucide-react";
 import { 
   LineChart, 
@@ -30,6 +32,7 @@ import {
 } from "recharts";
 
 const TopManagerDashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("reports");
   const [reportsView, setReportsView] = useState("");
 
@@ -101,8 +104,20 @@ const TopManagerDashboard = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Top Manager Dashboard</h1>
-          <p className="text-muted-foreground mt-2">System-wide oversight and management</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Top Manager Dashboard</h1>
+              <p className="text-muted-foreground mt-2">System-wide oversight and management</p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Change Login
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
