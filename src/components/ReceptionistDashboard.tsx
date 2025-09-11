@@ -50,88 +50,23 @@ const ReceptionistDashboard = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   
-                  {/* Book Appointment */}
+                  {/* Book/Cancel/Reschedule Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="flex items-center gap-2 h-20 flex-col">
                         <Calendar className="h-6 w-6" />
-                        Book
+                        Book/Cancel/Reschedule
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>Book Appointment</DialogTitle>
-                        <DialogDescription>Book a new appointment for a patient</DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Booking");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="newAppointmentId">Appointment ID</Label>
-                          <Input id="newAppointmentId" value="APT-" placeholder="APT-20240101-001" disabled />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientIdSearch">Patient ID</Label>
-                          <div className="flex gap-2">
-                            <Input 
-                              id="patientIdInput" 
-                              placeholder="Enter Patient ID" 
-                              className="flex-1"
-                            />
-                            <Select>
-                              <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Or select from list" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="P001">P001 - John Doe (NIC: 123456789V)</SelectItem>
-                                <SelectItem value="P002">P002 - Jane Smith (NIC: 987654321V)</SelectItem>
-                                <SelectItem value="P003">P003 - Bob Johnson (NIC: 456789123V)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="bookAppointmentDate">Appointment Date</Label>
-                          <Input id="bookAppointmentDate" type="date" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="bookAppointmentTime">Appointment Time</Label>
-                          <Input id="bookAppointmentTime" type="time" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="bookDoctorSelect">Select Doctor</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select doctor" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="D001">Dr. Smith - Cardiology</SelectItem>
-                              <SelectItem value="D002">Dr. Johnson - Neurology</SelectItem>
-                              <SelectItem value="D003">Dr. Williams - Orthopedics</SelectItem>
-                              <SelectItem value="D004">Dr. Brown - Pediatrics</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button type="submit" className="w-full">Book Appointment</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-
-                  {/* Reschedule/Cancel Appointment */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Clock className="h-6 w-6" />
-                        Reschedule/Cancel
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Reschedule/Cancel Appointment</DialogTitle>
-                        <DialogDescription>Reschedule or cancel existing appointments</DialogDescription>
+                        <DialogTitle>Appointment Management</DialogTitle>
+                        <DialogDescription>Book, cancel, or reschedule appointments</DialogDescription>
                       </DialogHeader>
                       <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Management");}} className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="appointmentId">Appointment ID</Label>
-                          <Input id="appointmentId" placeholder="Enter appointment ID" required />
+                          <Input id="appointmentId" placeholder="Auto-generated for new booking" />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="patientSearch">Patient ID</Label>
