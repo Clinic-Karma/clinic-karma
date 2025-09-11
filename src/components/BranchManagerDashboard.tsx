@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,12 +13,10 @@ import {
   UserPlus, 
   Filter,
   Stethoscope,
-  Settings,
-  LogOut
+  Settings
 } from "lucide-react";
 
 const BranchManagerDashboard = () => {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("doctor-management");
   const [doctorFilter, setDoctorFilter] = useState("");
   const [specializationFilter, setSpecializationFilter] = useState("");
@@ -184,23 +181,13 @@ const BranchManagerDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
-        <div className="mb-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/admin")}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Back to Admin Login
-          </Button>
-        </div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Branch Manager Dashboard</h1>
           <p className="text-muted-foreground mt-2">Manage doctors and staff roles</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="doctor-management" className="flex items-center gap-2">
               <Stethoscope className="w-4 h-4" />
               Doctor Management
@@ -208,10 +195,6 @@ const BranchManagerDashboard = () => {
             <TabsTrigger value="role-management" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Role Management
-            </TabsTrigger>
-            <TabsTrigger value="administration" className="flex items-center gap-2">
-              <LogOut className="w-4 h-4" />
-              Administration
             </TabsTrigger>
           </TabsList>
 
@@ -377,27 +360,6 @@ const BranchManagerDashboard = () => {
                       ))}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="administration" className="mt-6">
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold">Administration</h2>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <LogOut className="w-5 h-5 text-primary" />
-                    Change Login
-                  </CardTitle>
-                  <CardDescription>Return to the administration login page to change your login</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate("/")} className="w-full">
-                    Go to Administration Login
-                  </Button>
                 </CardContent>
               </Card>
             </div>
