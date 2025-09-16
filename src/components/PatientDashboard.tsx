@@ -7,12 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Calendar, FileText, CreditCard, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle, UserCircle, Bell, LogOut, FlaskConical, Activity } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import EditProfileModal from './EditProfileModal';
 
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const appointments = [{
@@ -147,7 +145,7 @@ const PatientDashboard = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
-                  <DropdownMenuItem onClick={() => setIsEditProfileOpen(true)} className="hover:bg-primary/10">
+                  <DropdownMenuItem onClick={() => window.location.href = '/edit-profile'} className="hover:bg-primary/10">
                     <User className="w-4 h-4 mr-2" />
                     Edit Profile
                   </DropdownMenuItem>
@@ -541,7 +539,6 @@ const PatientDashboard = () => {
       )}
 
       {/* Edit Profile Modal */}
-      <EditProfileModal open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen} />
     </div>
   );
 };
