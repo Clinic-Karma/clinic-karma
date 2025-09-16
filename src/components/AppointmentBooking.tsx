@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, MapPin, User, Clock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Calendar, MapPin, User, Clock, ArrowLeft, CheckCircle, Printer } from 'lucide-react';
 
 const AppointmentBooking = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -170,34 +170,101 @@ const AppointmentBooking = () => {
       case 4:
         return (
           <div className="text-center space-y-6">
-            <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="w-8 h-8 text-success-foreground" />
+            <div className="w-20 h-20 bg-success rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle className="w-10 h-10 text-success-foreground" />
             </div>
-            <h3 className="text-2xl font-bold text-success">Appointment Confirmed!</h3>
-            <div className="bg-muted/50 rounded-lg p-6 text-left space-y-3">
-              <h4 className="font-semibold">Appointment Details:</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Doctor:</span>
-                  <span className="font-medium">{bookingData.doctor}</span>
+            <div>
+              <h3 className="text-3xl font-bold text-success mb-2">Appointment Confirmed!</h3>
+              <p className="text-muted-foreground">Your appointment has been successfully booked</p>
+            </div>
+            
+            {/* Appointment Card */}
+            <div className="bg-gradient-to-br from-card to-card/80 border-2 border-primary/20 rounded-xl p-8 text-left space-y-6 shadow-hero">
+              <div className="text-center border-b border-border/50 pb-4">
+                <h4 className="text-xl font-bold text-primary mb-1">APPOINTMENT CONFIRMATION</h4>
+                <p className="text-sm text-muted-foreground">MedSync Healthcare System</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Doctor</p>
+                        <p className="font-semibold text-lg">{bookingData.doctor}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-secondary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Specialization</p>
+                        <p className="font-semibold">{bookingData.specialization}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-success" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Hospital Branch</p>
+                        <p className="font-semibold">{bookingData.branch}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-warning" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Appointment Date</p>
+                        <p className="font-semibold text-lg">{new Date(bookingData.date).toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-info/10 rounded-lg flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-info" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Time</p>
+                        <p className="font-semibold text-lg">{bookingData.time}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
+                      <p className="text-sm text-muted-foreground">Appointment ID</p>
+                      <p className="font-mono text-lg font-bold text-primary">APT-{Date.now().toString().slice(-8)}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Date & Time:</span>
-                  <span className="font-medium">{bookingData.date} at {bookingData.time}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Branch:</span>
-                  <span className="font-medium">{bookingData.branch}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Appointment ID:</span>
-                  <span className="font-medium">APT-{Date.now()}</span>
+              </div>
+              
+              <div className="border-t border-border/50 pt-4">
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <h5 className="font-semibold mb-2 text-primary">Important Instructions:</h5>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Please arrive 15 minutes before your scheduled appointment</li>
+                    <li>• Bring a valid ID and your insurance card (if applicable)</li>
+                    <li>• A confirmation email has been sent to your registered email</li>
+                    <li>• For any changes, contact us at least 24 hours in advance</li>
+                  </ul>
                 </div>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              A confirmation email has been sent to your registered email address. Please arrive 15 minutes early for your appointment.
-            </p>
           </div>
         );
 
@@ -289,19 +356,20 @@ const AppointmentBooking = () => {
 
             {/* Final Step Actions */}
             {currentStep === 4 && (
-              <div className="flex gap-4 pt-6">
+              <div className="space-y-4 pt-6">
+                <Button 
+                  onClick={() => window.print()}
+                  className="w-full h-12 bg-gradient-primary hover:opacity-90 text-lg font-semibold shadow-button"
+                >
+                  <Printer className="w-5 h-5 mr-3" />
+                  Print Appointment Details
+                </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => window.location.href = '/patient-dashboard'}
-                  className="flex-1"
+                  className="w-full h-10 border-primary/30 hover:bg-primary/10"
                 >
                   Back to Dashboard
-                </Button>
-                <Button 
-                  onClick={() => window.print()}
-                  className="flex-1 bg-gradient-primary hover:opacity-90"
-                >
-                  Print Confirmation
                 </Button>
               </div>
             )}
