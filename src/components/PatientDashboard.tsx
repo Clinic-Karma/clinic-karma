@@ -6,12 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Calendar, FileText, CreditCard, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle, UserCircle, Bell, LogOut, FlaskConical, Activity } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import EditProfileModal from './EditProfileModal';
 
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const appointments = [{
     id: 1,
@@ -116,30 +118,30 @@ const PatientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+    <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
       {/* Header */}
       <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
-        <div className="relative container mx-auto px-8 py-8">
+        <div className={`relative container mx-auto ${isMobile ? 'px-4 py-4' : 'px-8 py-8'}`}>
           <div className="flex justify-between items-center">
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight">Patient Dashboard</h1>
-              <p className="text-primary-foreground/90 text-lg">Welcome back, John Doe</p>
+              <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Patient Dashboard</h1>
+              <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Welcome back, John Doe</p>
             </div>
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-2 items-center">
               <Button 
                 variant="outline" 
                 onClick={() => window.location.href = '/'} 
-                className="border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button"
+                className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-2' : ''}`}
               >
                 <User className="w-4 h-4 mr-2" />
-                Home
+                {!isMobile && 'Home'}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button px-4"
+                    className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : 'px-4'}`}
                   >
                     Profile
                   </Button>
@@ -166,72 +168,74 @@ const PatientDashboard = () => {
 
       {/* Main Content with Sidebar */}
       <div className="flex min-h-screen">
-        {/* Sidebar */}
-        <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
-          <div className="p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
-              <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
+                <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
+              </div>
+              <nav className="space-y-3">
+                <button
+                  onClick={() => setActiveTab('echannel')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'echannel' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'echannel' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">E-Channel</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('activities')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'activities' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'activities' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Activities</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('payments')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'payments' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'payments' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Payments</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('labreports')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'labreports' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'labreports' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <FlaskConical className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Lab Reports</span>
+                </button>
+              </nav>
             </div>
-            <nav className="space-y-3">
-              <button
-                onClick={() => setActiveTab('echannel')}
-                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                  activeTab === 'echannel' 
-                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${activeTab === 'echannel' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <span className="font-medium">E-Channel</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('activities')}
-                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                  activeTab === 'activities' 
-                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${activeTab === 'activities' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                  <Activity className="w-5 h-5" />
-                </div>
-                <span className="font-medium">Activities</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('payments')}
-                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                  activeTab === 'payments' 
-                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${activeTab === 'payments' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <span className="font-medium">Payments</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('labreports')}
-                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                  activeTab === 'labreports' 
-                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${activeTab === 'labreports' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                  <FlaskConical className="w-5 h-5" />
-                </div>
-                <span className="font-medium">Lab Reports</span>
-              </button>
-            </nav>
-          </div>
-        </aside>
+          </aside>
+        )}
 
         {/* Main Content */}
-        <main className="flex-1 p-8 bg-gradient-to-br from-background to-muted/20">
+        <main className={`flex-1 ${isMobile ? 'p-4' : 'p-8'} bg-gradient-to-br from-background to-muted/20`}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
 
           {/* E-Channel Tab */}
@@ -265,7 +269,7 @@ const PatientDashboard = () => {
                     <p className="text-muted-foreground ml-12">Follow these simple steps to book your appointment</p>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'md:grid-cols-2 lg:grid-cols-4 gap-6'} mb-8`}>
                       <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
                         <CardContent className="p-6 text-center">
                           <div className="p-4 rounded-full bg-gradient-primary mx-auto mb-4 w-fit">
@@ -303,7 +307,7 @@ const PatientDashboard = () => {
                         </CardContent>
                       </Card>
                     </div>
-                    <Button className="w-full h-14 text-lg bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105" onClick={() => window.location.href = '/appointment-booking'}>
+                    <Button className={`w-full ${isMobile ? 'h-12 text-base' : 'h-14 text-lg'} bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105`} onClick={() => window.location.href = '/appointment-booking'}>
                       Start Booking Process
                       <Calendar className="w-5 h-5 ml-2" />
                     </Button>
@@ -483,6 +487,58 @@ const PatientDashboard = () => {
           </Tabs>
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 shadow-lg z-50">
+          <div className="flex items-center justify-around px-2 py-3">
+            <button
+              onClick={() => setActiveTab('echannel')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                activeTab === 'echannel' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <Calendar className="w-5 h-5 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">E-Channel</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('activities')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                activeTab === 'activities' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <Activity className="w-5 h-5 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">Activities</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                activeTab === 'payments' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <CreditCard className="w-5 h-5 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">Payments</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('labreports')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                activeTab === 'labreports' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <FlaskConical className="w-5 h-5 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">Lab Reports</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Profile Modal */}
       <EditProfileModal open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen} />
