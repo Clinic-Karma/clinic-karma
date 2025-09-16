@@ -7,12 +7,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Users, UserPlus, Search, Stethoscope, FileText, DollarSign, Clock, User, Eye, Edit, CreditCard, CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, Users, UserPlus, Search, Stethoscope, FileText, DollarSign, Clock, User, Eye, Edit, CreditCard, CalendarDays, X, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const ReceptionistDashboard = () => {
   const [activeTab, setActiveTab] = useState("appointments");
   const { toast } = useToast();
+  
+  // State for Book Appointment modal
+  const [bookDate, setBookDate] = useState<Date>();
+  const [bookSpecialization, setBookSpecialization] = useState("");
+  const [bookPatientUsername, setBookPatientUsername] = useState("");
+  const [bookDoctor, setBookDoctor] = useState("");
+  
+  // State for Cancel Appointment modal
+  const [cancelPatientUsername, setCancelPatientUsername] = useState("");
+  const [cancelAppointment, setCancelAppointment] = useState("");
+  
+  // State for Reschedule Appointment modal
+  const [reschedulePatientUsername, setReschedulePatientUsername] = useState("");
+  const [rescheduleDate, setRescheduleDate] = useState<Date>();
+
+  // Sample data for dropdowns
+  const specializations = ["Cardiology", "Neurology", "Orthopedics", "Pediatrics", "Dermatology", "Oncology"];
+  
+  const doctorsBySpecialization: Record<string, string[]> = {
+    "Cardiology": ["Dr. Smith", "Dr. Anderson"],
+    "Neurology": ["Dr. Johnson", "Dr. Wilson"],
+    "Orthopedics": ["Dr. Williams", "Dr. Davis"],
+    "Pediatrics": ["Dr. Brown", "Dr. Miller"],
+    "Dermatology": ["Dr. Garcia", "Dr. Martinez"],
+    "Oncology": ["Dr. Taylor", "Dr. Thomas"]
+  };
+
+  const sampleAppointments: Record<string, string[]> = {
+    "john_doe": ["Appointment with Dr. Smith - March 15, 2024", "Appointment with Dr. Johnson - March 20, 2024"],
+    "jane_smith": ["Appointment with Dr. Williams - March 18, 2024"],
+    "bob_johnson": ["Appointment with Dr. Brown - March 22, 2024", "Appointment with Dr. Garcia - March 25, 2024"]
+  };
 
   const handleFormSubmit = (formName: string) => {
     toast({
@@ -50,167 +86,190 @@ const ReceptionistDashboard = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   
-                  {/* Book/Cancel/Reschedule Appointment */}
+                  {/* Book Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Calendar className="h-6 w-6" />
-                        Book/Cancel/Reschedule
+                        <CalendarDays className="h-6 w-6" />
+                        Book Appointment
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>Appointment Management</DialogTitle>
-                        <DialogDescription>Book, cancel, or reschedule appointments</DialogDescription>
+                        <DialogTitle>Book New Appointment</DialogTitle>
+                        <DialogDescription>Schedule a new appointment for a patient</DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Management");}} className="space-y-4">
+                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Booking");}} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="appointmentId">Appointment ID</Label>
-                          <Input id="appointmentId" placeholder="Auto-generated for new booking" />
+                          <Label htmlFor="bookPatientUsername">Patient Username</Label>
+                          <Input 
+                            id="bookPatientUsername" 
+                            placeholder="Enter patient username" 
+                            value={bookPatientUsername}
+                            onChange={(e) => setBookPatientUsername(e.target.value)}
+                            required 
+                          />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="patientSearch">Patient ID</Label>
-                          <Select required>
+                          <Label htmlFor="bookSpecialization">Specialization</Label>
+                          <Select value={bookSpecialization} onValueChange={(value) => {
+                            setBookSpecialization(value);
+                            setBookDoctor(""); // Reset doctor when specialization changes
+                          }} required>
                             <SelectTrigger>
-                              <SelectValue placeholder="Search by ID, Name, or NIC" />
+                              <SelectValue placeholder="Select specialization" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="P001">P001 - John Doe (NIC: 123456789V)</SelectItem>
-                              <SelectItem value="P002">P002 - Jane Smith (NIC: 987654321V)</SelectItem>
-                              <SelectItem value="P003">P003 - Bob Johnson (NIC: 456789123V)</SelectItem>
+                              {specializations.map((spec) => (
+                                <SelectItem key={spec} value={spec}>{spec}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="appointmentDate">Appointment Date</Label>
-                          <Input id="appointmentDate" type="date" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="appointmentStatus">Status</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="scheduled">Scheduled</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                              <SelectItem value="rescheduled">Rescheduled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button type="submit" className="w-full">Update Appointment</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-
-                  {/* Assign Patient to Doctor */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Users className="h-6 w-6" />
-                        Assign Patient to Doctor
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Assign Patient to Doctor</DialogTitle>
-                        <DialogDescription>Assign a patient to a doctor for treatment</DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Patient Assignment");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="assignAppointmentId">Appointment ID</Label>
-                          <Input id="assignAppointmentId" placeholder="Enter appointment ID" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="assignPatientId">Patient ID</Label>
-                          <Input id="assignPatientId" placeholder="Enter patient ID" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="doctorSpecialization">Doctor by Specialization</Label>
-                          <Select required>
+                          <Label htmlFor="bookDoctor">Doctor</Label>
+                          <Select value={bookDoctor} onValueChange={setBookDoctor} required disabled={!bookSpecialization}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select doctor" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="D001">Dr. Smith - Cardiology</SelectItem>
-                              <SelectItem value="D002">Dr. Johnson - Neurology</SelectItem>
-                              <SelectItem value="D003">Dr. Williams - Orthopedics</SelectItem>
-                              <SelectItem value="D004">Dr. Brown - Pediatrics</SelectItem>
+                              {bookSpecialization && doctorsBySpecialization[bookSpecialization]?.map((doctor) => (
+                                <SelectItem key={doctor} value={doctor}>{doctor}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="startTime">Start Time</Label>
-                          <Input id="startTime" type="time" required />
+                          <Label>Appointment Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !bookDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {bookDate ? format(bookDate, "PPP") : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={bookDate}
+                                onSelect={setBookDate}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="appointmentType">Type</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="emergency">Emergency</SelectItem>
-                              <SelectItem value="regular">Regular</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button type="submit" className="w-full">Assign Patient</Button>
+                        <Button type="submit" className="w-full">Book Appointment</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
 
-                  {/* View Doctor Availability */}
+                  {/* Cancel Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Eye className="h-6 w-6" />
-                        View Doctor Availability
+                      <Button className="flex items-center gap-2 h-20 flex-col" variant="destructive">
+                        <X className="h-6 w-6" />
+                        Cancel Appointment
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>Doctor Availability</DialogTitle>
-                        <DialogDescription>View available time slots for all doctors</DialogDescription>
+                        <DialogTitle>Cancel Appointment</DialogTitle>
+                        <DialogDescription>Cancel an existing appointment</DialogDescription>
                       </DialogHeader>
-                      <div className="mt-4">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Doctor ID</TableHead>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Specialization</TableHead>
-                              <TableHead>Available Time Slots</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell>D001</TableCell>
-                              <TableCell>Dr. Smith</TableCell>
-                              <TableCell>Cardiology</TableCell>
-                              <TableCell>09:00-12:00, 14:00-17:00</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D002</TableCell>
-                              <TableCell>Dr. Johnson</TableCell>
-                              <TableCell>Neurology</TableCell>
-                              <TableCell>08:00-11:00, 13:00-16:00</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D003</TableCell>
-                              <TableCell>Dr. Williams</TableCell>
-                              <TableCell>Orthopedics</TableCell>
-                              <TableCell>10:00-13:00, 15:00-18:00</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D004</TableCell>
-                              <TableCell>Dr. Brown</TableCell>
-                              <TableCell>Pediatrics</TableCell>
-                              <TableCell>09:00-12:00, 14:00-16:00</TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
+                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Cancellation");}} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="cancelPatientUsername">Patient Username</Label>
+                          <Select value={cancelPatientUsername} onValueChange={(value) => {
+                            setCancelPatientUsername(value);
+                            setCancelAppointment(""); // Reset appointment when patient changes
+                          }} required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select patient" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.keys(sampleAppointments).map((username) => (
+                                <SelectItem key={username} value={username}>{username}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cancelAppointment">Appointment</Label>
+                          <Select value={cancelAppointment} onValueChange={setCancelAppointment} required disabled={!cancelPatientUsername}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select appointment to cancel" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cancelPatientUsername && sampleAppointments[cancelPatientUsername]?.map((appointment, index) => (
+                                <SelectItem key={index} value={appointment}>{appointment}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button type="submit" className="w-full" variant="destructive">Cancel Appointment</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Reschedule Appointment */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col" variant="secondary">
+                        <CheckCircle className="h-6 w-6" />
+                        Reschedule Appointment
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Reschedule Appointment</DialogTitle>
+                        <DialogDescription>Reschedule an existing appointment to a new date</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Rescheduling");}} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="reschedulePatientUsername">Patient Username</Label>
+                          <Input 
+                            id="reschedulePatientUsername" 
+                            placeholder="Enter patient username" 
+                            value={reschedulePatientUsername}
+                            onChange={(e) => setReschedulePatientUsername(e.target.value)}
+                            required 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>New Appointment Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !rescheduleDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {rescheduleDate ? format(rescheduleDate, "PPP") : <span>Pick a new date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={rescheduleDate}
+                                onSelect={setRescheduleDate}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <Button type="submit" className="w-full">Reschedule Appointment</Button>
+                      </form>
                     </DialogContent>
                   </Dialog>
 
