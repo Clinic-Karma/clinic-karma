@@ -170,58 +170,10 @@ const ReceptionistDashboard = () => {
                     </DialogContent>
                   </Dialog>
 
-                  {/* Cancel Appointment */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col" variant="destructive">
-                        <X className="h-6 w-6" />
-                        Cancel Appointment
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Cancel Appointment</DialogTitle>
-                        <DialogDescription>Cancel an existing appointment</DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Cancellation");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="cancelPatientUsername">Patient Username</Label>
-                          <Select value={cancelPatientUsername} onValueChange={(value) => {
-                            setCancelPatientUsername(value);
-                            setCancelAppointment(""); // Reset appointment when patient changes
-                          }} required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select patient" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.keys(sampleAppointments).map((username) => (
-                                <SelectItem key={username} value={username}>{username}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cancelAppointment">Appointment</Label>
-                          <Select value={cancelAppointment} onValueChange={setCancelAppointment} required disabled={!cancelPatientUsername}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select appointment to cancel" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cancelPatientUsername && sampleAppointments[cancelPatientUsername]?.map((appointment, index) => (
-                                <SelectItem key={index} value={appointment}>{appointment}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button type="submit" className="w-full" variant="destructive">Cancel Appointment</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-
                   {/* Reschedule Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col" variant="secondary">
+                      <Button className="flex items-center gap-2 h-20 flex-col">
                         <CheckCircle className="h-6 w-6" />
                         Reschedule Appointment
                       </Button>
@@ -273,6 +225,54 @@ const ReceptionistDashboard = () => {
                     </DialogContent>
                   </Dialog>
 
+                  {/* Cancel Appointment */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 h-20 flex-col">
+                        <X className="h-6 w-6" />
+                        Cancel Appointment
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Cancel Appointment</DialogTitle>
+                        <DialogDescription>Cancel an existing appointment</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Cancellation");}} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="cancelPatientUsername">Patient Username</Label>
+                          <Select value={cancelPatientUsername} onValueChange={(value) => {
+                            setCancelPatientUsername(value);
+                            setCancelAppointment(""); // Reset appointment when patient changes
+                          }} required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select patient" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.keys(sampleAppointments).map((username) => (
+                                <SelectItem key={username} value={username}>{username}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cancelAppointment">Appointment</Label>
+                          <Select value={cancelAppointment} onValueChange={setCancelAppointment} required disabled={!cancelPatientUsername}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select appointment to cancel" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cancelPatientUsername && sampleAppointments[cancelPatientUsername]?.map((appointment, index) => (
+                                <SelectItem key={index} value={appointment}>{appointment}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button type="submit" className="w-full">Cancel Appointment</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>
@@ -288,12 +288,12 @@ const ReceptionistDashboard = () => {
                 <CardDescription>Register new patients, update details, and search patient history</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 justify-center">
                   
                   {/* Register Patient */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
+                      <Button className="flex items-center gap-2 h-20 flex-col max-w-xs mx-auto">
                         <UserPlus className="h-6 w-6" />
                         Register Patient
                       </Button>
@@ -351,203 +351,6 @@ const ReceptionistDashboard = () => {
                         </div>
                         <Button type="submit" className="w-full">Register Patient</Button>
                       </form>
-                    </DialogContent>
-                  </Dialog>
-
-                  {/* Update Patient Details */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Edit className="h-6 w-6" />
-                        Update Patient Details
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Update Patient Details</DialogTitle>
-                        <DialogDescription>Search and update patient information</DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Patient Update");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="searchPatient">Search Patient</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Search by Patient ID or NIC" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="P001">P001 - John Doe (NIC: 123456789V)</SelectItem>
-                              <SelectItem value="P002">P002 - Jane Smith (NIC: 987654321V)</SelectItem>
-                              <SelectItem value="P003">P003 - Bob Johnson (NIC: 456789123V)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientId">Patient ID</Label>
-                          <Input id="updatePatientId" placeholder="P001" disabled />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientName">Full Name</Label>
-                          <Input id="updatePatientName" placeholder="John Doe" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientDOB">Date of Birth</Label>
-                          <Input id="updatePatientDOB" type="date" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientGender">Gender</Label>
-                          <Select>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Male" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="male">Male</SelectItem>
-                              <SelectItem value="female">Female</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientPhone">Contact Number</Label>
-                          <Input id="updatePatientPhone" placeholder="+1234567890" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientEmail">Email</Label>
-                          <Input id="updatePatientEmail" type="email" placeholder="john.doe@email.com" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientAddress">Address</Label>
-                          <Input id="updatePatientAddress" placeholder="123 Main St, City" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updatePatientNIC">NIC/Passport Number</Label>
-                          <Input id="updatePatientNIC" placeholder="123456789V" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="updateEmergencyContact">Emergency Contact</Label>
-                          <Input id="updateEmergencyContact" placeholder="+1234567890" />
-                        </div>
-                        <Button type="submit" className="w-full">Update Patient</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-
-                  {/* Search Patient History */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Search className="h-6 w-6" />
-                        Search Patient History
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Patient History</DialogTitle>
-                        <DialogDescription>View comprehensive patient medical history</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="historySearch">Search Patient</Label>
-                          <Select>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select patient to view history" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="P001">P001 - John Doe</SelectItem>
-                              <SelectItem value="P002">P002 - Jane Smith</SelectItem>
-                              <SelectItem value="P003">P003 - Bob Johnson</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Appointment History */}
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Appointment History</h4>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Doctor</TableHead>
-                                <TableHead>Status</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              <TableRow>
-                                <TableCell>2024-01-15</TableCell>
-                                <TableCell>Dr. Smith - Cardiology</TableCell>
-                                <TableCell>Completed</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell>2024-01-22</TableCell>
-                                <TableCell>Dr. Johnson - Neurology</TableCell>
-                                <TableCell>Completed</TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </div>
-
-                        {/* Consultation Notes */}
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Consultation Notes</h4>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Diagnosis</TableHead>
-                                <TableHead>Prescription</TableHead>
-                                <TableHead>Notes</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              <TableRow>
-                                <TableCell>2024-01-15</TableCell>
-                                <TableCell>Hypertension</TableCell>
-                                <TableCell>Amlodipine 5mg</TableCell>
-                                <TableCell>Follow up in 2 weeks</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell>2024-01-22</TableCell>
-                                <TableCell>Migraine</TableCell>
-                                <TableCell>Sumatriptan 50mg</TableCell>
-                                <TableCell>Avoid stress triggers</TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </div>
-
-                        {/* Lab Reports */}
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Lab Reports</h4>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Test Type</TableHead>
-                                <TableHead>Report Link</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              <TableRow>
-                                <TableCell>2024-01-10</TableCell>
-                                <TableCell>Blood Work - Complete Panel</TableCell>
-                                <TableCell>
-                                  <Button variant="link" className="p-0 h-auto">
-                                    View Report
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell>2024-01-20</TableCell>
-                                <TableCell>MRI Brain Scan</TableCell>
-                                <TableCell>
-                                  <Button variant="link" className="p-0 h-auto">
-                                    View Report
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
                     </DialogContent>
                   </Dialog>
 
