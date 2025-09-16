@@ -108,35 +108,44 @@ const PatientDashboard = () => {
         return 'secondary';
     }
   };
-  return <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       {/* Header */}
-      <header className="bg-gradient-primary text-primary-foreground shadow-hero">
-        <div className="container mx-auto px-6 py-6">
+      <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
+        <div className="relative container mx-auto px-8 py-8">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Patient Dashboard</h1>
-              <p className="opacity-90">Welcome back, John Doe</p>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Patient Dashboard</h1>
+              <p className="text-primary-foreground/90 text-lg">Welcome back, John Doe</p>
             </div>
-            <div className="flex gap-3 items-center">
-              <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground bg-slate-50 text-slate-950">
+            <div className="flex gap-4 items-center">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/'} 
+                className="border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button"
+              >
+                <User className="w-4 h-4 mr-2" />
                 Home
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="border-primary-foreground bg-slate-50 text-slate-950 p-2">
+                  <Button 
+                    variant="outline" 
+                    className="border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button p-3"
+                  >
                     <UserCircle className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => setIsEditProfileOpen(true)}>
+                <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
+                  <DropdownMenuItem onClick={() => setIsEditProfileOpen(true)} className="hover:bg-primary/10">
                     <User className="w-4 h-4 mr-2" />
                     Edit Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-primary/10">
                     <Bell className="w-4 h-4 mr-2" />
                     Notifications
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/'}>
+                  <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
                   </DropdownMenuItem>
@@ -150,131 +159,164 @@ const PatientDashboard = () => {
       {/* Main Content with Sidebar */}
       <div className="flex min-h-screen">
         {/* Sidebar */}
-        <aside className="w-64 bg-card border-r shadow-sm">
-          <nav className="p-4 space-y-2">
-            <button
-              onClick={() => setActiveTab('echannel')}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
-                activeTab === 'echannel' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <Calendar className="w-5 h-5" />
-              <span className="font-medium">E-Channel</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('activities')}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
-                activeTab === 'activities' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <Activity className="w-5 h-5" />
-              <span className="font-medium">Activities</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('payments')}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
-                activeTab === 'payments' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <CreditCard className="w-5 h-5" />
-              <span className="font-medium">Payments</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('labreports')}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
-                activeTab === 'labreports' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <FlaskConical className="w-5 h-5" />
-              <span className="font-medium">Lab Reports</span>
-            </button>
-          </nav>
+        <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
+          <div className="p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
+              <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
+            </div>
+            <nav className="space-y-3">
+              <button
+                onClick={() => setActiveTab('echannel')}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                  activeTab === 'echannel' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${activeTab === 'echannel' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <span className="font-medium">E-Channel</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('activities')}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                  activeTab === 'activities' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${activeTab === 'activities' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                  <Activity className="w-5 h-5" />
+                </div>
+                <span className="font-medium">Activities</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                  activeTab === 'payments' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${activeTab === 'payments' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <span className="font-medium">Payments</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('labreports')}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                  activeTab === 'labreports' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                    : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${activeTab === 'labreports' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                  <FlaskConical className="w-5 h-5" />
+                </div>
+                <span className="font-medium">Lab Reports</span>
+              </button>
+            </nav>
+          </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <main className="flex-1 p-8 bg-gradient-to-br from-background to-muted/20">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
 
           {/* E-Channel Tab */}
-          <TabsContent value="echannel" className="space-y-6">
-            <div className="space-y-6">
+          <TabsContent value="echannel" className="space-y-8">
+            <div className="space-y-8">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">E-Channel Services</h2>
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">E-Channel Services</h2>
+                  <p className="text-muted-foreground mt-1">Book appointments and manage your healthcare needs</p>
+                </div>
                 <Select value={activeEChannelTab} onValueChange={setActiveEChannelTab}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-56 bg-card/50 backdrop-blur-sm border-border/50 shadow-sm">
                     <SelectValue placeholder="Select service" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-card/95 backdrop-blur-sm border-border/50">
                     <SelectItem value="book">Book Appointment</SelectItem>
                     <SelectItem value="reschedule">Reschedule Request</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {activeEChannelTab === 'book' && <Card className="shadow-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-primary" />
+              {activeEChannelTab === 'book' && <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                      <div className="p-3 rounded-full bg-gradient-primary">
+                        <Calendar className="w-6 h-6 text-primary-foreground" />
+                      </div>
                       Book New Appointment
                     </CardTitle>
+                    <p className="text-muted-foreground ml-12">Follow these simple steps to book your appointment</p>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <Card className="hover:shadow-lg transition-all">
-                        <CardContent className="p-4 text-center">
-                          <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
-                          <h3 className="font-semibold">Select Branch</h3>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+                        <CardContent className="p-6 text-center">
+                          <div className="p-4 rounded-full bg-gradient-primary mx-auto mb-4 w-fit">
+                            <MapPin className="w-8 h-8 text-primary-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Select Branch</h3>
                           <p className="text-sm text-muted-foreground">Choose hospital location</p>
                         </CardContent>
                       </Card>
-                      <Card className="hover:shadow-lg transition-all">
-                        <CardContent className="p-4 text-center">
-                          <FileText className="w-8 h-8 mx-auto mb-2 text-primary" />
-                          <h3 className="font-semibold">Specialization</h3>
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20">
+                        <CardContent className="p-6 text-center">
+                          <div className="p-4 rounded-full bg-gradient-secondary mx-auto mb-4 w-fit">
+                            <FileText className="w-8 h-8 text-secondary-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Specialization</h3>
                           <p className="text-sm text-muted-foreground">Select medical specialty</p>
                         </CardContent>
                       </Card>
-                      <Card className="hover:shadow-lg transition-all">
-                        <CardContent className="p-4 text-center">
-                          <User className="w-8 h-8 mx-auto mb-2 text-primary" />
-                          <h3 className="font-semibold">Choose Doctor</h3>
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-success/5 to-accent/5 border-success/20">
+                        <CardContent className="p-6 text-center">
+                          <div className="p-4 rounded-full bg-success mx-auto mb-4 w-fit">
+                            <User className="w-8 h-8 text-success-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Choose Doctor</h3>
                           <p className="text-sm text-muted-foreground">Select preferred doctor</p>
                         </CardContent>
                       </Card>
-                      <Card className="hover:shadow-lg transition-all">
-                        <CardContent className="p-4 text-center">
-                          <Calendar className="w-8 h-8 mx-auto mb-2 text-primary" />
-                          <h3 className="font-semibold">Pick Date</h3>
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-warning/5 to-accent/5 border-warning/20">
+                        <CardContent className="p-6 text-center">
+                          <div className="p-4 rounded-full bg-warning mx-auto mb-4 w-fit">
+                            <Calendar className="w-8 h-8 text-warning-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Pick Date</h3>
                           <p className="text-sm text-muted-foreground">Available time slots</p>
                         </CardContent>
                       </Card>
                     </div>
-                    <Button className="mt-6 w-full bg-gradient-primary hover:opacity-90" onClick={() => window.location.href = '/appointment-booking'}>
+                    <Button className="w-full h-14 text-lg bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105" onClick={() => window.location.href = '/appointment-booking'}>
                       Start Booking Process
+                      <Calendar className="w-5 h-5 ml-2" />
                     </Button>
                   </CardContent>
                 </Card>}
 
-              {activeEChannelTab === 'reschedule' && <Card className="shadow-card">
+              {activeEChannelTab === 'reschedule' && <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <RefreshCw className="w-5 h-5 text-primary" />
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                      <div className="p-3 rounded-full bg-gradient-secondary">
+                        <RefreshCw className="w-6 h-6 text-secondary-foreground" />
+                      </div>
                       Reschedule Requests
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-8">
-                      <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">No Reschedule Requests</h3>
-                      <p className="text-muted-foreground">You don't have any pending reschedule requests at the moment.</p>
+                    <div className="text-center py-12">
+                      <div className="p-6 rounded-full bg-gradient-to-br from-muted/20 to-muted/10 mx-auto mb-6 w-fit">
+                        <AlertCircle className="w-16 h-16 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-3">No Reschedule Requests</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto">You don't have any pending reschedule requests at the moment. When you need to reschedule an appointment, it will appear here.</p>
                     </div>
                   </CardContent>
                 </Card>}
@@ -282,36 +324,49 @@ const PatientDashboard = () => {
           </TabsContent>
 
           {/* Activities Tab */}
-          <TabsContent value="activities" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
+          <TabsContent value="activities" className="space-y-8">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Recent Activities</h2>
+              <p className="text-muted-foreground mb-8">View your appointments and lab results</p>
+            </div>
+            <div className="grid lg:grid-cols-2 gap-8">
               {/* Appointments */}
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-primary" />
+              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 rounded-lg bg-gradient-primary">
+                      <Calendar className="w-5 h-5 text-primary-foreground" />
+                    </div>
                     Recent Appointments
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {appointments.map(appointment => <div key={appointment.id} className="border rounded-lg p-4 space-y-2">
+                  {appointments.map(appointment => <div key={appointment.id} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{appointment.doctor}</h4>
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-lg">{appointment.doctor}</h4>
                           <p className="text-sm text-muted-foreground">{appointment.specialization}</p>
                         </div>
-                        <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1">
+                        <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1 px-3 py-1">
                           {getStatusIcon(appointment.status)}
                           {appointment.status}
                         </Badge>
                       </div>
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>{appointment.date} at {appointment.time}</span>
-                        <span>{appointment.branch}</span>
+                      <div className="flex justify-between text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                        <span className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          {appointment.date} at {appointment.time}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          {appointment.branch}
+                        </span>
                       </div>
-                      <div className="text-sm font-medium text-primary">
+                      <div className="text-sm font-medium text-primary bg-primary/10 p-3 rounded-lg">
+                        <CreditCard className="w-4 h-4 inline mr-2" />
                         {appointment.payment}
                       </div>
-                      {appointment.status === 'confirmed' && <Button size="sm" variant="outline" className="w-full">
+                      {appointment.status === 'confirmed' && <Button size="sm" variant="outline" className="w-full mt-3 border-primary/30 hover:bg-primary/10">
                           <RefreshCw className="w-3 h-3 mr-2" />
                           Request Reschedule
                         </Button>}
@@ -320,29 +375,32 @@ const PatientDashboard = () => {
               </Card>
 
               {/* Lab Reports */}
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-primary" />
+              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 rounded-lg bg-gradient-secondary">
+                      <FileText className="w-5 h-5 text-secondary-foreground" />
+                    </div>
                     Lab Reports
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {labReports.map(report => <div key={report.id} className="border rounded-lg p-4 space-y-2">
+                  {labReports.map(report => <div key={report.id} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{report.testName}</h4>
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-lg">{report.testName}</h4>
                           <p className="text-sm text-muted-foreground">Ordered by {report.doctor}</p>
                         </div>
-                        <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1">
+                        <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1 px-3 py-1">
                           {getStatusIcon(report.status)}
                           {report.status}
                         </Badge>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                        <Clock className="w-4 h-4 inline mr-2" />
                         Test Date: {report.date}
                       </div>
-                      <Button size="sm" variant="outline" className="w-full">
+                      <Button size="sm" variant="outline" className="w-full border-success/30 hover:bg-success/10 text-success">
                         <Download className="w-3 h-3 mr-2" />
                         Download Report
                       </Button>
@@ -353,30 +411,39 @@ const PatientDashboard = () => {
           </TabsContent>
 
           {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  Payment History
+          <TabsContent value="payments" className="space-y-8">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Payment History</h2>
+              <p className="text-muted-foreground mb-8">Track all your medical payments and transactions</p>
+            </div>
+            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 rounded-lg bg-gradient-primary">
+                    <CreditCard className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  Transaction History
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {payments.map(payment => <div key={payment.id} className="border rounded-lg p-4 space-y-2">
+                {payments.map(payment => <div key={payment.id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{payment.description}</h4>
-                        <p className="text-sm text-muted-foreground">Payment Method: {payment.method}</p>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-lg">{payment.description}</h4>
+                        <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                          Payment Method: {payment.method}
+                        </p>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-lg">{payment.amount}</div>
-                        <Badge variant={getStatusColor(payment.status) as any} className="flex items-center gap-1 mt-1">
+                      <div className="text-right space-y-2">
+                        <div className="font-bold text-2xl text-primary">{payment.amount}</div>
+                        <Badge variant={getStatusColor(payment.status) as any} className="flex items-center gap-1 px-3 py-1">
                           {getStatusIcon(payment.status)}
                           {payment.status}
                         </Badge>
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                      <Calendar className="w-4 h-4 inline mr-2" />
                       Transaction Date: {payment.date}
                     </div>
                   </div>)}
@@ -385,34 +452,47 @@ const PatientDashboard = () => {
           </TabsContent>
 
           {/* Lab Reports Tab */}
-          <TabsContent value="labreports" className="space-y-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FlaskConical className="w-5 h-5 text-primary" />
-                  Lab Reports
+          <TabsContent value="labreports" className="space-y-8">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Lab Reports</h2>
+              <p className="text-muted-foreground mb-8">Access and download your medical test results</p>
+            </div>
+            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 rounded-lg bg-gradient-secondary">
+                    <FlaskConical className="w-5 h-5 text-secondary-foreground" />
+                  </div>
+                  Available Reports
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {labReports.map(report => 
-                  <div key={report.id} className="border rounded-lg p-4 space-y-2">
+                  <div key={report.id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{report.testName}</h4>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-lg">{report.testName}</h4>
                         <p className="text-sm text-muted-foreground">Ordered by {report.doctor}</p>
                       </div>
-                      <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1">
+                      <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1 px-3 py-1">
                         {getStatusIcon(report.status)}
                         {report.status}
                       </Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                      <Calendar className="w-4 h-4 inline mr-2" />
                       Test Date: {report.date}
                     </div>
-                    <Button size="sm" variant="outline" className="w-full">
-                      <Download className="w-3 h-3 mr-2" />
-                      Download Report
-                    </Button>
+                    <div className="flex gap-3">
+                      <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download PDF
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 border-primary/30 hover:bg-primary/10">
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Online
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>
