@@ -132,10 +132,10 @@ const PatientDashboard = () => {
               <Button 
                 variant="outline" 
                 onClick={() => window.location.href = '/'} 
-                className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-2' : ''}`}
+                className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : ''}`}
               >
                 <User className="w-4 h-4 mr-2" />
-                {!isMobile && 'Home'}
+                Home
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
