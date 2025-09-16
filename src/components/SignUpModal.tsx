@@ -62,7 +62,7 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
   };
 
   const handleSignUp = () => {
-    if (!formData.fullName || !formData.nic || !formData.contactNumber || !formData.gender || !dateOfBirth) {
+    if (!formData.fullName || !formData.nic || !formData.contactNumber || !formData.email || !formData.gender || !dateOfBirth) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -81,17 +81,15 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
       return;
     }
 
-    // Email validation (only if email is provided)
-    if (formData.email && formData.email.trim() !== '') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        toast({
-          title: "Invalid Email",
-          description: "Please enter a valid email address.",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Email validation (required field)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
     }
 
     // Phone validation
@@ -180,7 +178,7 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
             </div>
 
             <div>
-              <Label htmlFor="email">Email Address (Optional)</Label>
+              <Label htmlFor="email">Email Address *</Label>
               <Input
                 id="email"
                 type="email"
@@ -233,6 +231,9 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
                     }
                     initialFocus
                     className="pointer-events-auto"
+                    captionLayout="dropdown-buttons"
+                    fromYear={1900}
+                    toYear={new Date().getFullYear()}
                   />
                 </PopoverContent>
               </Popover>

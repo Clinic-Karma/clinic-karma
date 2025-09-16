@@ -20,10 +20,9 @@ const AppointmentBooking = () => {
   });
 
   const branches = [
-    'Main Hospital - Downtown',
-    'Orthopedic Center - North',
-    'Cardiology Wing - South',
-    'Neurology Center - East'
+    'Colombo branch',
+    'Kandy branch',
+    'Galle branch'
   ];
 
   const specializations = [
@@ -51,7 +50,7 @@ const AppointmentBooking = () => {
   ];
 
   const handleNext = () => {
-    if (currentStep < 4) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -167,38 +166,8 @@ const AppointmentBooking = () => {
           </div>
         );
 
-      case 4:
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Additional Information</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Reason for Visit</label>
-                <Textarea 
-                  placeholder="Please describe your symptoms or reason for the appointment..."
-                  value={bookingData.reason}
-                  onChange={(e) => setBookingData({...bookingData, reason: e.target.value})}
-                  rows={4}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Urgency Level</label>
-                <Select value={bookingData.urgency} onValueChange={(value) => setBookingData({...bookingData, urgency: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="routine">Routine Visit</SelectItem>
-                    <SelectItem value="urgent">Urgent Care</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        );
 
-      case 5:
+      case 4:
         return (
           <div className="text-center space-y-6">
             <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center mx-auto">
@@ -261,17 +230,17 @@ const AppointmentBooking = () => {
       </header>
 
       {/* Progress Indicator */}
-      {currentStep < 5 && (
+      {currentStep < 4 && (
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-8">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   step <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 }`}>
                   {step}
                 </div>
-                {step < 4 && (
+                {step < 3 && (
                   <div className={`w-16 h-1 mx-2 ${
                     step < currentStep ? 'bg-primary' : 'bg-muted'
                   }`} />
@@ -288,14 +257,14 @@ const AppointmentBooking = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
-              {currentStep < 5 ? `Step ${currentStep} of 4` : 'Booking Complete'}
+              {currentStep < 4 ? `Step ${currentStep} of 3` : 'Booking Complete'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {renderStepContent()}
 
             {/* Navigation Buttons */}
-            {currentStep < 5 && (
+            {currentStep < 4 && (
               <div className="flex justify-between pt-6">
                 <Button 
                   variant="outline" 
@@ -305,22 +274,21 @@ const AppointmentBooking = () => {
                   Back
                 </Button>
                 <Button 
-                  onClick={currentStep === 4 ? handleConfirmBooking : handleNext}
+                  onClick={currentStep === 3 ? handleConfirmBooking : handleNext}
                   className="bg-gradient-primary hover:opacity-90"
                   disabled={
                     (currentStep === 1 && (!bookingData.branch || !bookingData.specialization)) ||
                     (currentStep === 2 && !bookingData.doctor) ||
-                    (currentStep === 3 && (!bookingData.date || !bookingData.time)) ||
-                    (currentStep === 4 && !bookingData.reason)
+                    (currentStep === 3 && (!bookingData.date || !bookingData.time))
                   }
                 >
-                  {currentStep === 4 ? 'Confirm Booking' : 'Next'}
+                  {currentStep === 3 ? 'Confirm Booking' : 'Next'}
                 </Button>
               </div>
             )}
 
             {/* Final Step Actions */}
-            {currentStep === 5 && (
+            {currentStep === 4 && (
               <div className="flex gap-4 pt-6">
                 <Button 
                   variant="outline" 

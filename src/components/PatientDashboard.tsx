@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, FileText, CreditCard, Settings, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Calendar, FileText, CreditCard, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle, UserCircle, Bell, LogOut, FlaskConical, Activity } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
@@ -116,42 +117,91 @@ const PatientDashboard = () => {
               <h1 className="text-2xl font-bold">Patient Dashboard</h1>
               <p className="opacity-90">Welcome back, John Doe</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
               <Button variant="outline" onClick={() => window.location.href = '/'} className="border-primary-foreground bg-slate-50 text-slate-950">
                 Home
               </Button>
-              <Button variant="outline" onClick={() => {
-              // Handle logout logic here
-              window.location.href = '/';
-            }} className="border-primary-foreground bg-slate-50 text-slate-950">
-                Log Out
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="border-primary-foreground bg-slate-50 text-slate-950 p-2">
+                    <UserCircle className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setIsEditProfileOpen(true)}>
+                    <User className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Bell className="w-4 h-4 mr-2" />
+                    Notifications
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/'}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
-            <TabsTrigger value="echannel" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              E-Channel
-            </TabsTrigger>
-            <TabsTrigger value="activities" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Activities
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
-              Payments
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+      {/* Main Content with Sidebar */}
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
+        <aside className="w-64 bg-card border-r shadow-sm">
+          <nav className="p-4 space-y-2">
+            <button
+              onClick={() => setActiveTab('echannel')}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
+                activeTab === 'echannel' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <Calendar className="w-5 h-5" />
+              <span className="font-medium">E-Channel</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('activities')}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
+                activeTab === 'activities' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <Activity className="w-5 h-5" />
+              <span className="font-medium">Activities</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
+                activeTab === 'payments' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <CreditCard className="w-5 h-5" />
+              <span className="font-medium">Payments</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('labreports')}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
+                activeTab === 'labreports' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <FlaskConical className="w-5 h-5" />
+              <span className="font-medium">Lab Reports</span>
+            </button>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
           {/* E-Channel Tab */}
           <TabsContent value="echannel" className="space-y-6">
@@ -334,63 +384,43 @@ const PatientDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
+          {/* Lab Reports Tab */}
+          <TabsContent value="labreports" className="space-y-6">
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
-                  Profile Information
+                  <FlaskConical className="w-5 h-5 text-primary" />
+                  Lab Reports
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Full Name</label>
-                    <p className="text-lg">John Doe</p>
+                {labReports.map(report => 
+                  <div key={report.id} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold">{report.testName}</h4>
+                        <p className="text-sm text-muted-foreground">Ordered by {report.doctor}</p>
+                      </div>
+                      <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1">
+                        {getStatusIcon(report.status)}
+                        {report.status}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Test Date: {report.date}
+                    </div>
+                    <Button size="sm" variant="outline" className="w-full">
+                      <Download className="w-3 h-3 mr-2" />
+                      Download Report
+                    </Button>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">NIC</label>
-                    <p className="text-lg">123456789V</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Email</label>
-                    <p className="text-lg flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      john.doe@email.com
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Phone</label>
-                    <p className="text-lg flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      +1 (555) 123-4567
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Date of Birth</label>
-                    <p className="text-lg">January 15, 1985</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Gender</label>
-                    <p className="text-lg">Male</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Address</label>
-                  <p className="text-lg">123 Main Street, Anytown, ST 12345</p>
-                </div>
-                <Button 
-                  onClick={() => setIsEditProfileOpen(true)}
-                  className="bg-gradient-primary hover:opacity-90"
-                >
-                  Edit Profile Information
-                </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </main>
+          </Tabs>
+        </main>
+      </div>
 
       {/* Edit Profile Modal */}
       <EditProfileModal open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen} />
