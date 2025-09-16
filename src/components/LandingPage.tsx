@@ -143,12 +143,15 @@ const LandingPage = () => {
             </Button>
           </div>
           {/* Mobile Menu */}
-          <div className="md:hidden flex gap-2">
-            <Button onClick={() => setIsSignUpModalOpen(true)} size="sm" variant="outline" className="shadow-button">
+          <div className="md:hidden flex gap-1">
+            <Button onClick={() => setIsSignUpModalOpen(true)} size="sm" variant="outline" className="shadow-button text-xs px-2">
               Sign Up
             </Button>
-            <Button onClick={() => setIsPatientLoginOpen(true)} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button">
-              Login
+            <Button onClick={() => setIsAuthModalOpen(true)} size="sm" variant="outline" className="shadow-button text-xs px-2">
+              Admin Portal
+            </Button>
+            <Button onClick={() => setIsPatientLoginOpen(true)} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button text-xs px-2">
+              Patient Login
             </Button>
           </div>
         </div>
