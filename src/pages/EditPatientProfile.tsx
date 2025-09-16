@@ -17,10 +17,7 @@ const EditPatientProfile = () => {
     contactNumber: '+1 (555) 123-4567',
     gender: 'Male',
     dateOfBirth: '1985-01-15',
-    address: '123 Main Street, Anytown, ST 12345',
-    emergencyContact: '+1 (555) 987-6543',
-    bloodType: 'O+',
-    allergies: 'Penicillin, Peanuts'
+    address: '123 Main Street, Anytown, ST 12345'
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -170,18 +167,6 @@ const EditPatientProfile = () => {
                     </div>
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-destructive" />
-                    </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Blood Type</Label>
-                      <Badge variant="outline" className="font-semibold">{formData.bloodType}</Badge>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -224,36 +209,6 @@ const EditPatientProfile = () => {
               </div>
             </div>
 
-            {/* Additional Read-only Info */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-primary border-b border-border/50 pb-2">Medical Information (Read-only)</h3>
-              <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'md:grid-cols-2 gap-8'}`}>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
-                      <Phone className="w-5 h-5 text-warning" />
-                    </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Emergency Contact</Label>
-                      <p className="font-semibold">{formData.emergencyContact}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
-                      <User className="w-5 h-5 text-destructive" />
-                    </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Allergies</Label>
-                      <p className="font-semibold">{formData.allergies}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Notice */}
             <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
               <div className="flex items-start gap-3">
@@ -265,7 +220,6 @@ const EditPatientProfile = () => {
                   <ul className="space-y-1 ml-2">
                     <li>• Only contact number and address can be modified</li>
                     <li>• Personal details like NIC, name, and date of birth cannot be changed for security reasons</li>
-                    <li>• Medical information updates require hospital staff assistance</li>
                     <li>• Changes will be effective immediately after saving</li>
                   </ul>
                 </div>
