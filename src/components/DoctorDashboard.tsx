@@ -213,7 +213,6 @@ const DoctorDashboard = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold">{appointment.patient}</h4>
-                        <p className="text-sm text-muted-foreground">ID: {appointment.patientId}</p>
                       </div>
                       <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1">
                         {getStatusIcon(appointment.status)}
@@ -226,10 +225,6 @@ const DoctorDashboard = () => {
                         {appointment.time}
                       </span>
                       <span className="text-primary font-medium">{appointment.type}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Phone className="w-3 h-3" />
-                      {appointment.contact}
                     </div>
                     <div className="flex gap-2 pt-2">
                       <Button 
@@ -363,10 +358,6 @@ const DoctorDashboard = () => {
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Department</label>
                       <p className="text-lg">Cardiology Department</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Years of Experience</label>
-                      <p className="text-lg">12 years</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Contact</label>

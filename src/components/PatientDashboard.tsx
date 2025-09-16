@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Calendar, FileText, CreditCard, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle, UserCircle, Bell, LogOut, FlaskConical, Activity } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
+
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
   const appointments = [{
     id: 1,
     doctor: 'Dr. Priya Sharma',
@@ -39,6 +41,7 @@ const PatientDashboard = () => {
     branch: 'Neurology Wing',
     payment: 'Refunded - $175'
   }];
+
   const labReports = [{
     id: 1,
     testName: 'Complete Blood Count',
@@ -58,6 +61,7 @@ const PatientDashboard = () => {
     status: 'Ready',
     doctor: 'Dr. Emily Wilson'
   }];
+
   const payments = [{
     id: 1,
     description: 'Consultation - Dr. Priya Sharma',
@@ -80,6 +84,7 @@ const PatientDashboard = () => {
     status: 'Paid',
     method: 'Cash'
   }];
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -94,6 +99,7 @@ const PatientDashboard = () => {
         return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
   };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -108,7 +114,9 @@ const PatientDashboard = () => {
         return 'secondary';
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       {/* Header */}
       <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
@@ -131,9 +139,9 @@ const PatientDashboard = () => {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button p-3"
+                    className="border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button px-4"
                   >
-                    <UserCircle className="w-5 h-5" />
+                    Profile
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
@@ -245,7 +253,8 @@ const PatientDashboard = () => {
                 </Select>
               </div>
 
-              {activeEChannelTab === 'book' && <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              {activeEChannelTab === 'book' && (
+                <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
                   <CardHeader className="pb-6">
                     <CardTitle className="flex items-center gap-3 text-2xl">
                       <div className="p-3 rounded-full bg-gradient-primary">
@@ -299,9 +308,11 @@ const PatientDashboard = () => {
                       <Calendar className="w-5 h-5 ml-2" />
                     </Button>
                   </CardContent>
-                </Card>}
+                </Card>
+              )}
 
-              {activeEChannelTab === 'reschedule' && <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              {activeEChannelTab === 'reschedule' && (
+                <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3 text-2xl">
                       <div className="p-3 rounded-full bg-gradient-secondary">
@@ -319,7 +330,8 @@ const PatientDashboard = () => {
                       <p className="text-muted-foreground max-w-md mx-auto">You don't have any pending reschedule requests at the moment. When you need to reschedule an appointment, it will appear here.</p>
                     </div>
                   </CardContent>
-                </Card>}
+                </Card>
+              )}
             </div>
           </TabsContent>
 
@@ -327,87 +339,54 @@ const PatientDashboard = () => {
           <TabsContent value="activities" className="space-y-8">
             <div>
               <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Recent Activities</h2>
-              <p className="text-muted-foreground mb-8">View your appointments and lab results</p>
+              <p className="text-muted-foreground mb-8">View your recent appointments</p>
             </div>
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Appointments */}
-              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-                <CardHeader className="pb-6">
-                  <CardTitle className="flex items-center gap-3 text-xl">
-                    <div className="p-2 rounded-lg bg-gradient-primary">
-                      <Calendar className="w-5 h-5 text-primary-foreground" />
+            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 rounded-lg bg-gradient-primary">
+                    <Calendar className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  Recent Appointments
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {appointments.map(appointment => (
+                  <div key={appointment.id} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <h4 className="font-semibold text-lg">{appointment.doctor}</h4>
+                        <p className="text-sm text-muted-foreground">{appointment.specialization}</p>
+                      </div>
+                      <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1 px-3 py-1">
+                        {getStatusIcon(appointment.status)}
+                        {appointment.status}
+                      </Badge>
                     </div>
-                    Recent Appointments
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {appointments.map(appointment => <div key={appointment.id} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <h4 className="font-semibold text-lg">{appointment.doctor}</h4>
-                          <p className="text-sm text-muted-foreground">{appointment.specialization}</p>
-                        </div>
-                        <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1 px-3 py-1">
-                          {getStatusIcon(appointment.status)}
-                          {appointment.status}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
-                        <span className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          {appointment.date} at {appointment.time}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          {appointment.branch}
-                        </span>
-                      </div>
-                      <div className="text-sm font-medium text-primary bg-primary/10 p-3 rounded-lg">
-                        <CreditCard className="w-4 h-4 inline mr-2" />
-                        {appointment.payment}
-                      </div>
-                      {appointment.status === 'confirmed' && <Button size="sm" variant="outline" className="w-full mt-3 border-primary/30 hover:bg-primary/10">
-                          <RefreshCw className="w-3 h-3 mr-2" />
-                          Request Reschedule
-                        </Button>}
-                    </div>)}
-                </CardContent>
-              </Card>
-
-              {/* Lab Reports */}
-              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-                <CardHeader className="pb-6">
-                  <CardTitle className="flex items-center gap-3 text-xl">
-                    <div className="p-2 rounded-lg bg-gradient-secondary">
-                      <FileText className="w-5 h-5 text-secondary-foreground" />
+                    <div className="flex justify-between text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        {appointment.date} at {appointment.time}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        {appointment.branch}
+                      </span>
                     </div>
-                    Lab Reports
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {labReports.map(report => <div key={report.id} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <h4 className="font-semibold text-lg">{report.testName}</h4>
-                          <p className="text-sm text-muted-foreground">Ordered by {report.doctor}</p>
-                        </div>
-                        <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1 px-3 py-1">
-                          {getStatusIcon(report.status)}
-                          {report.status}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
-                        <Clock className="w-4 h-4 inline mr-2" />
-                        Test Date: {report.date}
-                      </div>
-                      <Button size="sm" variant="outline" className="w-full border-success/30 hover:bg-success/10 text-success">
-                        <Download className="w-3 h-3 mr-2" />
-                        Download Report
+                    <div className="text-sm font-medium text-primary bg-primary/10 p-3 rounded-lg">
+                      <CreditCard className="w-4 h-4 inline mr-2" />
+                      {appointment.payment}
+                    </div>
+                    {appointment.status === 'confirmed' && (
+                      <Button size="sm" variant="outline" className="w-full mt-3 border-primary/30 hover:bg-primary/10">
+                        <RefreshCw className="w-3 h-3 mr-2" />
+                        Request Reschedule
                       </Button>
-                    </div>)}
-                </CardContent>
-              </Card>
-            </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Payments Tab */}
@@ -426,7 +405,8 @@ const PatientDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {payments.map(payment => <div key={payment.id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
+                {payments.map(payment => (
+                  <div key={payment.id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                     <div className="flex justify-between items-start">
                       <div className="space-y-2">
                         <h4 className="font-semibold text-lg">{payment.description}</h4>
@@ -446,7 +426,8 @@ const PatientDashboard = () => {
                       <Calendar className="w-4 h-4 inline mr-2" />
                       Transaction Date: {payment.date}
                     </div>
-                  </div>)}
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </TabsContent>
@@ -467,7 +448,7 @@ const PatientDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {labReports.map(report => 
+                {labReports.map(report => (
                   <div key={report.id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                     <div className="flex justify-between items-start">
                       <div className="space-y-2">
@@ -494,16 +475,19 @@ const PatientDashboard = () => {
                       </Button>
                     </div>
                   </div>
-                )}
+                ))}
               </CardContent>
             </Card>
           </TabsContent>
+
           </Tabs>
         </main>
       </div>
 
       {/* Edit Profile Modal */}
       <EditProfileModal open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen} />
-    </div>;
+    </div>
+  );
 };
+
 export default PatientDashboard;
