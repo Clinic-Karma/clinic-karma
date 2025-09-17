@@ -231,7 +231,7 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
                     }
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
-                    captionLayout="dropdown-buttons"
+                    captionLayout="buttons"
                     fromYear={1900}
                     toYear={new Date().getFullYear()}
                     showOutsideDays={false}
