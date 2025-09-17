@@ -58,39 +58,41 @@ const ReceptionistDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Receptionist Dashboard</h1>
-          <p className="text-muted-foreground">Manage appointments, patients, and administrative tasks</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            Receptionist Dashboard
+          </h1>
+          <p className="text-lg text-muted-foreground mt-2">Streamlined management for appointments, patients, and administrative excellence</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            <TabsTrigger value="patients">Patients</TabsTrigger>
             <TabsTrigger value="doctors">Doctors</TabsTrigger>
             <TabsTrigger value="insurance">Insurance</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="appointments" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+          <TabsContent value="appointments" className="space-y-6">
+            <Card className="border-2 border-primary/20 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-t-lg">
+                <CardTitle className="flex items-center gap-3 text-xl text-primary">
+                  <CalendarDays className="h-6 w-6" />
                   Appointment Management
                 </CardTitle>
-                <CardDescription>Book, cancel, reschedule appointments and manage doctor assignments</CardDescription>
+                <CardDescription className="text-base">Efficiently manage all appointment operations with our streamlined interface</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CardContent className="space-y-6 p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
                   {/* Book Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <CalendarDays className="h-6 w-6" />
-                        Book Appointment
+                      <Button className="flex items-center gap-3 h-24 flex-col bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                        <CalendarDays className="h-8 w-8" />
+                        <span className="text-base font-semibold">Book Appointment</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
@@ -172,9 +174,9 @@ const ReceptionistDashboard = () => {
                   {/* Reschedule Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <CheckCircle className="h-6 w-6" />
-                        Reschedule Appointment
+                      <Button className="flex items-center gap-3 h-24 flex-col bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                        <CheckCircle className="h-8 w-8" />
+                        <span className="text-base font-semibold">Reschedule Appointment</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
@@ -227,9 +229,9 @@ const ReceptionistDashboard = () => {
                   {/* Cancel Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <X className="h-6 w-6" />
-                        Cancel Appointment
+                      <Button className="flex items-center gap-3 h-24 flex-col bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                        <X className="h-8 w-8" />
+                        <span className="text-base font-semibold">Cancel Appointment</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
@@ -275,84 +277,85 @@ const ReceptionistDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="patients" className="space-y-4">
-            <Card>
+            {/* Patient Management Section */}
+            <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Users className="h-6 w-6" />
                   Patient Management
                 </CardTitle>
-                <CardDescription>Register new patients, update details, and search patient history</CardDescription>
+                <CardDescription>Register new patients and manage patient information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 justify-center">
-                  
+                <div className="flex justify-center">
                   {/* Register Patient */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col max-w-xs mx-auto">
-                        <UserPlus className="h-6 w-6" />
-                        Register Patient
+                      <Button className="flex items-center gap-2 h-24 flex-col px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                        <UserPlus className="h-8 w-8" />
+                        <span className="text-base font-semibold">Register Patient</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Register New Patient</DialogTitle>
-                        <DialogDescription>Enter patient details to register</DialogDescription>
+                        <DialogTitle className="text-xl text-primary">Register New Patient</DialogTitle>
+                        <DialogDescription>Enter patient details to register them in the system</DialogDescription>
                       </DialogHeader>
                       <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Patient Registration");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="patientId">Patient ID</Label>
-                          <Input id="patientId" placeholder="P001 (Auto-generated)" disabled />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2 col-span-2">
+                            <Label htmlFor="patientId">Patient ID</Label>
+                            <Input id="patientId" placeholder="P001 (Auto-generated)" disabled className="bg-muted" />
+                          </div>
+                          <div className="space-y-2 col-span-2">
+                            <Label htmlFor="patientName">Full Name *</Label>
+                            <Input id="patientName" placeholder="Enter patient name" required className="border-primary/20 focus:border-primary" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="patientDOB">Date of Birth *</Label>
+                            <Input id="patientDOB" type="date" required className="border-primary/20 focus:border-primary" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="patientGender">Gender *</Label>
+                            <Select required>
+                              <SelectTrigger className="border-primary/20 focus:border-primary">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="male">Male</SelectItem>
+                                <SelectItem value="female">Female</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="patientPhone">Contact Number *</Label>
+                            <Input id="patientPhone" placeholder="Enter phone number" required className="border-primary/20 focus:border-primary" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="patientEmail">Email</Label>
+                            <Input id="patientEmail" type="email" placeholder="Enter email" className="border-primary/20 focus:border-primary" />
+                          </div>
+                          <div className="space-y-2 col-span-2">
+                            <Label htmlFor="patientAddress">Address *</Label>
+                            <Input id="patientAddress" placeholder="Enter address" required className="border-primary/20 focus:border-primary" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="patientNIC">NIC/Passport Number *</Label>
+                            <Input id="patientNIC" placeholder="Enter NIC or Passport number" required className="border-primary/20 focus:border-primary" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="emergencyContact">Emergency Contact *</Label>
+                            <Input id="emergencyContact" placeholder="Enter emergency contact number" required className="border-primary/20 focus:border-primary" />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientName">Full Name</Label>
-                          <Input id="patientName" placeholder="Enter patient name" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientDOB">Date of Birth</Label>
-                          <Input id="patientDOB" type="date" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientGender">Gender</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="male">Male</SelectItem>
-                              <SelectItem value="female">Female</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientPhone">Contact Number</Label>
-                          <Input id="patientPhone" placeholder="Enter phone number" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientEmail">Email</Label>
-                          <Input id="patientEmail" type="email" placeholder="Enter email" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientAddress">Address</Label>
-                          <Input id="patientAddress" placeholder="Enter address" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientNIC">NIC/Passport Number</Label>
-                          <Input id="patientNIC" placeholder="Enter NIC or Passport number" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="emergencyContact">Emergency Contact</Label>
-                          <Input id="emergencyContact" placeholder="Enter emergency contact number" required />
-                        </div>
-                        <Button type="submit" className="w-full">Register Patient</Button>
+                        <Button type="submit" className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                          Register Patient
+                        </Button>
                       </form>
                     </DialogContent>
                   </Dialog>
-
                 </div>
               </CardContent>
             </Card>
