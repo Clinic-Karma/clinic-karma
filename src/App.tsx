@@ -30,7 +30,7 @@ const App = () => (
           <Route path="/appointment-booking" element={<AppointmentBooking />} />
           <Route path="/edit-profile" element={<EditPatientProfile />} />
           <Route path="/staff-dashboard" element={<div className="min-h-screen bg-background flex items-center justify-center"><div className="text-center"><h1 className="text-2xl font-bold mb-4">Staff Dashboard</h1><p className="text-muted-foreground">Coming Soon - Staff features will be implemented here</p></div></div>} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          
         <Route path="/top-manager" element={<TopManagerDashboard />} />
         <Route path="/branch-manager" element={<BranchManagerDashboard />} />
         <Route path="/lab-coordinator" element={<LabCoordinatorDashboard />} />
