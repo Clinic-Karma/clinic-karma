@@ -8,13 +8,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   Users, 
   UserPlus, 
   Filter,
   Stethoscope,
-  Settings
+  Settings,
+  Home,
+  Bell,
+  LogOut,
+  User
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const BranchManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("doctor-management");
@@ -24,6 +30,7 @@ const BranchManagerDashboard = () => {
   const [nameFilter, setNameFilter] = useState("");
   const [showDoctorRegistration, setShowDoctorRegistration] = useState(false);
   const [showStaffRegistration, setShowStaffRegistration] = useState(false);
+  const isMobile = useIsMobile();
 
   // Sample doctors data
   const doctorsData = [
@@ -179,45 +186,124 @@ const BranchManagerDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Branch Manager Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Manage doctors and staff roles</p>
+    <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
+      {/* Header */}
+      <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
+        <div className={`relative container mx-auto ${isMobile ? 'px-4 py-4' : 'px-8 py-8'}`}>
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Branch Manager Dashboard</h1>
+              <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Manage doctors and staff roles</p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/'} 
+                className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : ''}`}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : 'px-4'}`}
+                  >
+                    Profile
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
+                  <DropdownMenuItem className="hover:bg-primary/10">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-primary/10">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Notifications
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
+      </header>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="doctor-management" className="flex items-center gap-2">
-              <Stethoscope className="w-4 h-4" />
-              Doctor Management
-            </TabsTrigger>
-            <TabsTrigger value="role-management" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              Role Management
-            </TabsTrigger>
-          </TabsList>
+      {/* Main Content with Sidebar */}
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
+                <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
+              </div>
+              <nav className="space-y-3">
+                <button
+                  onClick={() => setActiveTab('doctor-management')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'doctor-management' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'doctor-management' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <Stethoscope className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Doctor Management</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('role-management')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'role-management' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'role-management' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Role Management</span>
+                </button>
+              </nav>
+            </div>
+          </aside>
+        )}
 
-          <TabsContent value="doctor-management" className="mt-6">
-            <div className="space-y-6">
+        {/* Main Content */}
+        <main className={`flex-1 ${isMobile ? 'p-4' : 'p-8'} bg-gradient-to-br from-background to-muted/20`}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+
+            <TabsContent value="doctor-management" className="space-y-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Doctor Management</h2>
-                <Button onClick={() => setShowDoctorRegistration(true)} className="flex items-center gap-2">
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Doctor Management</h2>
+                  <p className="text-muted-foreground">Register new doctors and manage existing ones</p>
+                </div>
+                <Button onClick={() => setShowDoctorRegistration(true)} className={`flex items-center gap-2 ${isMobile ? 'px-3 py-2' : 'px-4 py-2'} bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105`}>
                   <UserPlus className="w-4 h-4" />
-                  Doctor Registration
+                  {!isMobile && "Doctor Registration"}
                 </Button>
               </div>
 
               {/* Filters */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Filter className="w-5 h-5" />
+              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-primary">
+                      <Filter className="w-5 h-5 text-primary-foreground" />
+                    </div>
                     Filters
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-4'}`}>
                     <div className="space-y-2">
                       <Label htmlFor="doctorSearch">Search Doctors</Label>
                       <Input
@@ -225,12 +311,13 @@ const BranchManagerDashboard = () => {
                         placeholder="Search by name..."
                         value={doctorFilter}
                         onChange={(e) => setDoctorFilter(e.target.value)}
+                        className="border-border/50 focus:border-primary"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="specializationFilter">Specialization</Label>
                       <Select value={specializationFilter} onValueChange={setSpecializationFilter}>
-                        <SelectTrigger>
+                        <SelectTrigger className="border-border/50 focus:border-primary">
                           <SelectValue placeholder="All specializations" />
                         </SelectTrigger>
                         <SelectContent>
@@ -246,62 +333,72 @@ const BranchManagerDashboard = () => {
               </Card>
 
               {/* Doctors Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Doctors List</CardTitle>
+              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-secondary">
+                      <Stethoscope className="w-5 h-5 text-secondary-foreground" />
+                    </div>
+                    Doctors List
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Specialization</TableHead>
-                        <TableHead>Join Date</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>NIC</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredDoctors.map((doctor) => (
-                        <TableRow key={doctor.id}>
-                          <TableCell className="font-medium">{doctor.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{doctor.specialization}</Badge>
-                          </TableCell>
-                          <TableCell>{doctor.joinDate}</TableCell>
-                          <TableCell>{doctor.contact}</TableCell>
-                          <TableCell>{doctor.email}</TableCell>
-                          <TableCell>{doctor.nic}</TableCell>
+                  <div className={isMobile ? "overflow-x-auto" : ""}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Specialization</TableHead>
+                          {!isMobile && <TableHead>Join Date</TableHead>}
+                          {!isMobile && <TableHead>Contact</TableHead>}
+                          {!isMobile && <TableHead>Email</TableHead>}
+                          {!isMobile && <TableHead>NIC</TableHead>}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredDoctors.map((doctor) => (
+                          <TableRow key={doctor.id}>
+                            <TableCell className="font-medium">{doctor.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{doctor.specialization}</Badge>
+                            </TableCell>
+                            {!isMobile && <TableCell>{doctor.joinDate}</TableCell>}
+                            {!isMobile && <TableCell>{doctor.contact}</TableCell>}
+                            {!isMobile && <TableCell>{doctor.email}</TableCell>}
+                            {!isMobile && <TableCell>{doctor.nic}</TableCell>}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="role-management" className="mt-6">
-            <div className="space-y-6">
+            <TabsContent value="role-management" className="space-y-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Role Management</h2>
-                <Button onClick={() => setShowStaffRegistration(true)} className="flex items-center gap-2">
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Role Management</h2>
+                  <p className="text-muted-foreground">Register and manage receptionist and lab coordinator roles</p>
+                </div>
+                <Button onClick={() => setShowStaffRegistration(true)} className={`flex items-center gap-2 ${isMobile ? 'px-3 py-2' : 'px-4 py-2'} bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105`}>
                   <UserPlus className="w-4 h-4" />
-                  Receptionist/Lab Coordinator Registration
+                  {!isMobile && "Staff Registration"}
                 </Button>
               </div>
 
               {/* Filters */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Filter className="w-5 h-5" />
+              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-primary">
+                      <Filter className="w-5 h-5 text-primary-foreground" />
+                    </div>
                     Filters
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 gap-4'}`}>
                     <div className="space-y-2">
                       <Label htmlFor="nameSearch">Search by Name</Label>
                       <Input
@@ -309,12 +406,13 @@ const BranchManagerDashboard = () => {
                         placeholder="Search by name..."
                         value={nameFilter}
                         onChange={(e) => setNameFilter(e.target.value)}
+                        className="border-border/50 focus:border-primary"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="roleFilter">Role</Label>
                       <Select value={roleFilter} onValueChange={setRoleFilter}>
-                        <SelectTrigger>
+                        <SelectTrigger className="border-border/50 focus:border-primary">
                           <SelectValue placeholder="All roles" />
                         </SelectTrigger>
                         <SelectContent>
@@ -329,46 +427,84 @@ const BranchManagerDashboard = () => {
               </Card>
 
               {/* Staff Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Staff List</CardTitle>
+              <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-secondary">
+                      <Users className="w-5 h-5 text-secondary-foreground" />
+                    </div>
+                    Staff List
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Join Date</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>NIC</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredStaff.map((staff) => (
-                        <TableRow key={staff.id}>
-                          <TableCell className="font-medium">{staff.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{staff.role}</Badge>
-                          </TableCell>
-                          <TableCell>{staff.joinDate}</TableCell>
-                          <TableCell>{staff.contact}</TableCell>
-                          <TableCell>{staff.email}</TableCell>
-                          <TableCell>{staff.nic}</TableCell>
+                  <div className={isMobile ? "overflow-x-auto" : ""}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Role</TableHead>
+                          {!isMobile && <TableHead>Join Date</TableHead>}
+                          {!isMobile && <TableHead>Contact</TableHead>}
+                          {!isMobile && <TableHead>Email</TableHead>}
+                          {!isMobile && <TableHead>NIC</TableHead>}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredStaff.map((staff) => (
+                          <TableRow key={staff.id}>
+                            <TableCell className="font-medium">{staff.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{staff.role}</Badge>
+                            </TableCell>
+                            {!isMobile && <TableCell>{staff.joinDate}</TableCell>}
+                            {!isMobile && <TableCell>{staff.contact}</TableCell>}
+                            {!isMobile && <TableCell>{staff.email}</TableCell>}
+                            {!isMobile && <TableCell>{staff.nic}</TableCell>}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
 
-        <DoctorRegistrationForm />
-        <StaffRegistrationForm />
+          </Tabs>
+        </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
+          <div className="grid grid-cols-2 gap-1 p-2">
+            <button
+              onClick={() => setActiveTab('doctor-management')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+                activeTab === 'doctor-management' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <Stethoscope className="w-5 h-5" />
+              <span className="text-xs font-medium">Doctors</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('role-management')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+                activeTab === 'role-management' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span className="text-xs font-medium">Staff</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <DoctorRegistrationForm />
+      <StaffRegistrationForm />
     </div>
   );
 };

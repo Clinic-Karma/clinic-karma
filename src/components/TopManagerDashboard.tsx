@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   BarChart3, 
   CreditCard, 
@@ -14,7 +15,11 @@ import {
   Plus,
   Settings,
   Database,
-  Eye
+  Eye,
+  Home,
+  Bell,
+  LogOut,
+  User
 } from "lucide-react";
 import { 
   LineChart, 
@@ -28,10 +33,12 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const TopManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("reports");
   const [reportsView, setReportsView] = useState("");
+  const isMobile = useIsMobile();
 
   // Sample data for charts
   const revenueData = [
@@ -98,78 +105,171 @@ const TopManagerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Top Manager Dashboard</h1>
-          <p className="text-muted-foreground mt-2">System-wide oversight and management</p>
+    <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
+      {/* Header */}
+      <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
+        <div className={`relative container mx-auto ${isMobile ? 'px-4 py-4' : 'px-8 py-8'}`}>
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Top Manager Dashboard</h1>
+              <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>System-wide oversight and management</p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/'} 
+                className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : ''}`}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : 'px-4'}`}
+                  >
+                    Profile
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
+                  <DropdownMenuItem className="hover:bg-primary/10">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-primary/10">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Notifications
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
+      </header>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              System Wide Reports
-            </TabsTrigger>
-            <TabsTrigger value="insurance" className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
-              Insurance Management
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="w-4 h-4" />
-              Security & Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="reports" className="mt-6">
-            {!reportsView ? (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-semibold">System Wide Reports</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setReportsView("patients")}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="w-5 h-5 text-primary" />
-                        Total Patients
-                      </CardTitle>
-                      <CardDescription>View patient bills and appointments</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold text-primary mb-2">1,247</div>
-                      <p className="text-sm text-muted-foreground">Active patients</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setReportsView("revenue")}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-primary" />
-                        Revenue & Billing
-                      </CardTitle>
-                      <CardDescription>Income trends and pending payments</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold text-primary mb-2">$124K</div>
-                      <p className="text-sm text-muted-foreground">Monthly revenue</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setReportsView("insurance")}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-primary" />
-                        Insurance Claims
-                      </CardTitle>
-                      <CardDescription>Claims summaries and analytics</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold text-primary mb-2">856</div>
-                      <p className="text-sm text-muted-foreground">Total claims</p>
-                    </CardContent>
-                  </Card>
-                </div>
+      {/* Main Content with Sidebar */}
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
+                <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
               </div>
-            ) : (
+              <nav className="space-y-3">
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'reports' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'reports' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <BarChart3 className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">System Reports</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('insurance')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'insurance' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'insurance' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Insurance</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('security')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'security' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'security' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Security</span>
+                </button>
+              </nav>
+            </div>
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <main className={`flex-1 ${isMobile ? 'p-4' : 'p-8'} bg-gradient-to-br from-background to-muted/20`}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+
+            <TabsContent value="reports" className="space-y-8">
+              {!reportsView ? (
+                <div className="space-y-8">
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">System Wide Reports</h2>
+                    <p className="text-muted-foreground mb-8">Comprehensive overview of hospital operations</p>
+                  </div>
+                  <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+                    <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20" onClick={() => setReportsView("patients")}>
+                      <CardHeader className="pb-6">
+                        <CardTitle className="flex items-center gap-3">
+                          <div className="p-3 rounded-full bg-gradient-primary">
+                            <Users className="w-6 h-6 text-primary-foreground" />
+                          </div>
+                          Total Patients
+                        </CardTitle>
+                        <CardDescription>View patient bills and appointments</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold text-primary mb-2">1,247</div>
+                        <p className="text-sm text-muted-foreground">Active patients</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-success/5 to-accent/5 border-success/20" onClick={() => setReportsView("revenue")}>
+                      <CardHeader className="pb-6">
+                        <CardTitle className="flex items-center gap-3">
+                          <div className="p-3 rounded-full bg-success">
+                            <TrendingUp className="w-6 h-6 text-success-foreground" />
+                          </div>
+                          Revenue & Billing
+                        </CardTitle>
+                        <CardDescription>Income trends and pending payments</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold text-primary mb-2">$124K</div>
+                        <p className="text-sm text-muted-foreground">Monthly revenue</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20" onClick={() => setReportsView("insurance")}>
+                      <CardHeader className="pb-6">
+                        <CardTitle className="flex items-center gap-3">
+                          <div className="p-3 rounded-full bg-gradient-secondary">
+                            <BarChart3 className="w-6 h-6 text-secondary-foreground" />
+                          </div>
+                          Insurance Claims
+                        </CardTitle>
+                        <CardDescription>Claims summaries and analytics</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold text-primary mb-2">856</div>
+                        <p className="text-sm text-muted-foreground">Total claims</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <Button variant="outline" onClick={() => setReportsView("")}>
@@ -344,30 +444,36 @@ const TopManagerDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="insurance" className="mt-6">
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold">Insurance Management</h2>
+            <TabsContent value="insurance" className="space-y-8">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Insurance Management</h2>
+                <p className="text-muted-foreground mb-8">Manage insurance providers and oversee claims</p>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Plus className="w-5 h-5 text-primary" />
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'grid-cols-1 md:grid-cols-2 gap-6'}`}>
+                <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 cursor-pointer">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="p-3 rounded-full bg-gradient-primary">
+                        <Plus className="w-6 h-6 text-primary-foreground" />
+                      </div>
                       Add/Update Insurance Providers
                     </CardTitle>
                     <CardDescription>Manage insurance providers in the system</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button className="w-full">
+                    <Button className="w-full bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105">
                       Manage Providers
                     </Button>
                   </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Eye className="w-5 h-5 text-primary" />
+                <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20 cursor-pointer">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="p-3 rounded-full bg-gradient-secondary">
+                        <Eye className="w-6 h-6 text-secondary-foreground" />
+                      </div>
                       Oversee All Claims
                     </CardTitle>
                     <CardDescription>Monitor claims handled by staff</CardDescription>
@@ -379,18 +485,21 @@ const TopManagerDashboard = () => {
                   </CardContent>
                 </Card>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="security" className="mt-6">
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold">Security & Settings</h2>
+            <TabsContent value="security" className="space-y-8">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Security & Settings</h2>
+                <p className="text-muted-foreground mb-8">System backup and configuration management</p>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Database className="w-5 h-5 text-primary" />
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'grid-cols-1 md:grid-cols-2 gap-6'}`}>
+                <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-warning/5 to-accent/5 border-warning/20 cursor-pointer">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="p-3 rounded-full bg-warning">
+                        <Database className="w-6 h-6 text-warning-foreground" />
+                      </div>
                       Backup
                     </CardTitle>
                     <CardDescription>System backup and restore options</CardDescription>
@@ -401,20 +510,22 @@ const TopManagerDashboard = () => {
                         <span>Last Backup</span>
                         <Badge variant="secondary">2 hours ago</Badge>
                       </div>
-                      <Button className="w-full">
+                      <Button className="w-full bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105">
                         Create Backup
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-primary" />
-                      System Configuration
+                <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-muted/5 to-accent/5 border-muted/20 cursor-pointer">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="p-3 rounded-full bg-muted">
+                        <Settings className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      Configuration
                     </CardTitle>
-                    <CardDescription>Configure system-wide settings</CardDescription>
+                    <CardDescription>System configuration and settings</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -429,10 +540,52 @@ const TopManagerDashboard = () => {
                   </CardContent>
                 </Card>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+
+          </Tabs>
+        </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
+          <div className="grid grid-cols-3 gap-1 p-2">
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+                activeTab === 'reports' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <BarChart3 className="w-5 h-5" />
+              <span className="text-xs font-medium">Reports</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('insurance')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+                activeTab === 'insurance' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <CreditCard className="w-5 h-5" />
+              <span className="text-xs font-medium">Insurance</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+                activeTab === 'security' 
+                  ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <Shield className="w-5 h-5" />
+              <span className="text-xs font-medium">Security</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
