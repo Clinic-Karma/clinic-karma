@@ -522,6 +522,8 @@ const AdminDashboard = () => {
         </Tabs>
       </main>
 
+      </div>
+
       {/* Mobile Bottom Navigation */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 shadow-hero z-50">
