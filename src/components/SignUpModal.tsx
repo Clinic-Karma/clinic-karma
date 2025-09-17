@@ -38,7 +38,7 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
     gender: '',
     address: ''
   });
-  const [dateOfBirth, setDateOfBirth] = useState<Date>();
+  const [dateOfBirth, setDateOfBirth] = useState<Date>(new Date());
   const { toast } = useToast();
 
   // Clear form when modal opens
@@ -124,7 +124,7 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
       gender: '',
       address: ''
     });
-    setDateOfBirth(undefined);
+    setDateOfBirth(new Date());
   };
 
   return (
@@ -212,13 +212,10 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn(
-                      "w-full mt-1 justify-start text-left font-normal",
-                      !dateOfBirth && "text-muted-foreground"
-                    )}
+                    className="w-full mt-1 justify-start text-left font-normal"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateOfBirth ? format(dateOfBirth, "PPP") : "Select date of birth"}
+                    {dateOfBirth ? format(dateOfBirth, "MM/dd/yyyy") : "mm/dd/yyyy"}
+                    <CalendarIcon className="ml-auto h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
