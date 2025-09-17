@@ -17,11 +17,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 interface SignUpModalProps {
@@ -38,8 +33,42 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
     gender: '',
     address: ''
   });
-  const [dateOfBirth, setDateOfBirth] = useState<Date>(new Date());
+  
+  // Initialize with today's date
+  const today = new Date();
+  const [dateOfBirth, setDateOfBirth] = useState({
+    month: (today.getMonth() + 1).toString(),
+    day: today.getDate().toString(),
+    year: today.getFullYear().toString()
+  });
+  
   const { toast } = useToast();
+
+  // Generate arrays for dropdowns
+  const months = [
+    { value: '1', label: 'January' },
+    { value: '2', label: 'February' },
+    { value: '3', label: 'March' },
+    { value: '4', label: 'April' },
+    { value: '5', label: 'May' },
+    { value: '6', label: 'June' },
+    { value: '7', label: 'July' },
+    { value: '8', label: 'August' },
+    { value: '9', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => currentYear - i);
+  
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month, 0).getDate();
+  };
+  
+  const daysInMonth = getDaysInMonth(parseInt(dateOfBirth.month), parseInt(dateOfBirth.year));
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   // Clear form when modal opens
   useEffect(() => {
@@ -62,7 +91,7 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
   };
 
   const handleSignUp = () => {
-    if (!formData.fullName || !formData.nic || !formData.contactNumber || !formData.email || !formData.gender || !dateOfBirth) {
+    if (!formData.fullName || !formData.nic || !formData.contactNumber || !formData.email || !formData.gender || !dateOfBirth.month || !dateOfBirth.day || !dateOfBirth.year) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -124,7 +153,12 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
       gender: '',
       address: ''
     });
-    setDateOfBirth(new Date());
+    const today = new Date();
+    setDateOfBirth({
+      month: (today.getMonth() + 1).toString(),
+      day: today.getDate().toString(),
+      year: today.getFullYear().toString()
+    });
   };
 
   return (
@@ -208,33 +242,69 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
 
             <div>
               <Label>Date of Birth *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full mt-1 justify-start text-left font-normal"
-                  >
-                    {dateOfBirth ? format(dateOfBirth, "MM/dd/yyyy") : "mm/dd/yyyy"}
-                    <CalendarIcon className="ml-auto h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateOfBirth}
-                    onSelect={setDateOfBirth}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
+              <div className="grid grid-cols-3 gap-2 mt-1">
+                <Select 
+                  value={dateOfBirth.month} 
+                  onValueChange={(value) => {
+                    setDateOfBirth(prev => ({ ...prev, month: value }));
+                    // Adjust day if it's invalid for the new month
+                    const newDaysInMonth = getDaysInMonth(parseInt(value), parseInt(dateOfBirth.year));
+                    if (parseInt(dateOfBirth.day) > newDaysInMonth) {
+                      setDateOfBirth(prev => ({ ...prev, day: newDaysInMonth.toString() }));
                     }
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                    captionLayout="dropdown-buttons"
-                    fromYear={1900}
-                    toYear={new Date().getFullYear()}
-                    showOutsideDays={false}
-                  />
-                </PopoverContent>
-              </Popover>
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {months.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={dateOfBirth.day} 
+                  onValueChange={(value) => setDateOfBirth(prev => ({ ...prev, day: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {days.map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={dateOfBirth.year} 
+                  onValueChange={(value) => {
+                    setDateOfBirth(prev => ({ ...prev, year: value }));
+                    // Adjust day if it's invalid for the new year (leap year consideration)
+                    const newDaysInMonth = getDaysInMonth(parseInt(dateOfBirth.month), parseInt(value));
+                    if (parseInt(dateOfBirth.day) > newDaysInMonth) {
+                      setDateOfBirth(prev => ({ ...prev, day: newDaysInMonth.toString() }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {years.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
