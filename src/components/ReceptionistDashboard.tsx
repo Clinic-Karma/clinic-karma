@@ -9,14 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Users, UserPlus, Search, Stethoscope, FileText, DollarSign, Clock, User, Eye, Edit, CreditCard, CalendarDays, X, CheckCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Calendar as CalendarIcon, Users, UserPlus, Search, Stethoscope, FileText, DollarSign, Clock, User, Eye, Edit, CreditCard, CalendarDays, X, CheckCircle, Home, Bell, LogOut, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ReceptionistDashboard = () => {
   const [activeTab, setActiveTab] = useState("appointments");
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // State for Book Appointment modal
   const [bookDate, setBookDate] = useState<Date>();
@@ -58,42 +61,156 @@ const ReceptionistDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="container mx-auto p-6">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Receptionist Dashboard
-          </h1>
-          <p className="text-lg text-muted-foreground mt-2">Streamlined management for appointments, patients, and administrative excellence</p>
+    <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
+      {/* Header */}
+      <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
+        <div className={`relative container mx-auto ${isMobile ? 'px-4 py-4' : 'px-8 py-8'}`}>
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Receptionist Dashboard</h1>
+              <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Streamlined management for appointments and patients</p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/'} 
+                className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : ''}`}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : 'px-4'}`}
+                  >
+                    Profile
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
+                  <DropdownMenuItem className="hover:bg-primary/10">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-primary/10">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Notifications
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
+      </header>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            <TabsTrigger value="doctors">Doctors</TabsTrigger>
-            <TabsTrigger value="insurance">Insurance</TabsTrigger>
-            <TabsTrigger value="billing">Billing</TabsTrigger>
-          </TabsList>
+      {/* Main Content with Sidebar */}
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
+                <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
+              </div>
+              <nav className="space-y-3">
+                <button
+                  onClick={() => setActiveTab('appointments')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'appointments' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'appointments' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <CalendarDays className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Appointments</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('doctors')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'doctors' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'doctors' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <Stethoscope className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Doctors</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('insurance')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'insurance' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'insurance' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Insurance</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('billing')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === 'billing' 
+                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === 'billing' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Billing</span>
+                </button>
+              </nav>
+            </div>
+          </aside>
+        )}
 
-          <TabsContent value="appointments" className="space-y-6">
-            <Card className="border-2 border-primary/20 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl text-primary">
-                  <CalendarDays className="h-6 w-6" />
-                  Appointment Management
+        {/* Main Content */}
+        <main className={`flex-1 ${isMobile ? 'p-4' : 'p-8'} bg-gradient-to-br from-background to-muted/20`}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+
+          <TabsContent value="appointments" className="space-y-8">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Appointment Management</h2>
+              <p className="text-muted-foreground mb-8">Efficiently manage all appointment operations</p>
+            </div>
+            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <div className="p-3 rounded-full bg-gradient-primary">
+                    <CalendarDays className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  Appointment Operations
                 </CardTitle>
-                <CardDescription className="text-base">Efficiently manage all appointment operations with our streamlined interface</CardDescription>
+                <p className="text-muted-foreground ml-12">Book, reschedule, or cancel appointments with ease</p>
               </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <CardContent>
+                <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'md:grid-cols-3 gap-6'} mb-8`}>
                   
                   {/* Book Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-3 h-24 flex-col bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                        <CalendarDays className="h-8 w-8" />
-                        <span className="text-base font-semibold">Book Appointment</span>
-                      </Button>
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 cursor-pointer">
+                        <CardContent className="p-6 text-center">
+                          <div className="p-4 rounded-full bg-gradient-primary mx-auto mb-4 w-fit">
+                            <CalendarDays className="w-8 h-8 text-primary-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Book Appointment</h3>
+                          <p className="text-sm text-muted-foreground">Schedule new appointments</p>
+                        </CardContent>
+                      </Card>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
@@ -174,10 +291,15 @@ const ReceptionistDashboard = () => {
                   {/* Reschedule Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-3 h-24 flex-col bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                        <CheckCircle className="h-8 w-8" />
-                        <span className="text-base font-semibold">Reschedule Appointment</span>
-                      </Button>
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20 cursor-pointer">
+                        <CardContent className="p-6 text-center">
+                          <div className="p-4 rounded-full bg-gradient-secondary mx-auto mb-4 w-fit">
+                            <CheckCircle className="w-8 h-8 text-secondary-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Reschedule</h3>
+                          <p className="text-sm text-muted-foreground">Change appointment dates</p>
+                        </CardContent>
+                      </Card>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
@@ -229,10 +351,15 @@ const ReceptionistDashboard = () => {
                   {/* Cancel Appointment */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-3 h-24 flex-col bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                        <X className="h-8 w-8" />
-                        <span className="text-base font-semibold">Cancel Appointment</span>
-                      </Button>
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-destructive/5 to-accent/5 border-destructive/20 cursor-pointer">
+                        <CardContent className="p-6 text-center">
+                          <div className="p-4 rounded-full bg-destructive mx-auto mb-4 w-fit">
+                            <X className="w-8 h-8 text-destructive-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Cancel</h3>
+                          <p className="text-sm text-muted-foreground">Cancel existing appointments</p>
+                        </CardContent>
+                      </Card>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
@@ -279,23 +406,29 @@ const ReceptionistDashboard = () => {
             </Card>
 
             {/* Patient Management Section */}
-            <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
-                  <Users className="h-6 w-6" />
+            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <div className="p-3 rounded-full bg-gradient-secondary">
+                    <Users className="w-6 h-6 text-secondary-foreground" />
+                  </div>
                   Patient Management
                 </CardTitle>
-                <CardDescription>Register new patients and manage patient information</CardDescription>
+                <p className="text-muted-foreground ml-12">Register new patients and manage patient information</p>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <div className="flex justify-center">
-                  {/* Register Patient */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-24 flex-col px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                        <UserPlus className="h-8 w-8" />
-                        <span className="text-base font-semibold">Register Patient</span>
-                      </Button>
+                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-success/5 to-accent/5 border-success/20 cursor-pointer">
+                        <CardContent className="p-8 text-center">
+                          <div className="p-4 rounded-full bg-success mx-auto mb-4 w-fit">
+                            <UserPlus className="w-10 h-10 text-success-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-xl mb-2">Register Patient</h3>
+                          <p className="text-sm text-muted-foreground">Add new patients to the system</p>
+                        </CardContent>
+                      </Card>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
@@ -798,8 +931,61 @@ const ReceptionistDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </div>
+
+    {/* Mobile Bottom Navigation */}
+    {isMobile && (
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
+        <div className="grid grid-cols-4 gap-1 p-2">
+          <button
+            onClick={() => setActiveTab('appointments')}
+            className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+              activeTab === 'appointments' 
+                ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                : 'hover:bg-muted/50'
+            }`}
+          >
+            <CalendarDays className="w-5 h-5" />
+            <span className="text-xs font-medium">Appointments</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('doctors')}
+            className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+              activeTab === 'doctors' 
+                ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                : 'hover:bg-muted/50'
+            }`}
+          >
+            <Stethoscope className="w-5 h-5" />
+            <span className="text-xs font-medium">Doctors</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('insurance')}
+            className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+              activeTab === 'insurance' 
+                ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                : 'hover:bg-muted/50'
+            }`}
+          >
+            <Shield className="w-5 h-5" />
+            <span className="text-xs font-medium">Insurance</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('billing')}
+            className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
+              activeTab === 'billing' 
+                ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                : 'hover:bg-muted/50'
+            }`}
+          >
+            <CreditCard className="w-5 h-5" />
+            <span className="text-xs font-medium">Billing</span>
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
   );
 };
 
