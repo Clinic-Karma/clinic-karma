@@ -230,10 +230,11 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
                       date > new Date() || date < new Date("1900-01-01")
                     }
                     initialFocus
-                    className="pointer-events-auto"
+                    className={cn("p-3 pointer-events-auto")}
                     captionLayout="dropdown-buttons"
                     fromYear={1900}
                     toYear={new Date().getFullYear()}
+                    showOutsideDays={false}
                   />
                 </PopoverContent>
               </Popover>
