@@ -19,7 +19,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +38,9 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
     gender: '',
     address: ''
   });
-  const [dateOfBirth, setDateOfBirth] = useState<Date>();
+  const [dateOfBirth, setDateOfBirth] = useState<Date>(new Date());
+  const [datePickerView, setDatePickerView] = useState<'month' | 'year' | 'date'>('month');
+  const [tempDate, setTempDate] = useState<Date>(new Date());
   const { toast } = useToast();
 
   // Clear form when modal opens
@@ -124,8 +126,139 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
       gender: '',
       address: ''
     });
-    setDateOfBirth(undefined);
+    setDateOfBirth(new Date());
+    setDatePickerView('month');
+    setTempDate(new Date());
   };
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
+
+  const handleMonthSelect = (monthIndex: number) => {
+    const newDate = new Date(tempDate);
+    newDate.setMonth(monthIndex);
+    setTempDate(newDate);
+    setDatePickerView('year');
+  };
+
+  const handleYearSelect = (year: number) => {
+    const newDate = new Date(tempDate);
+    newDate.setFullYear(year);
+    setTempDate(newDate);
+    setDatePickerView('date');
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setDateOfBirth(date);
+      setDatePickerView('month');
+    }
+  };
+
+  const renderMonthGrid = () => (
+    <div className="p-4 w-80">
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const newDate = new Date(tempDate);
+            newDate.setFullYear(tempDate.getFullYear() - 1);
+            setTempDate(newDate);
+          }}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <h3 className="font-semibold text-lg">{tempDate.getFullYear()}</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const newDate = new Date(tempDate);
+            newDate.setFullYear(tempDate.getFullYear() + 1);
+            setTempDate(newDate);
+          }}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {months.map((month, index) => (
+          <Button
+            key={month}
+            variant={tempDate.getMonth() === index ? "default" : "outline"}
+            className="h-12 text-sm"
+            onClick={() => handleMonthSelect(index)}
+          >
+            {month.substring(0, 3)}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderYearGrid = () => (
+    <div className="p-4 w-80 max-h-96 overflow-y-auto">
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDatePickerView('month')}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <h3 className="font-semibold text-lg">Select Year</h3>
+        <div className="w-8" />
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {years.map((year) => (
+          <Button
+            key={year}
+            variant={tempDate.getFullYear() === year ? "default" : "outline"}
+            className="h-12 text-sm"
+            onClick={() => handleYearSelect(year)}
+          >
+            {year}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderDateGrid = () => (
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDatePickerView('year')}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <h3 className="font-semibold text-lg">
+          {months[tempDate.getMonth()]} {tempDate.getFullYear()}
+        </h3>
+        <div className="w-8" />
+      </div>
+      <Calendar
+        mode="single"
+        selected={dateOfBirth}
+        onSelect={handleDateSelect}
+        month={tempDate}
+        onMonthChange={setTempDate}
+        disabled={(date) =>
+          date > new Date() || date < new Date("1900-01-01")
+        }
+        className={cn("pointer-events-auto")}
+        showOutsideDays={false}
+      />
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={(open) => {
@@ -222,20 +355,9 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateOfBirth}
-                    onSelect={setDateOfBirth}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                    captionLayout="buttons"
-                    fromYear={1900}
-                    toYear={new Date().getFullYear()}
-                    showOutsideDays={false}
-                  />
+                  {datePickerView === 'month' && renderMonthGrid()}
+                  {datePickerView === 'year' && renderYearGrid()}
+                  {datePickerView === 'date' && renderDateGrid()}
                 </PopoverContent>
               </Popover>
             </div>
