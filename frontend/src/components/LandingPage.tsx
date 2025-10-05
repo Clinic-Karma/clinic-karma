@@ -3,19 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, FileText, CreditCard, History, Users, TrendingUp, Star, MapPin, Phone, Mail, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
-import AuthModal from './AuthModal';
 import SignUpModal from './SignUpModal';
-import PatientLoginModal from './PatientLoginModal';
+import LoginModal from './LoginModal';
 import AboutUsModal from './AboutUsModal';
 import BranchDetailsModal from './BranchDetailsModal';
 import heroImage from '@/assets/medical-hero.jpg';
 import doctor1 from '@/assets/doctor-1.jpg';
 import doctor2 from '@/assets/doctor-2.jpg';
 import doctor3 from '@/assets/doctor-3.jpg';
+
 const LandingPage = () => {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
-  const [isPatientLoginOpen, setIsPatientLoginOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
   const [isBranchDetailsOpen, setIsBranchDetailsOpen] = useState(false);
   const [expandedBenefit, setExpandedBenefit] = useState<number | null>(null);
@@ -135,11 +134,8 @@ const LandingPage = () => {
             <Button onClick={() => setIsSignUpModalOpen(true)} variant="outline" className="shadow-button">
               Sign Up
             </Button>
-            <Button onClick={() => setIsAuthModalOpen(true)} variant="outline" className="shadow-button">
-              Admin Portal
-            </Button>
-            <Button onClick={() => setIsPatientLoginOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
-              Patient Login
+            <Button onClick={() => setIsLoginOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
+             Login
             </Button>
           </div>
           {/* Mobile Menu */}
@@ -147,11 +143,8 @@ const LandingPage = () => {
             <Button onClick={() => setIsSignUpModalOpen(true)} size="sm" variant="outline" className="shadow-button text-xs px-2">
               Sign Up
             </Button>
-            <Button onClick={() => setIsAuthModalOpen(true)} size="sm" variant="outline" className="shadow-button text-xs px-2">
-              Admin Portal
-            </Button>
-            <Button onClick={() => setIsPatientLoginOpen(true)} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button text-xs px-2">
-              Patient Login
+            <Button onClick={() => setIsLoginOpen(true)} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button text-xs px-2">
+             Login
             </Button>
           </div>
         </div>
@@ -399,9 +392,8 @@ const LandingPage = () => {
       </footer>
 
       {/* Modals */}
-      <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
-      <SignUpModal open={isSignUpModalOpen} onOpenChange={setIsSignUpModalOpen} />
-      <PatientLoginModal open={isPatientLoginOpen} onOpenChange={setIsPatientLoginOpen} />
+      <SignUpModal open={isSignUpModalOpen} onOpenChange={setIsSignUpModalOpen} onOpenLogin={() => setIsLoginOpen(true)}/>
+      <LoginModal open={isLoginOpen} onOpenChange={setIsLoginOpen} />
       <AboutUsModal open={isAboutUsOpen} onOpenChange={setIsAboutUsOpen} />
       <BranchDetailsModal open={isBranchDetailsOpen} onOpenChange={setIsBranchDetailsOpen} />
     </div>;

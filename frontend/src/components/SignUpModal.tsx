@@ -18,80 +18,103 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import axios from "axios";
 
 interface SignUpModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onOpenLogin: () => void;
 }
 
-const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    nic: '',
-    contactNumber: '',
-    email: '',
-    gender: '',
-    address: ''
-  });
-  
-  // Initialize with today's date
-  const today = new Date();
-  const [dateOfBirth, setDateOfBirth] = useState({
-    month: (today.getMonth() + 1).toString(),
-    day: today.getDate().toString(),
-    year: today.getFullYear().toString()
-  });
-  
-  const { toast } = useToast();
+const SignUpModal = ({ open, onOpenChange, onOpenLogin }: SignUpModalProps) => {
+    const [formData, setFormData] = useState({
+      fullName: '',
+      nic: '',
+      contactNumber: '',
+      username: '',
+      gender: '',
+      address: '',
+      password: '',
+      role: '',
+      emmergencyContact: ''
+    });
+    
+    // Initialize with today's date
+    const today = new Date();
+    const [dateOfBirth, setDateOfBirth] = useState({
+      month: (today.getMonth() + 1).toString(),
+      day: today.getDate().toString(),
+      year: today.getFullYear().toString()
+    });
+    
+    const { toast } = useToast();
 
-  // Generate arrays for dropdowns
-  const months = [
-    { value: '1', label: 'January' },
-    { value: '2', label: 'February' },
-    { value: '3', label: 'March' },
-    { value: '4', label: 'April' },
-    { value: '5', label: 'May' },
-    { value: '6', label: 'June' },
-    { value: '7', label: 'July' },
-    { value: '8', label: 'August' },
-    { value: '9', label: 'September' },
-    { value: '10', label: 'October' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'December' }
-  ];
+    // Generate arrays for dropdowns
+    const months = [
+      { value: '1', label: 'January' },
+      { value: '2', label: 'February' },
+      { value: '3', label: 'March' },
+      { value: '4', label: 'April' },
+      { value: '5', label: 'May' },
+      { value: '6', label: 'June' },
+      { value: '7', label: 'July' },
+      { value: '8', label: 'August' },
+      { value: '9', label: 'September' },
+      { value: '10', label: 'October' },
+      { value: '11', label: 'November' },
+      { value: '12', label: 'December' }
+    ];
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => currentYear - i);
-  
-  const getDaysInMonth = (month: number, year: number) => {
-    return new Date(year, month, 0).getDate();
-  };
-  
-  const daysInMonth = getDaysInMonth(parseInt(dateOfBirth.month), parseInt(dateOfBirth.year));
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => currentYear - i);
+    
+    const getDaysInMonth = (month: number, year: number) => {
+      return new Date(year, month, 0).getDate();
+    };
+    
+    const daysInMonth = getDaysInMonth(parseInt(dateOfBirth.month), parseInt(dateOfBirth.year));
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // Clear form when modal opens
-  useEffect(() => {
-    if (open) {
-      resetForm();
-    }
-  }, [open]);
+    // Clear form when modal opens
+    useEffect(() => {
+      if (open) {
+        resetForm();
+      }
+    }, [open]);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+    const handleInputChange = (field: string, value: string) => {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
 
-  const validateNIC = (nic: string) => {
-    // Basic NIC validation - can be enhanced based on country requirements
-    const nicRegex = /^[0-9]{9}[vVxX]$|^[0-9]{12}$/;
-    return nicRegex.test(nic.replace(/\s/g, ''));
-  };
+    const validateNIC = (nic: string) => {
+      // Basic NIC validation - can be enhanced based on country requirements
+      const nicRegex = /^[0-9]{9}[vVxX]$|^[0-9]{12}$/;
+      return nicRegex.test(nic.replace(/\s/g, ''));
+    };
 
-  const handleSignUp = () => {
-    if (!formData.fullName || !formData.nic || !formData.contactNumber || !formData.email || !formData.gender || !dateOfBirth.month || !dateOfBirth.day || !dateOfBirth.year) {
+    function checkPasswordStrength(password) {
+      const minLength = /.{8,}/;                // at least 8 characters
+      const upper = /[A-Z]/;                   // at least one uppercase
+      const lower = /[a-z]/;                   // at least one lowercase
+      const number = /[0-9]/;                  // at least one number
+      const special = /[!@#$%^&*(),.?":{}|<>]/; // at least one special char
+
+      let score = 0;
+      if (minLength.test(password)) score++;
+      if (upper.test(password)) score++;
+      if (lower.test(password)) score++;
+      if (number.test(password)) score++;
+      if (special.test(password)) score++;
+
+      return score;
+  }
+
+
+  const handleSignUp = async () => {
+    if (!formData.fullName || !formData.nic || !formData.contactNumber || !formData.username || !formData.gender || !dateOfBirth.month || !dateOfBirth.day || !dateOfBirth.year || !formData.password) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -110,19 +133,8 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
       return;
     }
 
-    // Email validation (required field)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Phone validation
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const phoneRegex = /^(?:\+94|0)\d{9}$/;
     if (!phoneRegex.test(formData.contactNumber.replace(/\s/g, ''))) {
       toast({
         title: "Invalid Phone Number",
@@ -132,27 +144,65 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
       return;
     }
 
-    // Simulate successful registration
-    toast({
-      title: "Registration Successful!",
-      description: `Welcome ${formData.fullName}! Your account has been created successfully.`,
-    });
+    //Check Password strength
+    const strength = checkPasswordStrength(formData.password);
+    if (strength < 3) {
+      toast({
+        title: "Password is not strong enough!",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    setTimeout(() => {
-      onOpenChange(false);
-      resetForm();
-    }, 2000);
+    // Prepare payload for Neon backend
+    const payload = {
+      name: formData.fullName,
+      username: formData.username, // You can split first/last name if needed
+      nic: formData.nic,
+      contact_number: formData.contactNumber,
+      address: formData.address,
+      password: formData.password,
+      dob: `${dateOfBirth.year}-${dateOfBirth.month.padStart(2, '0')}-${dateOfBirth.day.padStart(2, '0')}`,
+      emergencyContact: formData.emmergencyContact,
+      gender: formData.gender
+    };
+
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/register-patient", payload);
+      toast({
+        title: "Registration Successful!",
+        description: `Welcome ${formData.username}! Your account has been created successfully.`,
+      });
+      setTimeout(() => {
+        onOpenChange(false);
+        resetForm();
+      }, 2000);
+
+    } catch (err) {
+      console.log(err);
+      toast({
+        title: "Registration Failed!",
+        description: err.response?.data?.error || err.response?.data?.message || err.message,
+        variant: "destructive"
+      });
+    }
+
   };
+
 
   const resetForm = () => {
     setFormData({
       fullName: '',
       nic: '',
       contactNumber: '',
-      email: '',
+      username: '',
       gender: '',
-      address: ''
+      address: '',
+      password: '',
+      role: '',
+      emmergencyContact: ''
     });
+
     const today = new Date();
     setDateOfBirth({
       month: (today.getMonth() + 1).toString(),
@@ -201,6 +251,30 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                type="username"
+                value={formData.username}
+                onChange={(e) => handleInputChange('username', e.target.value)}
+                placeholder="username"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="password">Password *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="password"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="contactNumber">Contact Number *</Label>
               <Input
                 id="contactNumber"
@@ -212,13 +286,12 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
             </div>
 
             <div>
-              <Label htmlFor="email">Email Address *</Label>
+              <Label htmlFor="emmergencyContact">Emmergency Contact Number</Label>
               <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="your.email@example.com"
+                id="emmergencyContact"
+                value={formData.emmergencyContact}
+                onChange={(e) => handleInputChange('emmergencyContact', e.target.value)}
+                placeholder="+1 (555) 123-4567"
                 className="mt-1"
               />
             </div>
@@ -342,7 +415,7 @@ const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
               className="text-primary hover:text-primary-dark font-medium"
               onClick={() => {
                 onOpenChange(false);
-                // You could emit an event or use a callback to open auth modal
+                onOpenLogin();
               }}
             >
               Sign in here

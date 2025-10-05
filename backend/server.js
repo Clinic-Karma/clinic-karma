@@ -1,11 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-
+import cookieParser from 'cookie-parser';
 import { router } from "./src/routes/authRouter.js"
 
 
 const app = express();
+
+// Middleware
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+}));
+app.use(cookieParser());
+app.use(bodyParser.json());
+
 const PORT = process.env.PORT || 3000;
 
 // Middleware

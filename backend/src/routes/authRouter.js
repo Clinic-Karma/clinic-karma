@@ -1,9 +1,13 @@
 import { Router } from "express";
-import { registerPatient, login } from "../controllers/authController.js";
+import { registerPatient, login, refreshAccessToken, logout } from "../controllers/authController.js";
+import { loginLimiter, refreshLimiter } from "../middlewares/rateLimiters.js";
 
 export const router = Router();
 
+
 router.post("/register-patient", registerPatient);
-router.post("/login", login);
+router.post("/login", loginLimiter, login);
+router.post("/refresh", refreshLimiter, refreshAccessToken);
+router.post("/logout", logout);
 
 export default router;

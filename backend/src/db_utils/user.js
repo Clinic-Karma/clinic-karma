@@ -1,4 +1,11 @@
 import { sql } from "./db.js"
+import crypto from 'crypto';
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+
 
 export async function checkUser(username) {
     try {
@@ -14,15 +21,48 @@ export async function checkUser(username) {
     }
 }
 
-export async function storeRefreshToken(user_id, refreshToken) {
+export async function storeRefreshToken(user_id, refreshToken, jti) {
     try {
-        // Store refresh token in DB
+        const hashedToken = hashToken(refreshToken);
+
         await sql`
-            INSERT INTO refresh_tokens (user_id, token, expires_at)
-            VALUES (${user_id}, ${refreshToken}, NOW() + interval '30 days')
+            INSERT INTO refresh_tokens (user_id, token, jti, expires_at, revoked)
+            VALUES (${user_id}, ${hashedToken}, ${jti}, NOW() + interval '30 days', false)
         `;
     }
         catch (err) {
+        console.log(err);
+        throw err;
+    }
+}
+
+export async function checkRefreshToken(refreshToken) {
+    try {
+        const hashedToken = hashToken(refreshToken);
+        const result = await sql`SELECT * FROM refresh_tokens WHERE token = ${hashedToken}`;
+        return result;
+    }
+    catch (err) {
+        console.log(err);
+        throw err;
+    }
+}
+
+export async function deleteRefreshToken(jti) {
+    try {
+        await sql`DELETE FROM refresh_tokens WHERE jti = ${jti}`;
+    }
+    catch (err) {
+        console.log(err);
+        throw err;
+    }
+}
+
+export async function deleteAllRefreshTokensForUser(user_id) {
+    try {
+        await sql`DELETE FROM refresh_tokens WHERE user_id = ${user_id}`;
+    }
+    catch (err) {
         console.log(err);
         throw err;
     }
