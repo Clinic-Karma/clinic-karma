@@ -1,8 +1,8 @@
-import { checkUser } from "../db_utils/db.js";
 import { addPatient } from "../db_utils/patient.js";
 import { validationResult } from 'express-validator';
 import { checkUser, storeRefreshToken } from "../db_utils/user.js";
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from "../utils/token.js";
+
 
 export async function registerPatient(req, res) {
     const errors = validationResult(req);

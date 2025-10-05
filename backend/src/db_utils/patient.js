@@ -1,4 +1,4 @@
-import sql from './db.js';
+import { sql } from './db.js';
 import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;
