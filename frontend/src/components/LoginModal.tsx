@@ -65,16 +65,16 @@ const LoginModal = ({ open, onOpenChange }: LoginModalProps) => {
             window.location.href = "/doctor-dashboard";
             break;
           case "lab-assistant":
-            window.location.href = "/lab-dashboard";
+            window.location.href = "/lab-coordinator";
             break;
           case "receptionist":
-            window.location.href = "/reception-dashboard";
+            window.location.href = "/receptionist";
             break;
           case "branch-manager":
-            window.location.href = "/manager-dashboard";
+            window.location.href = "/branch-manager";
             break;
-          case "admin":
-            window.location.href = "/admin-dashboard";
+          case "top-manager":
+            window.location.href = "/top-manager";
             break;
           default:
             window.location.href = "/";

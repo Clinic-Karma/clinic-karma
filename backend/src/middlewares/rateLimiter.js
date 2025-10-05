@@ -2,11 +2,10 @@ import rateLimit from "express-rate-limit";
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many login attempts, please try again later." },
-  keyGenerator: (req, _res) => `${req.ip}:${req.body?.username || ""}`,
 });
 
 export const refreshLimiter = rateLimit({
@@ -15,5 +14,4 @@ export const refreshLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many requests, please slow down." },
-  keyGenerator: (req, _res) => req.ip,
 });
