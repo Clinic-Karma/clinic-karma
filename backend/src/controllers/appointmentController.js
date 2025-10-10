@@ -42,14 +42,14 @@ export async function fetchAvailableTimeSlots(req, res) {
 }
 
 export async function storeAppointment(req, res) {
-    const { patientId, doctorId, date, status, startTime, type, branch } = req.body;
+    const { patientId, doctorId, date, status, startTime, type, branch, specializationId } = req.body;
 
-    if (!patientId || !doctorId || !date || !status || !startTime || !type) {
+    if (!patientId || !doctorId || !date || !status || !startTime || !type || !branch || !specializationId) {
         return res.status(400).json({ message: "All appointment details are required" });
     }
 
     try {
-        const appointment = await addAppointment(patientId, doctorId, date, status, startTime, type, branch);
+        const appointment = await addAppointment(patientId, doctorId, date, status, startTime, type, branch, specializationId);
         return res.status(201).json(appointment);
     } catch (error) {
         return res.status(500).json({ message: error.message || "Internal Server Error" });

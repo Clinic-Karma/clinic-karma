@@ -155,7 +155,10 @@ useEffect(() => {
         startTime: bookingData.time,
         status: "Confimed",
         branch: bookingData.branch,
-        type: "doctor"
+        type: "doctor",
+        specializationId: specializations.find(
+          spec => spec.Specialization_Name === bookingData.specialization
+        )?.Specialization_ID
       }
 
       console.log("Booking Payload:", payload);

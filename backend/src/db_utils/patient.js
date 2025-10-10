@@ -47,7 +47,7 @@ export async function getPatientID(userID) {
     }   
 }
 
-export async function addAppointment(patientId, doctorId, date, status, startTime, type, branch) {
+export async function addAppointment(patientId, doctorId, date, status, startTime, type, branch, specializationId) {
     try {
         const [appointmentResult, doctorAppointmentResult] = await sql.transaction((txn) => [
             txn`
@@ -56,7 +56,7 @@ export async function addAppointment(patientId, doctorId, date, status, startTim
                 RETURNING "Appointment_ID";
             `,
             txn`
-                INSERT INTO "Doctor_Appointment" ("Appointment_ID", "Doctor_ID", "Start_Time", "Is_Emergency")
+                INSERT INTO "Doctor_Appointment" ("Appointment_ID", "Doctor_ID", "Start_Time", "Is_Emergency", "Specialization_ID")
                 VALUES (
                     (SELECT "Appointment_ID"
                     FROM "Appointment"
@@ -65,7 +65,8 @@ export async function addAppointment(patientId, doctorId, date, status, startTim
                     LIMIT 1),
                     ${doctorId},
                     ${startTime},
-                    False
+                    False,
+                    ${specializationId}
                 );
             `
         ]);
