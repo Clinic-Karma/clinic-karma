@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
-import { router } from "./src/routes/authRouter.js"
+import { router as authRouter } from "./src/routes/authRouter.js"
+import { router as patientRouter } from "./src/routes/patientRouter.js"
 
 
 const app = express();
@@ -25,7 +26,8 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.use("/api/auth", router);
+app.use("/api/auth", authRouter);
+app.use("/api/patient", patientRouter); // Use the patientRouter
 
 // Start server
 app.listen(PORT, () => {

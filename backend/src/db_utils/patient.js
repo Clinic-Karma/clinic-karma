@@ -32,3 +32,50 @@ export async function addPatient(payLoad) {
         throw error;
     }
 } 
+
+export async function getPatientID(userID) {
+    try {
+        const result = await sql`
+            SELECT patient_id 
+            FROM "Patient" 
+            WHERE user_id    = ${userID};
+        `;
+        return result[0]?.patient_id;
+    } catch (error) {
+        console.error('Error fetching patient ID:', error);
+        throw error;
+    }   
+}
+
+export async function addAppointment(patientId, doctorId, date, status, startTime, type, branch) {
+    try {
+        const [appointmentResult, doctorAppointmentResult] = await sql.transaction((txn) => [
+            txn`
+                INSERT INTO "Appointment" ("Patient_ID", "Appointment_Date", "Status", "Type", "Branch_Name")
+                VALUES (${patientId}, ${date}, ${status}, ${type}, ${branch})
+                RETURNING "Appointment_ID";
+            `,
+            txn`
+                INSERT INTO "Doctor_Appointment" ("Appointment_ID", "Doctor_ID", "Start_Time", "Is_Emergency")
+                VALUES (
+                    (SELECT "Appointment_ID"
+                    FROM "Appointment"
+                    WHERE "Patient_ID" = ${patientId} AND "Appointment_Date" = ${date}
+                    ORDER BY "Appointment_ID" DESC
+                    LIMIT 1),
+                    ${doctorId},
+                    ${startTime},
+                    False
+                );
+            `
+        ]);
+
+        const { appointment_id } = appointmentResult;
+        const { doctor_appointment_id } = doctorAppointmentResult;
+
+        return { appointment_id, doctor_appointment_id };
+    } catch (error) {
+        console.error('Error adding appointment:', error);
+        throw error;
+    }
+}

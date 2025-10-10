@@ -5,8 +5,6 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-
-
 export async function checkUser(username) {
     try {
         const result = await sql`SELECT User_ID, Username, Password_Hash, User_type FROM "User"

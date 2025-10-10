@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,8 +7,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, MapPin, User, Clock, ArrowLeft, CheckCircle, Printer } from 'lucide-react';
 
+import axios from 'axios';
+
 const AppointmentBooking = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [specializations, setSpecializations] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([
+    '9:00 AM', '10:00 AM',
+    '11:00 AM', '1:00 PM', '2:00 PM',
+    '3:00 PM', '4:00 PM'
+  ]);
+
+    // Master time list in 24-hour format
+  const allTimeSlots = [
+    '09:00:00', '10:00:00', '11:00:00',
+    '13:00:00', '14:00:00', '15:00:00', '16:00:00'
+  ];
+
+    // Utility to format times to AM/PM
+  const formatTime = (time: string) => {
+    const [hour] = time.split(':');
+    const h = parseInt(hour);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const formatted = ((h + 11) % 12 + 1) + ':00 ' + suffix;
+    return formatted;
+  };
+
   const [bookingData, setBookingData] = useState({
     branch: '',
     specialization: '',
@@ -20,36 +45,82 @@ const AppointmentBooking = () => {
   });
 
   const branches = [
-    'Colombo branch',
-    'Kandy branch',
-    'Galle branch'
+    'Colombo',
+    'Kandy',
+    'Galle'
   ];
 
-  const specializations = [
-    'Cardiology',
-    'Orthopedic Surgery',
-    'Neurology',
-    'Pediatrics',
-    'Dermatology',
-    'Gynecology'
-  ];
+  //  Fetch specializations on mount
+  useEffect(() => {
+    const fetchSpecializations = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/patient/specializations");
+        setSpecializations(res.data);
+      } catch (error) {
+        console.error("Error fetching specializations:", error);
+        setSpecializations([]);
+      }
+    };
 
-  const doctors = {
-    'Cardiology': ['Dr. Priya Sharma', 'Dr. John Smith'],
-    'Orthopedic Surgery': ['Dr. Marcus Johnson', 'Dr. Sarah Lee'],
-    'Neurology': ['Dr. Carlos Rodriguez', 'Dr. Emily Chen'],
-    'Pediatrics': ['Dr. Sarah Chen', 'Dr. Michael Brown'],
-    'Dermatology': ['Dr. Robert Kim', 'Dr. Lisa Wang'],
-    'Gynecology': ['Dr. Maria Lopez', 'Dr. Jennifer Davis']
+    fetchSpecializations();
+  }, []);
+
+// Fetch doctors when branch & specialization are selected
+useEffect(() => {
+  const fetchDoctors = async () => {
+    try {
+      const branch = bookingData.branch;
+      const specialization_id = specializations.find(
+        spec => spec.Specialization_Name === bookingData.specialization
+      )?.Specialization_ID;
+
+      if (!branch || !specialization_id) return;
+
+      const res = await axios.get(
+        `http://localhost:5000/api/patient/doctors/${specialization_id}/${branch}`
+      );
+      setDoctors(res.data);
+    } catch (error) {
+      console.error("Error fetching doctors:", error);
+      setDoctors([]);
+    }
   };
 
-  const availableTimes = [
-    '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM',
-    '11:00 AM', '11:30 AM', '2:00 PM', '2:30 PM',
-    '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'
-  ];
+  if (currentStep === 1) fetchDoctors();
+}, [currentStep, bookingData.branch, bookingData.specialization]);
 
-  const handleNext = () => {
+
+// Fetch available times when doctor & date are selected
+useEffect(() => {
+  const fetchAvailableTimes = async () => {
+    try {
+      const doctorId = doctors.find(
+        doc => doc.Doctor_Name === bookingData.doctor
+      )?.Doctor_ID;
+      const date = bookingData.date;
+      if (!doctorId || !date) return;
+
+      const res = await axios.get(
+        `http://localhost:5000/api/patient/available-timeslots/${doctorId}/${date}`
+      );
+
+      // Filter out slots with count >= 5
+      const blockedSlots = res.data
+        .filter(slot => slot.BookedCount >= 5)
+        .map(slot => slot.Start_Time);
+
+      const filtered = allTimeSlots.filter(time => !blockedSlots.includes(time));
+      setAvailableTimes(filtered.map(formatTime));
+    } catch (error) {
+      console.error("Error fetching available time slots:", error);
+      setAvailableTimes([]);
+    }
+  };
+
+  if (currentStep === 3) fetchAvailableTimes();
+}, [currentStep, bookingData.doctor, bookingData.date]);
+  
+  const handleNext = async () => {  
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
@@ -61,9 +132,41 @@ const AppointmentBooking = () => {
     }
   };
 
-  const handleConfirmBooking = () => {
-    // Handle booking confirmation
-    setCurrentStep(5);
+  const handleConfirmBooking = async () => {
+    try {
+      const doctorId = doctors.find(
+        doc => doc.Doctor_Name === bookingData.doctor
+      )?.Doctor_ID;
+
+      // Get the string from localStorage
+      const userString = localStorage.getItem('user');
+
+      // Parse it to an object
+      const user = userString ? JSON.parse(userString) : null;
+
+      // Get the patient ID
+      const patientId = user?.pid;
+
+
+      const payload = {
+        patientId: patientId,
+        doctorId: doctorId,
+        date: bookingData.date,
+        startTime: bookingData.time,
+        status: "Confimed",
+        branch: bookingData.branch,
+        type: "doctor"
+      }
+
+      console.log("Booking Payload:", payload);
+
+      const res = await axios.post('http://localhost:5000/api/patient/appointment', payload);
+      console.log(res.data);
+      setCurrentStep(4);
+    }
+    catch (error) {
+      console.error("Error confirming booking:", error);
+    }
   };
 
   const renderStepContent = () => {
@@ -94,7 +197,7 @@ const AppointmentBooking = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {specializations.map((spec) => (
-                      <SelectItem key={spec} value={spec}>{spec}</SelectItem>
+                      <SelectItem key={spec.Specialization_Name} value={spec.Specialization_Name}>{spec.Specialization_Name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -108,11 +211,11 @@ const AppointmentBooking = () => {
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Choose Doctor</h3>
             <div className="grid gap-4">
-              {bookingData.specialization && doctors[bookingData.specialization as keyof typeof doctors]?.map((doctor) => (
+              {bookingData.specialization && doctors.map((doctor) => (
                 <Card 
-                  key={doctor} 
-                  className={`cursor-pointer transition-all ${bookingData.doctor === doctor ? 'ring-2 ring-primary' : 'hover:shadow-lg'}`}
-                  onClick={() => setBookingData({...bookingData, doctor})}
+                  key={doctor.Doctor_ID} 
+                  className={`cursor-pointer transition-all ${bookingData.doctor === doctor.Doctor_Name ? 'ring-2 ring-primary' : 'hover:shadow-lg'}`}
+                  onClick={() => setBookingData({...bookingData, doctor: doctor.Doctor_Name})}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
@@ -120,7 +223,7 @@ const AppointmentBooking = () => {
                         <User className="w-6 h-6 text-primary-foreground" />
                       </div>
                       <div>
-                        <h4 className="font-semibold">{doctor}</h4>
+                        <h4 className="font-semibold">{doctor.Doctor_Name}</h4>
                         <p className="text-sm text-muted-foreground">{bookingData.specialization}</p>
                         <Badge variant="secondary" className="mt-1">Available</Badge>
                       </div>
@@ -128,6 +231,7 @@ const AppointmentBooking = () => {
                   </CardContent>
                 </Card>
               ))}
+
             </div>
           </div>
         );
