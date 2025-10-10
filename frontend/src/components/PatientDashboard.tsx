@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,12 +8,65 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Calendar, FileText, CreditCard, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle, UserCircle, Bell, LogOut, FlaskConical, Activity } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+import axios from "axios";
+
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
   const isMobile = useIsMobile();
+  const [appointments, setAppointments] = useState([]);
+  const [labReports, setLabReports] = useState([]);
+  const [payments, setPayments] = useState([]); 
 
-  const appointments = [{
+        // Get the string from localStorage
+  const userString = localStorage.getItem('user');
+
+      // Parse it to an object
+  const user = userString ? JSON.parse(userString) : null;
+
+      // Get the patient ID
+  const patientId = user?.pid;
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/patient/appointments/" + patientId);
+      setAppointments(response.data);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    }
+  };
+  
+  const fetchLabReports = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/patient/labreports/' + patientId);
+      console.log(response.data);
+      setLabReports(response.data);
+    } catch (error) {
+      console.error("Error fetching lab reports");
+    }
+  }
+
+  const fetchPayments = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/patient/payments/" + patientId);
+      setPayments(response.data);
+    }  
+    catch (error) {
+      console.error("Error while fetching payments");
+    }
+  }
+
+  useEffect(() => {
+  if (patientId) {
+    fetchAppointments();
+    fetchLabReports();
+    fetchPayments();
+
+    console.log(appointments);
+  }
+}, [patientId]);
+
+  const appointsments = [{
     id: 1,
     doctor: 'Dr. Priya Sharma',
     specialization: 'Cardiologist',
@@ -42,7 +95,7 @@ const PatientDashboard = () => {
     payment: 'Refunded - $175'
   }];
 
-  const labReports = [{
+  const labReportsw = [{
     id: 1,
     testName: 'Complete Blood Count',
     date: '2024-09-08',
@@ -62,7 +115,7 @@ const PatientDashboard = () => {
     doctor: 'Dr. Emily Wilson'
   }];
 
-  const payments = [{
+  const paymesnts = [{
     id: 1,
     description: 'Consultation - Dr. Priya Sharma',
     amount: '$150',
@@ -354,25 +407,25 @@ const PatientDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {appointments.map(appointment => (
-                  <div key={appointment.id} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
+                  <div key={appointment.Appointment_ID} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
-                        <h4 className="font-semibold text-lg">{appointment.doctor}</h4>
-                        <p className="text-sm text-muted-foreground">{appointment.specialization}</p>
+                        <h4 className="font-semibold text-lg">{appointment.name}</h4>
+                        <p className="text-sm text-muted-foreground">{appointment.Specialization_Name}</p>
                       </div>
-                      <Badge variant={getStatusColor(appointment.status) as any} className="flex items-center gap-1 px-3 py-1">
-                        {getStatusIcon(appointment.status)}
-                        {appointment.status}
+                      <Badge variant={getStatusColor(appointment.Status) as any} className="flex items-center gap-1 px-3 py-1">
+                        {getStatusIcon(appointment.Status)}
+                        {appointment.Status}
                       </Badge>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
                       <span className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
-                        {appointment.date} at {appointment.time}
+                        {appointment.Appointment_Date.slice(0, 10)} at {appointment.Start_Time.slice(0, 5)}
                       </span>
                       <span className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
-                        {appointment.branch}
+                        {appointment.Branch_Name}
                       </span>
                     </div>
                     <div className="text-sm font-medium text-primary bg-primary/10 p-3 rounded-lg">

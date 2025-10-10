@@ -65,3 +65,17 @@ export async function deleteAllRefreshTokensForUser(user_id) {
         throw err;
     }
 }
+
+export async function getStaffID(userID) {
+    try {
+        const result = await sql`
+            SELECT "Staff_ID" 
+            FROM "Staff"  
+            WHERE "User_ID" = ${userID};
+        `;
+        return result[0]?.Staff_ID  ;
+    } catch (error) {
+        console.error('Error fetching Staff ID:', error);
+        throw error;
+    }   
+}

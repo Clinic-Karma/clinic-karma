@@ -1,6 +1,6 @@
 import { addPatient, getPatientID  } from "../db_utils/patient.js";
 import { validationResult } from 'express-validator';
-import { checkUser, storeRefreshToken, checkRefreshToken, deleteRefreshToken, deleteAllRefreshTokensForUser } from "../db_utils/user.js";
+import { checkUser, storeRefreshToken, checkRefreshToken, deleteRefreshToken, deleteAllRefreshTokensForUser, getStaffID } from "../db_utils/user.js";
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from "../utils/token.js";
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,7 +28,11 @@ export async function login(req, res) {
 
     try {
         const user = await checkUser(username);
-        const patientID = await getPatientID(user.user_id);
+        let ID = "";
+
+        if (user.user_type == "patient") ID = await getPatientID(user.user_id);
+        else ID = await getStaffID(user.user_id);
+
         if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
         const match = await bcrypt.compare(password, user.password_hash);
@@ -56,7 +60,7 @@ export async function login(req, res) {
         });
 
         return res.json({
-        user: { id: user.user_id, pid: patientID, username: user.username, role: user.user_type }
+        user: { id: user.user_id, pid: ID, username: user.username, role: user.user_type }
         });
 
     }

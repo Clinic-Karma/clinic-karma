@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import { router as authRouter } from "./src/routes/authRouter.js"
 import { router as patientRouter } from "./src/routes/patientRouter.js"
-
+import { router as doctorRouter } from "./src/routes/doctorRouter.js"
 
 const app = express();
 
@@ -28,6 +28,7 @@ app.get('/', (req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/patient", patientRouter); // Use the patientRouter
+app.use("/api/doctor", doctorRouter);
 
 // Start server
 app.listen(PORT, () => {
