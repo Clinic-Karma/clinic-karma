@@ -10,6 +10,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
@@ -29,7 +31,7 @@ const PatientDashboard = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/patient/appointments/" + patientId);
+      const response = await axios.get(`${API_BASE_URL}/patient/appointments/${patientId}`);
       setAppointments(response.data);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -38,7 +40,7 @@ const PatientDashboard = () => {
   
   const fetchLabReports = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/patient/labreports/' + patientId);
+      const response = await axios.get(`${API_BASE_URL}/patient/labreports/${patientId}`);
       console.log(response.data);
       setLabReports(response.data);
     } catch (error) {
@@ -48,7 +50,7 @@ const PatientDashboard = () => {
 
   const fetchPayments = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/patient/payments/" + patientId);
+      const response = await axios.get(`${API_BASE_URL}/patient/payments/${patientId}`);
       setPayments(response.data);
     }  
     catch (error) {

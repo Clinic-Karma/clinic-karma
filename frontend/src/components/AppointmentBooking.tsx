@@ -9,6 +9,9 @@ import { Calendar, MapPin, User, Clock, ArrowLeft, CheckCircle, Printer } from '
 
 import axios from 'axios';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
+
 const AppointmentBooking = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [specializations, setSpecializations] = useState([]);
@@ -54,7 +57,7 @@ const AppointmentBooking = () => {
   useEffect(() => {
     const fetchSpecializations = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/patient/specializations");
+        const res = await axios.get(`${BASE_URL}/patient/specializations`);
         setSpecializations(res.data);
       } catch (error) {
         console.error("Error fetching specializations:", error);
@@ -77,7 +80,7 @@ useEffect(() => {
       if (!branch || !specialization_id) return;
 
       const res = await axios.get(
-        `http://localhost:5000/api/patient/doctors/${specialization_id}/${branch}`
+        `${BASE_URL}/patient/doctors/${specialization_id}/${branch}`
       );
       setDoctors(res.data);
     } catch (error) {
@@ -101,7 +104,7 @@ useEffect(() => {
       if (!doctorId || !date) return;
 
       const res = await axios.get(
-        `http://localhost:5000/api/patient/available-timeslots/${doctorId}/${date}`
+        `${BASE_URL}/patient/available-timeslots/${doctorId}/${date}`
       );
 
       // Filter out slots with count >= 5
@@ -163,7 +166,7 @@ useEffect(() => {
 
       console.log("Booking Payload:", payload);
 
-      const res = await axios.post('http://localhost:5000/api/patient/appointment', payload);
+      const res = await axios.post(`${BASE_URL}/patient/appointment`, payload);
       console.log(res.data);
       setCurrentStep(4);
     }

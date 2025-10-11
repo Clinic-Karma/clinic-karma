@@ -31,7 +31,10 @@
   import { useIsMobile } from '@/hooks/use-mobile';
 
   import { useEffect } from 'react';
-  import axios from 'axios';
+import axios from 'axios';
+  
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
 
 
   const DoctorDashboard = () => {
@@ -69,11 +72,11 @@
     const doctorId   = user?.pid;
 
     useEffect(() => {
-      axios.get(`http://localhost:5000/api/doctor/appointments/${doctorId}`)
+      axios.get(`${API_BASE_URL}/doctor/appointments/${doctorId}`)
         .then(res => setAppointments(res.data))
         .catch(err => console.error(err));
 
-      axios.get(`http://localhost:5000/api/doctor/patients/${doctorId}`)
+      axios.get(`${API_BASE_URL}/doctor/patients/${doctorId}`)
         .then(res => setPatients(res.data))
         .catch(err => console.error(err));
     }, []);

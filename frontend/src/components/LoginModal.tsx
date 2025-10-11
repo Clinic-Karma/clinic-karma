@@ -13,6 +13,9 @@ import { UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
+
 interface LoginModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,7 +40,7 @@ const LoginModal = ({ open, onOpenChange }: LoginModalProps) => {
     setLoading(true);
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${API_BASE_URL}auth/login`,
         {
           username,
           password,

@@ -18,7 +18,6 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
 app.use(bodyParser.json());
 
 // Sample route

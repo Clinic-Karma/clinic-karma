@@ -20,6 +20,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
 interface SignUpModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -168,7 +170,7 @@ const SignUpModal = ({ open, onOpenChange, onOpenLogin }: SignUpModalProps) => {
     };
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register-patient", payload);
+      const res = await axios.post(`${API_BASE_URL}/auth/register-patient`, payload);
       toast({
         title: "Registration Successful!",
         description: `Welcome ${formData.username}! Your account has been created successfully.`,
