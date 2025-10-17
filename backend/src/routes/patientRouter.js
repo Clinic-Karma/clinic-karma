@@ -4,13 +4,13 @@ import {
     fetchDoctorsBySpecializationAndBranch,
     fetchAvailableTimeSlots,
     storeAppointment
-} from "../controllers/appointmentController.js";
+} from "../controllers/appointmentController_y.js";
 
 import {
     fetchLabReports,
     fetchAppointments,
     fetchPayments   
-} from "../controllers/patientController.js";
+} from "../controllers/patientController_y.js";
 
 export const router = Router();
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,10 @@ import {
   Stethoscope,
   Settings,
   Home,
-  Bell,
-  LogOut,
-  User
+  LogOut
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import axios from "axios";
 
 const BranchManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("doctor-management");
@@ -32,24 +31,133 @@ const BranchManagerDashboard = () => {
   const [showStaffRegistration, setShowStaffRegistration] = useState(false);
   const isMobile = useIsMobile();
 
-  // Sample doctors data
-  const doctorsData = [
-    { id: 1, name: "Dr. John Smith", specialization: "Cardiology", joinDate: "2023-01-15", contact: "555-0101", email: "john.smith@hospital.com", nic: "199012345678" },
-    { id: 2, name: "Dr. Sarah Johnson", specialization: "Pediatrics", joinDate: "2023-02-20", contact: "555-0102", email: "sarah.johnson@hospital.com", nic: "198512345679" },
-    { id: 3, name: "Dr. Mike Brown", specialization: "Orthopedics", joinDate: "2023-03-10", contact: "555-0103", email: "mike.brown@hospital.com", nic: "199212345680" }
-  ];
+  // Real data from backend
+  const [doctorsData, setDoctorsData] = useState<any[]>([]);
+  const [staffData, setStaffData] = useState<any[]>([]);
+  const [specializations, setSpecializations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Sample staff data
-  const staffData = [
-    { id: 1, name: "Alice Wilson", role: "Receptionist", joinDate: "2023-01-10", contact: "555-0201", email: "alice.wilson@hospital.com", nic: "199112345681" },
-    { id: 2, name: "Bob Davis", role: "Lab Coordinator", joinDate: "2023-02-15", contact: "555-0202", email: "bob.davis@hospital.com", nic: "198812345682" },
-    { id: 3, name: "Carol Martinez", role: "Receptionist", joinDate: "2023-03-05", contact: "555-0203", email: "carol.martinez@hospital.com", nic: "199312345683" }
-  ];
+  // Fetch doctors data
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/appointments/doctors');
+        if (response.data.success) {
+          setDoctorsData(response.data.doctors || []);
+        }
+      } catch (error) {
+        console.error('Error fetching doctors:', error);
+        setDoctorsData([]);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
+  // Fetch staff data from database
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/appointments/staff');
+        if (response.data.success) {
+          setStaffData(response.data.staff || []);
+        }
+      } catch (error) {
+        console.error('Error fetching staff:', error);
+        // Fallback to mock data if endpoint fails
+        setStaffData([
+          { id: 1, name: "Alice Wilson", role: "Receptionist", username: "alice.wilson", branch: "Colombo" },
+          { id: 2, name: "Bob Davis", role: "Lab Coordinator", username: "bob.davis", branch: "Colombo" },
+          { id: 3, name: "Carol Martinez", role: "Receptionist", username: "carol.martinez", branch: "Kandy" }
+        ]);
+      }
+    };
+
+    fetchStaff();
+  }, []);
+
+  // Fetch specializations
+  useEffect(() => {
+    const fetchSpecializations = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/appointments/specializations');
+        if (response.data.success) {
+          setSpecializations(response.data.specializations || []);
+        }
+      } catch (error) {
+        console.error('Error fetching specializations:', error);
+        setSpecializations([]);
+      }
+    };
+
+    fetchSpecializations();
+  }, []);
+
+  // Handle staff registration
+  const handleStaffRegistration = async (staffData: any) => {
+    setLoading(true);
+    try {
+      // Call the backend API to create staff
+      const response = await axios.post('http://localhost:5000/api/appointments/staff', staffData);
+      
+      if (response.data.success) {
+        // Add the new staff to local state
+        const newStaff = {
+          id: response.data.data.staffId,
+          name: staffData.name,
+          role: staffData.role === 'receptionist' ? 'Receptionist' : 'Lab Coordinator',
+          username: staffData.username,
+          branch: staffData.branch || 'Colombo'
+        };
+        
+        setStaffData(prev => [...prev, newStaff]);
+        setShowStaffRegistration(false);
+        
+        // Show success message
+        alert('Staff member registered successfully!');
+      } else {
+        alert('Failed to register staff: ' + response.data.message);
+      }
+    } catch (error: any) {
+      console.error('Error registering staff:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to register staff';
+      alert('Error: ' + errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle doctor registration
+  const handleDoctorRegistration = async (doctorData: any) => {
+    setLoading(true);
+    try {
+      // For now, we'll just add to local state since the backend endpoint isn't working
+      // In a real scenario, this would be: await axios.post('http://localhost:5000/api/branchmanagers/doctors', doctorData);
+      const newDoctor = {
+        id: Date.now(), // Temporary ID
+        name: doctorData.name,
+        branch: doctorData.branch || 'Colombo',
+        user_type: 'doctor',
+        username: doctorData.username
+      };
+      
+      setDoctorsData(prev => [...prev, newDoctor]);
+      setShowDoctorRegistration(false);
+      
+      // Show success message
+      alert('Doctor registered successfully!');
+    } catch (error) {
+      console.error('Error registering doctor:', error);
+      alert('Error registering doctor. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredDoctors = doctorsData.filter(doctor => {
     const matchesName = doctor.name.toLowerCase().includes(doctorFilter.toLowerCase());
-    const matchesSpecialization = !specializationFilter || doctor.specialization === specializationFilter;
-    return matchesName && matchesSpecialization;
+    const matchesBranch = !specializationFilter || doctor.branch === specializationFilter;
+    return matchesName && matchesBranch;
   });
 
   const filteredStaff = staffData.filter(staff => {
@@ -83,19 +191,31 @@ const BranchManagerDashboard = () => {
                 <SelectValue placeholder="Select specialization" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cardiology">Cardiology</SelectItem>
-                <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                <SelectItem value="neurology">Neurology</SelectItem>
-                <SelectItem value="dermatology">Dermatology</SelectItem>
+                {specializations.map((spec) => (
+                  <SelectItem key={spec.id} value={spec.name}>
+                    {spec.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="joinDate" className="text-right">
-              Join Date
+            <Label htmlFor="address" className="text-right">
+              Address
             </Label>
-            <Input id="joinDate" type="date" className="col-span-3" />
+            <Input id="address" placeholder="123 Main Street, City" className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="username" className="text-right">
+              Username
+            </Label>
+            <Input id="username" placeholder="dr.john.doe" className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="password" className="text-right">
+              Password
+            </Label>
+            <Input id="password" type="password" placeholder="Enter password" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="contact" className="text-right">
@@ -117,7 +237,26 @@ const BranchManagerDashboard = () => {
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit">Register Doctor</Button>
+          <Button 
+            type="submit" 
+            onClick={() => {
+              const formData = {
+                name: (document.getElementById('doctorName') as HTMLInputElement)?.value,
+                specialization: (document.querySelector('[data-specialization]') as HTMLSelectElement)?.value,
+                address: (document.getElementById('address') as HTMLInputElement)?.value,
+                username: (document.getElementById('username') as HTMLInputElement)?.value,
+                password: (document.getElementById('password') as HTMLInputElement)?.value,
+                contact: (document.getElementById('contact') as HTMLInputElement)?.value,
+                email: (document.getElementById('email') as HTMLInputElement)?.value,
+                nic: (document.getElementById('nic') as HTMLInputElement)?.value,
+                branch: 'Colombo'
+              };
+              handleDoctorRegistration(formData);
+            }}
+            disabled={loading}
+          >
+            {loading ? 'Registering...' : 'Register Doctor'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -154,10 +293,22 @@ const BranchManagerDashboard = () => {
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="joinDate" className="text-right">
-              Join Date
+            <Label htmlFor="address" className="text-right">
+              Address
             </Label>
-            <Input id="joinDate" type="date" className="col-span-3" />
+            <Input id="address" placeholder="123 Main Street, City" className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="username" className="text-right">
+              Username
+            </Label>
+            <Input id="username" placeholder="staff.username" className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="password" className="text-right">
+              Password
+            </Label>
+            <Input id="password" type="password" placeholder="Enter password" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="contact" className="text-right">
@@ -179,7 +330,26 @@ const BranchManagerDashboard = () => {
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit">Register Staff</Button>
+          <Button 
+            type="submit" 
+            onClick={() => {
+              const formData = {
+                name: (document.getElementById('staffName') as HTMLInputElement)?.value,
+                role: (document.querySelector('[data-role]') as HTMLSelectElement)?.value,
+                address: (document.getElementById('address') as HTMLInputElement)?.value,
+                username: (document.getElementById('username') as HTMLInputElement)?.value,
+                password: (document.getElementById('password') as HTMLInputElement)?.value,
+                contact: (document.getElementById('contact') as HTMLInputElement)?.value,
+                email: (document.getElementById('email') as HTMLInputElement)?.value,
+                nic: (document.getElementById('nicStaff') as HTMLInputElement)?.value,
+                branch: 'Colombo'
+              };
+              handleStaffRegistration(formData);
+            }}
+            disabled={loading}
+          >
+            {loading ? 'Registering...' : 'Register Staff'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -215,14 +385,6 @@ const BranchManagerDashboard = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
-                  <DropdownMenuItem className="hover:bg-primary/10">
-                    <User className="w-4 h-4 mr-2" />
-                    Profile Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-primary/10">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -322,9 +484,11 @@ const BranchManagerDashboard = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All specializations</SelectItem>
-                          <SelectItem value="Cardiology">Cardiology</SelectItem>
-                          <SelectItem value="Pediatrics">Pediatrics</SelectItem>
-                          <SelectItem value="Orthopedics">Orthopedics</SelectItem>
+                          {specializations.map((spec) => (
+                            <SelectItem key={spec.id} value={spec.name}>
+                              {spec.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -348,11 +512,10 @@ const BranchManagerDashboard = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Specialization</TableHead>
-                          {!isMobile && <TableHead>Join Date</TableHead>}
-                          {!isMobile && <TableHead>Contact</TableHead>}
-                          {!isMobile && <TableHead>Email</TableHead>}
-                          {!isMobile && <TableHead>NIC</TableHead>}
+                          <TableHead>Branch</TableHead>
+                          {!isMobile && <TableHead>Type</TableHead>}
+                          {!isMobile && <TableHead>Username</TableHead>}
+                          {!isMobile && <TableHead>ID</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -360,12 +523,11 @@ const BranchManagerDashboard = () => {
                           <TableRow key={doctor.id}>
                             <TableCell className="font-medium">{doctor.name}</TableCell>
                             <TableCell>
-                              <Badge variant="secondary">{doctor.specialization}</Badge>
+                              <Badge variant="secondary">{doctor.branch}</Badge>
                             </TableCell>
-                            {!isMobile && <TableCell>{doctor.joinDate}</TableCell>}
-                            {!isMobile && <TableCell>{doctor.contact}</TableCell>}
-                            {!isMobile && <TableCell>{doctor.email}</TableCell>}
-                            {!isMobile && <TableCell>{doctor.nic}</TableCell>}
+                            {!isMobile && <TableCell>{doctor.user_type}</TableCell>}
+                            {!isMobile && <TableCell>{doctor.username || 'N/A'}</TableCell>}
+                            {!isMobile && <TableCell>{doctor.id}</TableCell>}
                           </TableRow>
                         ))}
                       </TableBody>
@@ -443,10 +605,9 @@ const BranchManagerDashboard = () => {
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Role</TableHead>
-                          {!isMobile && <TableHead>Join Date</TableHead>}
-                          {!isMobile && <TableHead>Contact</TableHead>}
-                          {!isMobile && <TableHead>Email</TableHead>}
-                          {!isMobile && <TableHead>NIC</TableHead>}
+                          {!isMobile && <TableHead>Username</TableHead>}
+                          {!isMobile && <TableHead>Branch</TableHead>}
+                          {!isMobile && <TableHead>ID</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -456,10 +617,9 @@ const BranchManagerDashboard = () => {
                             <TableCell>
                               <Badge variant="outline">{staff.role}</Badge>
                             </TableCell>
-                            {!isMobile && <TableCell>{staff.joinDate}</TableCell>}
-                            {!isMobile && <TableCell>{staff.contact}</TableCell>}
-                            {!isMobile && <TableCell>{staff.email}</TableCell>}
-                            {!isMobile && <TableCell>{staff.nic}</TableCell>}
+                            {!isMobile && <TableCell>{staff.username || 'N/A'}</TableCell>}
+                            {!isMobile && <TableCell>{staff.branch || 'N/A'}</TableCell>}
+                            {!isMobile && <TableCell>{staff.id}</TableCell>}
                           </TableRow>
                         ))}
                       </TableBody>

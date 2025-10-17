@@ -164,10 +164,7 @@ useEffect(() => {
         )?.Specialization_ID
       }
 
-      console.log("Booking Payload:", payload);
-
       const res = await axios.post(`${BASE_URL}/patient/appointment`, payload);
-      console.log(res.data);
       setCurrentStep(4);
     }
     catch (error) {

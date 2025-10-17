@@ -1,3 +1,17 @@
+import { addPatient } from "../db_utils/patient.js";
+// Register new patient
+export async function registerPatient(req, res) {
+    const { name, dob, gender, contact_number, address, nic, emmergency_contact_number, username, password } = req.body;
+    if (!name || !dob || !gender || !contact_number || !address || !nic || !emmergency_contact_number || !username || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+    try {
+        const result = await addPatient({ name, dob, gender, contact_number, address, nic, emmergency_contact_number, username, password });
+        return res.status(201).json(result);
+    } catch (error) {
+        return res.status(500).json({ message: error.message || "Internal Server Error" });
+    }
+}
 import { getAppointmentsByPatient, getLabReportsByPatient, getPaymentsByPatient } from "../db_utils/patient.js";
 
 export async function fetchAppointments(req, res) {

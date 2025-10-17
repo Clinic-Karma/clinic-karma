@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from 'axios';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,9 +18,7 @@ import {
   Database,
   Eye,
   Home,
-  Bell,
-  LogOut,
-  User
+  LogOut
 } from "lucide-react";
 import { 
   LineChart, 
@@ -36,46 +35,88 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const TopManagerDashboard = () => {
-  const [activeTab, setActiveTab] = useState("reports");
-  const [reportsView, setReportsView] = useState("");
+  const [activeTab, setActiveTab] = useState("revenue");
   const isMobile = useIsMobile();
 
-  // Sample data for charts
-  const revenueData = [
-    { name: 'Jan', daily: 4000, monthly: 120000 },
-    { name: 'Feb', daily: 3000, monthly: 90000 },
-    { name: 'Mar', daily: 5000, monthly: 150000 },
-    { name: 'Apr', daily: 4500, monthly: 135000 },
-    { name: 'May', daily: 6000, monthly: 180000 },
-    { name: 'Jun', daily: 5500, monthly: 165000 }
-  ];
+  // Dynamic data from backend
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [insuranceChart, setInsuranceChart] = useState<any[]>([]);
+  const [totalClaims, setTotalClaims] = useState<number>(0);
 
-  const insuranceClaimsData = [
-    { name: 'Approved', value: 65, fill: '#10b981' },
-    { name: 'Pending', value: 25, fill: '#f59e0b' },
-    { name: 'Rejected', value: 10, fill: '#ef4444' }
-  ];
+  const [patientBillsData, setPatientBillsData] = useState<any[]>([]);
+  const [appointmentsData, setAppointmentsData] = useState<any[]>([]);
 
-  // Sample patient data
-  const patientBillsData = [
-    { id: 1, name: "John Doe", amount: "$1,250", status: "Paid", date: "2024-01-15" },
-    { id: 2, name: "Jane Smith", amount: "$850", status: "Pending", date: "2024-01-14" },
-    { id: 3, name: "Mike Johnson", amount: "$2,100", status: "Paid", date: "2024-01-13" },
-    { id: 4, name: "Sarah Wilson", amount: "$675", status: "Overdue", date: "2024-01-12" }
-  ];
+  const [halfPaymentData, setHalfPaymentData] = useState<any[]>([]);
 
-  const appointmentsData = [
-    { id: 1, patient: "John Doe", doctor: "Dr. Smith", date: "2024-01-15", time: "10:00 AM", status: "Completed" },
-    { id: 2, patient: "Jane Smith", doctor: "Dr. Johnson", date: "2024-01-15", time: "2:00 PM", status: "Scheduled" },
-    { id: 3, patient: "Mike Johnson", doctor: "Dr. Brown", date: "2024-01-14", time: "11:30 AM", status: "Completed" },
-    { id: 4, patient: "Sarah Wilson", doctor: "Dr. Davis", date: "2024-01-14", time: "3:15 PM", status: "Cancelled" }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [
+          billsRes,
+          apptsRes,
+          revenueRes,
+          pendingRes,
+          insuranceSummaryRes,
+        ] = await Promise.all([
+          axios.get('http://localhost:5000/api/topmanagers/dashboard/bills'),
+          axios.get('http://localhost:5000/api/topmanagers/dashboard/appointments'),
+          axios.get('http://localhost:5000/api/topmanagers/dashboard/revenue'),
+          axios.get('http://localhost:5000/api/topmanagers/dashboard/pending-payments'),
+          axios.get('http://localhost:5000/api/topmanagers/dashboard/insurance-summary'),
+        ]);
 
-  const halfPaymentData = [
-    { id: 1, patient: "Robert Brown", amount: "$500", remaining: "$500", dueDate: "2024-01-20" },
-    { id: 2, patient: "Lisa Davis", amount: "$300", remaining: "$300", dueDate: "2024-01-22" },
-    { id: 3, patient: "Tom Wilson", amount: "$750", remaining: "$375", dueDate: "2024-01-25" }
-  ];
+        const bills = Array.isArray(billsRes.data?.bills) ? billsRes.data.bills : [];
+        setPatientBillsData(bills.map((b: any) => ({
+          id: b.bill_id,
+          name: b.patient_name,
+          amount: b.total_amount,
+          status: 'Paid',
+          date: b.appointment_date,
+        })));
+
+        const appts = Array.isArray(apptsRes.data?.appointments) ? apptsRes.data.appointments : [];
+        setAppointmentsData(appts.map((a: any) => ({
+          id: a.Appointment_ID || a.id,
+          patient: a.patient_name || a.patient || 'Patient',
+          doctor: a.doctor_name || a.doctor || 'Doctor',
+          date: a.Appointment_Date || a.appointment_date,
+          time: a.Time_Slot || a.time_slot || '',
+          status: a.Status || a.status || 'Scheduled',
+        })));
+
+        const rev = Array.isArray(revenueRes.data?.data) ? revenueRes.data.data : [];
+        setRevenueData(rev.map((r: any) => ({
+          name: r.month_short,
+          daily: Number(r.monthly_total) || 0,
+          monthly: Number(r.monthly_total) || 0,
+        })));
+
+        const pending = Array.isArray(pendingRes.data?.data) ? pendingRes.data.data : [];
+        setHalfPaymentData(pending.map((p: any, idx: number) => ({
+          id: idx + 1,
+          patient: p.patient,
+          amount: p.amount,
+          remaining: p.remaining,
+          dueDate: p.due_date,
+        })));
+
+        const summary = insuranceSummaryRes.data;
+        if (summary?.success) {
+          setTotalClaims(Number(summary.totalClaims) || 0);
+          const chart = Array.isArray(summary.chart) ? summary.chart : [];
+          // Apply fills to match existing colors
+          const fillMap: any = { Approved: '#10b981', Pending: '#f59e0b', Rejected: '#ef4444' };
+          setInsuranceChart(chart.map((c: any) => ({ ...c, fill: fillMap[c.name] || '#8884d8' })));
+        } else {
+          setTotalClaims(0);
+          setInsuranceChart([]);
+        }
+      } catch (e) {
+        console.error('Failed to load reports data', e);
+      }
+    };
+    fetchData();
+  }, []);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -134,14 +175,6 @@ const TopManagerDashboard = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
-                  <DropdownMenuItem className="hover:bg-primary/10">
-                    <User className="w-4 h-4 mr-2" />
-                    Profile Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-primary/10">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -165,17 +198,17 @@ const TopManagerDashboard = () => {
               </div>
               <nav className="space-y-3">
                 <button
-                  onClick={() => setActiveTab('reports')}
+                  onClick={() => setActiveTab('revenue')}
                   className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'reports' 
+                    activeTab === 'revenue' 
                       ? 'bg-gradient-primary text-primary-foreground shadow-button' 
                       : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
                   }`}
                 >
-                  <div className={`p-2 rounded-lg ${activeTab === 'reports' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <BarChart3 className="w-5 h-5" />
+                  <div className={`p-2 rounded-lg ${activeTab === 'revenue' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                    <TrendingUp className="w-5 h-5" />
                   </div>
-                  <span className="font-medium">System Reports</span>
+                  <span className="font-medium">Revenue & Billing</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('insurance')}
@@ -190,19 +223,7 @@ const TopManagerDashboard = () => {
                   </div>
                   <span className="font-medium">Insurance</span>
                 </button>
-                <button
-                  onClick={() => setActiveTab('security')}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'security' 
-                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === 'security' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <Shield className="w-5 h-5" />
-                  </div>
-                  <span className="font-medium">Security</span>
-                </button>
+                
               </nav>
             </div>
           </aside>
@@ -211,148 +232,8 @@ const TopManagerDashboard = () => {
         {/* Main Content */}
         <main className={`flex-1 ${isMobile ? 'p-4' : 'p-8'} bg-gradient-to-br from-background to-muted/20`}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-
-            <TabsContent value="reports" className="space-y-8">
-              {!reportsView ? (
-                <div className="space-y-8">
-                  <div>
-                    <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">System Wide Reports</h2>
-                    <p className="text-muted-foreground mb-8">Comprehensive overview of hospital operations</p>
-                  </div>
-                  <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
-                    <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20" onClick={() => setReportsView("patients")}>
-                      <CardHeader className="pb-6">
-                        <CardTitle className="flex items-center gap-3">
-                          <div className="p-3 rounded-full bg-gradient-primary">
-                            <Users className="w-6 h-6 text-primary-foreground" />
-                          </div>
-                          Total Patients
-                        </CardTitle>
-                        <CardDescription>View patient bills and appointments</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-primary mb-2">1,247</div>
-                        <p className="text-sm text-muted-foreground">Active patients</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-success/5 to-accent/5 border-success/20" onClick={() => setReportsView("revenue")}>
-                      <CardHeader className="pb-6">
-                        <CardTitle className="flex items-center gap-3">
-                          <div className="p-3 rounded-full bg-success">
-                            <TrendingUp className="w-6 h-6 text-success-foreground" />
-                          </div>
-                          Revenue & Billing
-                        </CardTitle>
-                        <CardDescription>Income trends and pending payments</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-primary mb-2">$124K</div>
-                        <p className="text-sm text-muted-foreground">Monthly revenue</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20" onClick={() => setReportsView("insurance")}>
-                      <CardHeader className="pb-6">
-                        <CardTitle className="flex items-center gap-3">
-                          <div className="p-3 rounded-full bg-gradient-secondary">
-                            <BarChart3 className="w-6 h-6 text-secondary-foreground" />
-                          </div>
-                          Insurance Claims
-                        </CardTitle>
-                        <CardDescription>Claims summaries and analytics</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-primary mb-2">856</div>
-                        <p className="text-sm text-muted-foreground">Total claims</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              ) : (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <Button variant="outline" onClick={() => setReportsView("")}>
-                    ← Back to Reports
-                  </Button>
-                </div>
-
-                {reportsView === "patients" && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl font-semibold">Patient Bills & Appointments</h2>
-                    
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Patient Bills</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Patient Name</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Date</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {patientBillsData.map((bill) => (
-                              <TableRow key={bill.id}>
-                                <TableCell>{bill.name}</TableCell>
-                                <TableCell>{bill.amount}</TableCell>
-                                <TableCell>
-                                  <Badge variant={bill.status === "Paid" ? "default" : bill.status === "Pending" ? "secondary" : "destructive"}>
-                                    {bill.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{bill.date}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Recent Appointments</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Patient</TableHead>
-                              <TableHead>Doctor</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Time</TableHead>
-                              <TableHead>Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {appointmentsData.map((appointment) => (
-                              <TableRow key={appointment.id}>
-                                <TableCell>{appointment.patient}</TableCell>
-                                <TableCell>{appointment.doctor}</TableCell>
-                                <TableCell>{appointment.date}</TableCell>
-                                <TableCell>{appointment.time}</TableCell>
-                                <TableCell>
-                                  <Badge variant={appointment.status === "Completed" ? "default" : appointment.status === "Scheduled" ? "secondary" : "destructive"}>
-                                    {appointment.status}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-
-                {reportsView === "revenue" && (
-                  <div className="space-y-6">
+            <TabsContent value="revenue" className="space-y-6">
                     <h2 className="text-2xl font-semibold">Revenue & Billing Analytics</h2>
-                    
                     <Card>
                       <CardHeader>
                         <CardTitle>Income Trends</CardTitle>
@@ -371,7 +252,6 @@ const TopManagerDashboard = () => {
                         </ResponsiveContainer>
                       </CardContent>
                     </Card>
-
                     <Card>
                       <CardHeader>
                         <CardTitle>Pending Payments (Half Payments)</CardTitle>
@@ -399,12 +279,31 @@ const TopManagerDashboard = () => {
                         </Table>
                       </CardContent>
                     </Card>
-                  </div>
-                )}
+          </TabsContent>
 
-                {reportsView === "insurance" && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl font-semibold">Insurance Claims Summary</h2>
+            <TabsContent value="insurance" className="space-y-8">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Insurance Management</h2>
+                <p className="text-muted-foreground mb-8">Manage insurance providers and oversee claims</p>
+                  </div>
+              
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+                <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3">
+                      <div className="p-3 rounded-full bg-gradient-secondary">
+                        <BarChart3 className="w-6 h-6 text-secondary-foreground" />
+                      </div>
+                      Insurance Claims
+                    </CardTitle>
+                    <CardDescription>Claims summaries and analytics</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-primary mb-2">{totalClaims}</div>
+                    <p className="text-sm text-muted-foreground">Total claims</p>
+                  </CardContent>
+                </Card>
+              </div>
                     
                     <Card>
                       <CardHeader>
@@ -415,13 +314,13 @@ const TopManagerDashboard = () => {
                         <ResponsiveContainer width="100%" height={300}>
                           <PieChart>
                             <Pie
-                              data={insuranceClaimsData}
+                        data={insuranceChart}
                               cx="50%"
                               cy="50%"
                               outerRadius={80}
                               dataKey="value"
                             >
-                              {insuranceClaimsData.map((entry, index) => (
+                        {insuranceChart.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                               ))}
                             </Pie>
@@ -429,7 +328,7 @@ const TopManagerDashboard = () => {
                           </PieChart>
                         </ResponsiveContainer>
                         <div className="flex justify-center gap-6 mt-4">
-                          {insuranceClaimsData.map((item) => (
+                    {insuranceChart.map((item) => (
                             <div key={item.name} className="flex items-center gap-2">
                               <div className="w-4 h-4 rounded" style={{ backgroundColor: item.fill }}></div>
                               <span className="text-sm">{item.name}: {item.value}%</span>
@@ -438,17 +337,8 @@ const TopManagerDashboard = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  </div>
-                )}
-              </div>
-            )}
-          </TabsContent>
 
-            <TabsContent value="insurance" className="space-y-8">
-              <div>
-                <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Insurance Management</h2>
-                <p className="text-muted-foreground mb-8">Manage insurance providers and oversee claims</p>
-              </div>
+              
               
               <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'grid-cols-1 md:grid-cols-2 gap-6'}`}>
                 <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 cursor-pointer">
@@ -468,79 +358,11 @@ const TopManagerDashboard = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20 cursor-pointer">
-                  <CardHeader className="pb-6">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="p-3 rounded-full bg-gradient-secondary">
-                        <Eye className="w-6 h-6 text-secondary-foreground" />
-                      </div>
-                      Oversee All Claims
-                    </CardTitle>
-                    <CardDescription>Monitor claims handled by staff</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button className="w-full" variant="outline">
-                      View All Claims
-                    </Button>
-                  </CardContent>
-                </Card>
+                
               </div>
             </TabsContent>
 
-            <TabsContent value="security" className="space-y-8">
-              <div>
-                <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Security & Settings</h2>
-                <p className="text-muted-foreground mb-8">System backup and configuration management</p>
-              </div>
-              
-              <div className={`grid ${isMobile ? 'grid-cols-1 gap-6' : 'grid-cols-1 md:grid-cols-2 gap-6'}`}>
-                <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-warning/5 to-accent/5 border-warning/20 cursor-pointer">
-                  <CardHeader className="pb-6">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="p-3 rounded-full bg-warning">
-                        <Database className="w-6 h-6 text-warning-foreground" />
-                      </div>
-                      Backup
-                    </CardTitle>
-                    <CardDescription>System backup and restore options</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span>Last Backup</span>
-                        <Badge variant="secondary">2 hours ago</Badge>
-                      </div>
-                      <Button className="w-full bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105">
-                        Create Backup
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-muted/5 to-accent/5 border-muted/20 cursor-pointer">
-                  <CardHeader className="pb-6">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="p-3 rounded-full bg-muted">
-                        <Settings className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                      Configuration
-                    </CardTitle>
-                    <CardDescription>System configuration and settings</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span>System Status</span>
-                        <Badge variant="default">Online</Badge>
-                      </div>
-                      <Button className="w-full" variant="outline">
-                        Configure System
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+            
 
           </Tabs>
         </main>
@@ -549,17 +371,17 @@ const TopManagerDashboard = () => {
       {/* Mobile Bottom Navigation */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
-          <div className="grid grid-cols-3 gap-1 p-2">
+          <div className="grid grid-cols-2 gap-1 p-2">
             <button
-              onClick={() => setActiveTab('reports')}
+              onClick={() => setActiveTab('revenue')}
               className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
-                activeTab === 'reports' 
+                activeTab === 'revenue' 
                   ? 'bg-gradient-primary text-primary-foreground shadow-button' 
                   : 'hover:bg-muted/50'
               }`}
             >
-              <BarChart3 className="w-5 h-5" />
-              <span className="text-xs font-medium">Reports</span>
+              <TrendingUp className="w-5 h-5" />
+              <span className="text-xs font-medium">Revenue</span>
             </button>
             <button
               onClick={() => setActiveTab('insurance')}
@@ -571,17 +393,6 @@ const TopManagerDashboard = () => {
             >
               <CreditCard className="w-5 h-5" />
               <span className="text-xs font-medium">Insurance</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
-                activeTab === 'security' 
-                  ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                  : 'hover:bg-muted/50'
-              }`}
-            >
-              <Shield className="w-5 h-5" />
-              <span className="text-xs font-medium">Security</span>
             </button>
           </div>
         </div>

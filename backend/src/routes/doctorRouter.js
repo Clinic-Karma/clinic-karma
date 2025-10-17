@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { fetchAppointments, fetchPatients, updateAppointments } from "../controllers/doctorController.js";
+import { fetchAppointments, fetchPatients, updateAppointments } from "../controllers/doctorController_y.js";
 
 export const router = Router();
 

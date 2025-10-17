@@ -7,34 +7,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Upload, FileText, Search, FlaskConical, Activity, FileCheck, Home, Bell, LogOut, User, Users } from "lucide-react";
+import { Upload, FileText, FlaskConical, Activity, FileCheck, Home, Bell, LogOut, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const LabCoordinatorDashboard = () => {
   const [activeTab, setActiveTab] = useState("upload");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [patientSearchOpen, setPatientSearchOpen] = useState(false);
-  const [appointmentSearchOpen, setAppointmentSearchOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [uploadFormData, setUploadFormData] = useState({
+    patientUsername: '',
+    appointmentId: '',
+    treatmentName: '',
+    reportFile: null
+  });
+  const [labReports, setLabReports] = useState<any[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Mock data - in real app this would come from API
-  const mockPatients = [
-    { id: "P001", name: "John Doe", nic: "123456789V" },
-    { id: "P002", name: "Jane Smith", nic: "987654321V" },
-    { id: "P003", name: "Bob Johnson", nic: "456789123V" },
-  ];
-
-  const mockAppointments = [
-    { id: "A001", patientId: "P001", doctorName: "Dr. Wilson", date: "2024-01-15" },
-    { id: "A002", patientId: "P002", doctorName: "Dr. Brown", date: "2024-01-16" },
-    { id: "A003", patientId: "P001", doctorName: "Dr. Davis", date: "2024-01-17" },
-  ];
 
   const treatmentCatalogue = [
     "Blood Test - Complete Blood Count",
@@ -48,29 +38,97 @@ const LabCoordinatorDashboard = () => {
     "Ultrasound"
   ];
 
-  const getCurrentDateTime = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  // Function to fetch lab reports
+  const fetchLabReports = async () => {
+    setIsLoadingReports(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/appointments/lab-reports');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setLabReports(data.data || []);
+      } else {
+        throw new Error(data.message || 'Failed to fetch lab reports');
+      }
+    } catch (error) {
+      console.error('Error fetching lab reports:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to fetch lab reports',
+        variant: "destructive",
+      });
+      setLabReports([]);
+    } finally {
+      setIsLoadingReports(false);
+    }
   };
 
-  const filteredAppointments = selectedPatient 
-    ? mockAppointments.filter(apt => apt.patientId === selectedPatient.id)
-    : [];
+  // Load lab reports when component mounts or when reports tab is accessed
+  React.useEffect(() => {
+    if (activeTab === 'reports') {
+      fetchLabReports();
+    }
+  }, [activeTab]);
 
-  const handleUploadReport = (e: React.FormEvent) => {
+
+  const handleUploadReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Lab Report Uploaded",
-      description: "The lab report has been successfully uploaded.",
-    });
-    setIsUploadDialogOpen(false);
-    setSelectedPatient(null);
-    setSelectedAppointment(null);
+    
+    // Validate required fields
+    if (!uploadFormData.patientUsername || !uploadFormData.appointmentId || !uploadFormData.treatmentName || !uploadFormData.reportFile) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields and select a file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('appointmentId', uploadFormData.appointmentId);
+      formData.append('patientUsername', uploadFormData.patientUsername);
+      formData.append('treatmentName', uploadFormData.treatmentName);
+      formData.append('reportFile', uploadFormData.reportFile);
+
+      const response = await fetch('http://localhost:5000/api/appointments/upload-lab-report', {
+        method: 'POST',
+        body: formData, // Don't set Content-Type header, let browser set it with boundary
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Lab report uploaded successfully!",
+        });
+        
+        // Reset form
+        setUploadFormData({
+          patientUsername: '',
+          appointmentId: '',
+          treatmentName: '',
+          reportFile: null
+        });
+        setIsUploadDialogOpen(false);
+        
+        // Refresh lab reports if we're on the reports tab
+        if (activeTab === 'reports') {
+          fetchLabReports();
+        }
+      } else {
+        throw new Error(data.message || 'Failed to upload lab report');
+      }
+    } catch (error) {
+      console.error('Error uploading lab report:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to upload lab report',
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -159,19 +217,6 @@ const LabCoordinatorDashboard = () => {
                   </div>
                   <span className="font-medium">Lab Reports</span>
                 </button>
-                <button
-                  onClick={() => setActiveTab('patients')}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'patients' 
-                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === 'patients' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <span className="font-medium">Patients</span>
-                </button>
               </nav>
             </div>
           </aside>
@@ -220,92 +265,41 @@ const LabCoordinatorDashboard = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleUploadReport} className="space-y-4">
-                    {/* Patient ID - Dropdown Search */}
+                    {/* Patient Username */}
                     <div className="space-y-2">
-                      <Label htmlFor="patientId">Patient ID</Label>
-                      <Popover open={patientSearchOpen} onOpenChange={setPatientSearchOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={patientSearchOpen}
-                            className="w-full justify-between"
-                          >
-                            {selectedPatient
-                              ? `${selectedPatient.id} - ${selectedPatient.name}`
-                              : "Search by ID, Name, or NIC..."}
-                            <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
-                          <Command>
-                            <CommandInput placeholder="Search patients..." />
-                            <CommandList>
-                              <CommandEmpty>No patient found.</CommandEmpty>
-                              <CommandGroup>
-                                {mockPatients.map((patient) => (
-                                  <CommandItem
-                                    key={patient.id}
-                                    value={`${patient.id} ${patient.name} ${patient.nic}`}
-                                    onSelect={() => {
-                                      setSelectedPatient(patient);
-                                      setSelectedAppointment(null);
-                                      setPatientSearchOpen(false);
-                                    }}
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">{patient.id} - {patient.name}</span>
-                                      <span className="text-sm text-muted-foreground">NIC: {patient.nic}</span>
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    {/* Patient Name - Auto-filled */}
-                    <div className="space-y-2">
-                      <Label htmlFor="patientName">Patient Name</Label>
+                      <Label htmlFor="patientUsername">Patient Username</Label>
                       <Input 
-                        id="patientName" 
-                        value={selectedPatient?.name || ""} 
-                        placeholder="Auto-filled when patient is selected"
-                        readOnly 
-                        className="bg-muted"
+                        id="patientUsername" 
+                        placeholder="Enter patient username" 
+                        value={uploadFormData.patientUsername}
+                        onChange={(e) => setUploadFormData({...uploadFormData, patientUsername: e.target.value})}
+                        required 
+                        className="border-primary/20 focus:border-primary"
                       />
                     </div>
 
-                    {/* Appointment ID - Linked to Patient */}
+                    {/* Appointment ID */}
                     <div className="space-y-2">
                       <Label htmlFor="appointmentId">Appointment ID</Label>
-                      <Select 
-                        disabled={!selectedPatient}
-                        onValueChange={(value) => {
-                          const appointment = filteredAppointments.find(apt => apt.id === value);
-                          setSelectedAppointment(appointment);
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={selectedPatient ? "Select appointment" : "Select patient first"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filteredAppointments.map((appointment) => (
-                            <SelectItem key={appointment.id} value={appointment.id}>
-                              {appointment.id} - {appointment.doctorName} ({appointment.date})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input 
+                        id="appointmentId" 
+                        placeholder="Enter appointment ID" 
+                        value={uploadFormData.appointmentId}
+                        onChange={(e) => setUploadFormData({...uploadFormData, appointmentId: e.target.value})}
+                        required 
+                        className="border-primary/20 focus:border-primary"
+                      />
                     </div>
 
                     {/* Treatment Name - Dropdown from Catalogue */}
                     <div className="space-y-2">
                       <Label htmlFor="treatmentName">Treatment Name</Label>
-                      <Select required>
-                        <SelectTrigger>
+                      <Select 
+                        value={uploadFormData.treatmentName}
+                        onValueChange={(value) => setUploadFormData({...uploadFormData, treatmentName: value})}
+                        required
+                      >
+                        <SelectTrigger className="border-primary/20 focus:border-primary">
                           <SelectValue placeholder="Select treatment from catalogue" />
                         </SelectTrigger>
                         <SelectContent>
@@ -325,19 +319,9 @@ const LabCoordinatorDashboard = () => {
                         id="reportFile" 
                         type="file" 
                         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" 
+                        onChange={(e) => setUploadFormData({...uploadFormData, reportFile: e.target.files?.[0] || null})}
                         required 
                         className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
-                      />
-                    </div>
-
-                    {/* Date & Time - Auto set to current */}
-                    <div className="space-y-2">
-                      <Label htmlFor="dateTime">Date & Time</Label>
-                      <Input 
-                        id="dateTime" 
-                        type="datetime-local" 
-                        defaultValue={getCurrentDateTime()}
-                        required 
                       />
                     </div>
 
@@ -347,8 +331,6 @@ const LabCoordinatorDashboard = () => {
                         variant="outline" 
                         onClick={() => {
                           setIsUploadDialogOpen(false);
-                          setSelectedPatient(null);
-                          setSelectedAppointment(null);
                         }}
                       >
                         Cancel
@@ -380,50 +362,113 @@ const LabCoordinatorDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12">
-              <div className="p-6 rounded-full bg-gradient-to-br from-muted/20 to-muted/10 mx-auto mb-6 w-fit">
-                <FileCheck className="w-16 h-16 text-muted-foreground" />
+            {isLoadingReports ? (
+              <div className="text-center py-12">
+                <div className="p-6 rounded-full bg-gradient-to-br from-muted/20 to-muted/10 mx-auto mb-6 w-fit">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Loading Reports...</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">Please wait while we fetch the lab reports.</p>
               </div>
-              <h3 className="text-xl font-semibold mb-3">No Reports Available</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">Lab reports will appear here once they are uploaded to the system.</p>
-            </div>
+            ) : labReports.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="p-6 rounded-full bg-gradient-to-br from-muted/20 to-muted/10 mx-auto mb-6 w-fit">
+                  <FileCheck className="w-16 h-16 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">No Reports Available</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">Lab reports will appear here once they are uploaded to the system.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {labReports.length} lab report{labReports.length !== 1 ? 's' : ''}
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={fetchLabReports}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Refresh
+                  </Button>
+                </div>
+                
+                <div className="grid gap-4">
+                  {labReports.map((report) => (
+                    <div key={report.Appointment_ID} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-lg flex items-center gap-2">
+                            <FlaskConical className="w-5 h-5 text-primary" />
+                            {report.Treatment_name}
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium text-muted-foreground">Patient:</span>
+                              <p className="font-medium">{report.patient_name} ({report.patient_username})</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-muted-foreground">Appointment ID:</span>
+                              <p className="font-medium">#{report.Appointment_ID}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-muted-foreground">Date:</span>
+                              <p className="font-medium">{new Date(report.Appointment_Date).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-muted-foreground">Catalogue ID:</span>
+                              <p className="font-medium">#{report.Catalogue_ID}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {report.Report_Links && (
+                            <>
+                              {report.Report_Links.startsWith('/uploads/') ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const directUrl = `http://localhost:5000${report.Report_Links}`;
+                                    console.log('Opening file:', directUrl);
+                                    window.open(directUrl, '_blank');
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  View Report
+                                </Button>
+                              ) : (
+                                <div className="flex flex-col gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled
+                                    className="flex items-center gap-2 opacity-50"
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    Report Not Available
+                                  </Button>
+                                  <p className="text-xs text-muted-foreground">
+                                    This report was uploaded with an old system
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </TabsContent>
 
-      {/* Patients Tab */}
-      <TabsContent value="patients" className="space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Patient Information</h2>
-          <p className="text-muted-foreground mb-8">View patient details and their lab history</p>
-        </div>
-        
-        <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-6">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 rounded-lg bg-gradient-secondary">
-                <Users className="w-5 h-5 text-secondary-foreground" />
-              </div>
-              Patient Database
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {mockPatients.map((patient) => (
-                <div key={patient.id} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <h4 className="font-semibold text-lg">{patient.name}</h4>
-                      <p className="text-sm text-muted-foreground">Patient ID: {patient.id}</p>
-                      <p className="text-sm text-muted-foreground">NIC: {patient.nic}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
 
       </Tabs>
     </main>
@@ -432,7 +477,7 @@ const LabCoordinatorDashboard = () => {
   {/* Mobile Bottom Navigation */}
   {isMobile && (
     <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
-      <div className="grid grid-cols-3 gap-1 p-2">
+      <div className="grid grid-cols-2 gap-1 p-2">
         <button
           onClick={() => setActiveTab('upload')}
           className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
@@ -454,17 +499,6 @@ const LabCoordinatorDashboard = () => {
         >
           <FlaskConical className="w-5 h-5" />
           <span className="text-xs font-medium">Reports</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('patients')}
-          className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all duration-300 ${
-            activeTab === 'patients' 
-              ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-              : 'hover:bg-muted/50'
-          }`}
-        >
-          <Users className="w-5 h-5" />
-          <span className="text-xs font-medium">Patients</span>
         </button>
       </div>
     </div>

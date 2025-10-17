@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,26 +26,124 @@ const ReceptionistDashboard = () => {
   const [bookSpecialization, setBookSpecialization] = useState("");
   const [bookPatientUsername, setBookPatientUsername] = useState("");
   const [bookDoctor, setBookDoctor] = useState("");
+  const [bookTimeSlot, setBookTimeSlot] = useState("");
+  const [bookBranch, setBookBranch] = useState("Colombo");
+  const [specializationsData, setSpecializationsData] = useState<{ id: number; name: string }[]>([]);
+  const [doctorsData, setDoctorsData] = useState<{ id: number; name: string }[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [pendingInsurances, setPendingInsurances] = useState<{ username: string; insuranceId: string; approved: boolean; }[]>([]);
+  
+  // State for Insurance Claim submission
+  const [claimBillId, setClaimBillId] = useState("");
+  const [claimInsuranceId, setClaimInsuranceId] = useState("");
+  const [claimAmount, setClaimAmount] = useState("");
+  
+  // State for Billing
+  const [billAppointmentId, setBillAppointmentId] = useState("");
+  const [billDetails, setBillDetails] = useState<any>(null);
+  const [userPaymentAmount, setUserPaymentAmount] = useState("");
+
+  // State for Patient Registration
+  const [patientFormData, setPatientFormData] = useState({
+    username: "",
+    password: "",
+    name: "",
+    phone: "",
+    dateOfBirth: "",
+    gender: "",
+    address: ""
+  });
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   
   // State for Cancel Appointment modal
-  const [cancelPatientUsername, setCancelPatientUsername] = useState("");
-  const [cancelAppointment, setCancelAppointment] = useState("");
+  const [cancelAppointmentId, setCancelAppointmentId] = useState("");
   
   // State for Reschedule Appointment modal
   const [reschedulePatientUsername, setReschedulePatientUsername] = useState("");
   const [rescheduleDate, setRescheduleDate] = useState<Date>();
+  const [rescheduleAppointmentId, setRescheduleAppointmentId] = useState("");
+  const [rescheduleTimeSlot, setRescheduleTimeSlot] = useState("");
 
-  // Sample data for dropdowns
-  const specializations = ["Cardiology", "Neurology", "Orthopedics", "Pediatrics", "Dermatology", "Oncology"];
-  
-  const doctorsBySpecialization: Record<string, string[]> = {
-    "Cardiology": ["Dr. Smith", "Dr. Anderson"],
-    "Neurology": ["Dr. Johnson", "Dr. Wilson"],
-    "Orthopedics": ["Dr. Williams", "Dr. Davis"],
-    "Pediatrics": ["Dr. Brown", "Dr. Miller"],
-    "Dermatology": ["Dr. Garcia", "Dr. Martinez"],
-    "Oncology": ["Dr. Taylor", "Dr. Thomas"]
-  };
+  // Load data from backend for booking
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/appointments/specializations');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to load specializations');
+        setSpecializationsData(Array.isArray(data.specializations) ? data.specializations : []);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
+  // Load pending insurances
+  useEffect(() => {
+    (async () => {
+      try {
+        console.log('Fetching pending insurances...');
+        const res = await fetch('http://localhost:5000/api/appointments/pending-insurances');
+        const data = await res.json();
+        console.log('Pending insurances response:', data);
+        if (!res.ok) throw new Error(data.message || 'Failed to load pending insurances');
+        const insurances = Array.isArray(data.insurances) ? data.insurances.map((item: any) => ({
+          username: item.patient_username,
+          insuranceId: item.insurance_id,
+          approved: item.status === 'Approved'
+        })) : [];
+        console.log('Processed insurances:', insurances);
+        setPendingInsurances(insurances);
+      } catch (err) {
+        console.error('Error loading pending insurances:', err);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setDoctorsData([]);
+        setBookDoctor("");
+        if (!bookSpecialization || !bookBranch) return;
+        const selected = specializationsData.find(s => s.name === bookSpecialization);
+        if (!selected) return;
+        const res = await fetch(`http://localhost:5000/api/appointments/doctors/${encodeURIComponent(selected.id)}/${encodeURIComponent(bookBranch)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to load doctors');
+        setDoctorsData(Array.isArray(data.doctors) ? data.doctors : []);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [bookSpecialization, bookBranch, specializationsData]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setAvailableSlots([]);
+        setBookTimeSlot("");
+        if (!bookDoctor || !bookDate) return;
+        const selected = doctorsData.find(d => d.name === bookDoctor);
+        if (!selected) return;
+        const localDate = format(bookDate, 'yyyy-MM-dd');
+        const res = await fetch(`http://localhost:5000/api/appointments/available-slots/${selected.id}/${localDate}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to load time slots');
+        setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : []);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [bookDoctor, bookDate, doctorsData]);
+
+  const timeSlots = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
+  ];
+
+  const branches = ["Colombo","Kandy", "Galle"];
 
   const sampleAppointments: Record<string, string[]> = {
     "john_doe": ["Appointment with Dr. Smith - March 15, 2024", "Appointment with Dr. Johnson - March 20, 2024"],
@@ -53,10 +151,378 @@ const ReceptionistDashboard = () => {
     "bob_johnson": ["Appointment with Dr. Brown - March 22, 2024", "Appointment with Dr. Garcia - March 25, 2024"]
   };
 
-  const handleFormSubmit = (formName: string) => {
+  const handleFormSubmit = async (formName: string, formData?: any) => {
+    try {
+      if (formName === "Patient Registration" && formData) {
+        const response = await fetch('http://localhost:5000/api/patient/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+          throw new Error('Registration failed');
+        }
+
+        toast({
+          title: "Success",
+          description: "Patient registered successfully!",
+          variant: "default",
+        });
+      } else {
+        // Handle other form submissions with default toast
+        toast({
+          title: "Success",
+          description: `${formName} completed successfully.`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleInsuranceClaimSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!claimBillId || !claimInsuranceId || !claimAmount) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(parseFloat(claimAmount)) || parseFloat(claimAmount) <= 0) {
+      toast({
+        title: "Error",
+        description: "Claim amount must be a positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/appointments/submit-insurance-claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          billId: parseInt(claimBillId),
+          insuranceId: parseInt(claimInsuranceId),
+          claimAmount: parseFloat(claimAmount)
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `Insurance claim submitted successfully! Claim ID: ${data.data.claimId}`,
+        });
+        
+        // Reset form
+        setClaimBillId("");
+        setClaimInsuranceId("");
+        setClaimAmount("");
+        
+        // Refresh pending insurances
+        const res = await fetch('http://localhost:5000/api/appointments/pending-insurances');
+        const insuranceData = await res.json();
+        if (res.ok) {
+          const insurances = Array.isArray(insuranceData.insurances) ? insuranceData.insurances.map((item: any) => ({
+            username: item.patient_username,
+            insuranceId: item.insurance_id,
+            approved: item.status === 'Approved'
+          })) : [];
+          setPendingInsurances(insurances);
+        }
+      } else {
+        throw new Error(data.message || 'Failed to submit insurance claim');
+      }
+    } catch (error) {
+      console.error('Error submitting insurance claim:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to submit insurance claim',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBillDetailsFetch = async (appointmentId: string) => {
+    if (!appointmentId || appointmentId.trim() === '') {
+      setBillDetails(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/bill-details/${appointmentId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('=== FRONTEND RECEIVED BILL DATA ===');
+        console.log('Full response data:', data);
+        console.log('Appointment data:', data.data?.appointment);
+        console.log('Patient username:', data.data?.appointment?.patient_username);
+        console.log('Patient name:', data.data?.appointment?.patient_name);
+        setBillDetails(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch bill details');
+      }
+    } catch (error) {
+      console.error('Error fetching bill details:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to fetch bill details',
+        variant: "destructive",
+      });
+      setBillDetails(null);
+    }
+  };
+
+  // Add useEffect for debounced API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (billAppointmentId) {
+        handleBillDetailsFetch(billAppointmentId);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [billAppointmentId]);
+
+  // Patient registration functions
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/check-username/${encodeURIComponent(username)}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setUsernameAvailable(data.available);
+      } else {
+        setUsernameAvailable(null);
+      }
+    } catch (error) {
+      console.error('Error checking username availability:', error);
+      setUsernameAvailable(null);
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+
+  const handlePatientRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!patientFormData.username || !patientFormData.password || !patientFormData.name || 
+        !patientFormData.phone || !patientFormData.dateOfBirth || 
+        !patientFormData.gender) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if username is available
+    if (usernameAvailable === false) {
+      toast({
+        title: "Error",
+        description: "Username is already taken. Please choose a different username.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/appointments/register-patient', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(patientFormData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `Patient registered successfully! Username: ${data.data.username}`,
+        });
+        
+        // Reset form
+        setPatientFormData({
+          username: "",
+          password: "",
+          name: "",
+          phone: "",
+          dateOfBirth: "",
+          gender: "",
+          address: ""
+        });
+        setUsernameAvailable(null);
+      } else {
+        throw new Error(data.message || 'Failed to register patient');
+      }
+    } catch (error) {
+      console.error('Error registering patient:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to register patient',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateReceipt = () => {
+    if (!billDetails) return;
+
+    // Create PDF content using HTML
+    const pdfContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Medical Bill Receipt</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+          .section { margin-bottom: 15px; }
+          .section h3 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+          .info-item { display: flex; justify-content: space-between; }
+          .amounts { background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
+          .total { font-weight: bold; font-size: 1.1em; }
+          .footer { margin-top: 30px; text-align: center; font-size: 0.9em; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>MEDICAL BILL RECEIPT</h1>
+        </div>
+        
+        <div class="section">
+          <h3>Appointment Details</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span><strong>Appointment ID:</strong></span>
+              <span>${billDetails.appointment.Appointment_ID}</span>
+            </div>
+            <div class="info-item">
+              <span><strong>Patient:</strong></span>
+              <span>${billDetails.appointment.patient_name} (${billDetails.appointment.patient_username})</span>
+            </div>
+            <div class="info-item">
+              <span><strong>Doctor:</strong></span>
+              <span>${billDetails.appointment.doctor_name}</span>
+            </div>
+            <div class="info-item">
+              <span><strong>Date:</strong></span>
+              <span>${new Date(billDetails.appointment.Appointment_Date).toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Billing Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span><strong>Bill ID:</strong></span>
+              <span>${billDetails.billing.Bill_ID}</span>
+            </div>
+            <div class="info-item">
+              <span><strong>Bill Date:</strong></span>
+              <span>${new Date(billDetails.billing.bill_date).toLocaleDateString()}</span>
+            </div>
+            <div class="info-item">
+              <span><strong>Due Date:</strong></span>
+              <span>${new Date(billDetails.billing.due_date).toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Financial Summary</h3>
+          <div class="amounts">
+            <div class="info-item">
+              <span>Total Amount:</span>
+              <span>$${billDetails.totals.totalAmount.toFixed(2)}</span>
+            </div>
+            <div class="info-item">
+              <span>Insured Amount:</span>
+              <span>$${billDetails.totals.insuredAmount.toFixed(2)}</span>
+            </div>
+            <div class="info-item total">
+              <span>Amount to be Paid:</span>
+              <span>$${billDetails.totals.amountToBePaid.toFixed(2)}</span>
+            </div>
+            ${userPaymentAmount ? `
+            <div class="info-item">
+              <span>Amount Paid by User:</span>
+              <span>$${parseFloat(userPaymentAmount).toFixed(2)}</span>
+            </div>
+            ${parseFloat(userPaymentAmount) === billDetails.totals.amountToBePaid ? 
+              '<div class="info-item" style="color: green; font-weight: bold;"><span>✓ Payment Complete - No Balance Remaining</span></div>' :
+              `<div class="info-item" style="color: orange; font-weight: bold;"><span>$${(billDetails.totals.amountToBePaid - parseFloat(userPaymentAmount)).toFixed(2)} remaining</span></div>`
+            }
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Insurance Claims</h3>
+          ${billDetails.insuranceClaims.length > 0 ? 
+            billDetails.insuranceClaims.map((claim: any) => `
+              <div class="info-item">
+                <span>Claim ID: ${claim.Insurance_Claim_ID} | Provider: ${claim.Provider_Name}</span>
+                <span>$${claim.Claim_Amount} (${claim.Claim_Status})</span>
+              </div>
+            `).join('') : 
+            '<div>No insurance claims</div>'
+          }
+        </div>
+
+        <div class="footer">
+          <p>Generated on: ${new Date().toLocaleString()}</p>
+          <p>Thank you for choosing our medical services!</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create a new window with the PDF content
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(pdfContent);
+      printWindow.document.close();
+      
+      // Wait for content to load, then trigger print dialog
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+    }
+
     toast({
       title: "Success",
-      description: `${formName} completed successfully.`,
+      description: "PDF receipt generated successfully!",
     });
   };
 
@@ -90,14 +556,6 @@ const ReceptionistDashboard = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
-                  <DropdownMenuItem className="hover:bg-primary/10">
-                    <User className="w-4 h-4 mr-2" />
-                    Profile Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-primary/10">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -133,19 +591,7 @@ const ReceptionistDashboard = () => {
                   </div>
                   <span className="font-medium">Appointments</span>
                 </button>
-                <button
-                  onClick={() => setActiveTab('doctors')}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'doctors' 
-                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === 'doctors' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <Stethoscope className="w-5 h-5" />
-                  </div>
-                  <span className="font-medium">Doctors</span>
-                </button>
+                {/* Doctors tab removed */}
                 <button
                   onClick={() => setActiveTab('insurance')}
                   className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
@@ -217,7 +663,73 @@ const ReceptionistDashboard = () => {
                         <DialogTitle>Book New Appointment</DialogTitle>
                         <DialogDescription>Schedule a new appointment for a patient</DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Booking");}} className="space-y-4">
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        try {
+                          if (!bookPatientUsername || !bookSpecialization || !bookDoctor || !bookDate || !bookTimeSlot) {
+                            toast({
+                              title: "Error",
+                              description: "All fields are required",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          // Find the doctor ID from the selected doctor name
+                          const selectedDoctor = doctorsData.find(doc => doc.name === bookDoctor);
+                          if (!selectedDoctor) {
+                            toast({
+                              title: "Error",
+                              description: "Selected doctor not found",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          const appointmentData = {
+                            patientUsername: bookPatientUsername,
+                            doctorId: selectedDoctor.id,
+                            appointmentDate: format(bookDate, 'yyyy-MM-dd'),
+                            timeSlot: bookTimeSlot,
+                            specialization: bookSpecialization,
+                            branch: bookBranch
+                          };
+
+                          console.log('Sending appointment data:', appointmentData);
+
+                          const response = await fetch('http://localhost:5000/api/appointments/book', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(appointmentData)
+                          });
+
+                          if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to book appointment');
+                          }
+
+                          // Clear form
+                          setBookPatientUsername('');
+                          setBookSpecialization('');
+                          setBookDoctor('');
+                          setBookDate(undefined);
+                          setBookTimeSlot('');
+                          setBookBranch('Colombo');
+
+                          toast({
+                            title: "Success",
+                            description: "Appointment booked successfully!",
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: error instanceof Error ? error.message : "Failed to book appointment",
+                            variant: "destructive",
+                          });
+                        }
+                      }} className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="bookPatientUsername">Patient Username</Label>
                           <Input 
@@ -229,6 +741,19 @@ const ReceptionistDashboard = () => {
                           />
                         </div>
                         <div className="space-y-2">
+                          <Label htmlFor="bookBranch">Branch</Label>
+                          <Select value={bookBranch} onValueChange={setBookBranch} required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select branch" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {branches.map((branch) => (
+                                <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
                           <Label htmlFor="bookSpecialization">Specialization</Label>
                           <Select value={bookSpecialization} onValueChange={(value) => {
                             setBookSpecialization(value);
@@ -238,8 +763,8 @@ const ReceptionistDashboard = () => {
                               <SelectValue placeholder="Select specialization" />
                             </SelectTrigger>
                             <SelectContent>
-                              {specializations.map((spec) => (
-                                <SelectItem key={spec} value={spec}>{spec}</SelectItem>
+                              {specializationsData.map((spec) => (
+                                <SelectItem key={spec.id} value={spec.name}>{spec.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -251,8 +776,8 @@ const ReceptionistDashboard = () => {
                               <SelectValue placeholder="Select doctor" />
                             </SelectTrigger>
                             <SelectContent>
-                              {bookSpecialization && doctorsBySpecialization[bookSpecialization]?.map((doctor) => (
-                                <SelectItem key={doctor} value={doctor}>{doctor}</SelectItem>
+                              {bookSpecialization && doctorsData.map((doctor) => (
+                                <SelectItem key={doctor.id} value={doctor.name}>{doctor.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -282,6 +807,19 @@ const ReceptionistDashboard = () => {
                               />
                             </PopoverContent>
                           </Popover>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="bookTimeSlot">Time Slot</Label>
+                          <Select value={bookTimeSlot} onValueChange={setBookTimeSlot} required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select time slot" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(availableSlots.length ? availableSlots : []).map((slot) => (
+                                <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <Button type="submit" className="w-full">Book Appointment</Button>
                       </form>
@@ -317,6 +855,16 @@ const ReceptionistDashboard = () => {
                             required 
                           />
                         </div>
+                          <div className="space-y-2">
+                          <Label htmlFor="rescheduleAppointmentId">Appointment ID</Label>
+                          <Input 
+                            id="rescheduleAppointmentId" 
+                            placeholder="Enter appointment ID" 
+                            value={rescheduleAppointmentId}
+                            onChange={(e) => setRescheduleAppointmentId(e.target.value)}
+                            required 
+                          />
+                              </div>
                         <div className="space-y-2">
                           <Label>New Appointment Date</Label>
                           <Popover>
@@ -343,7 +891,57 @@ const ReceptionistDashboard = () => {
                             </PopoverContent>
                           </Popover>
                         </div>
-                        <Button type="submit" className="w-full">Reschedule Appointment</Button>
+                        <div className="space-y-2">
+                          <Label htmlFor="rescheduleTimeSlot">New Time Slot</Label>
+                          <Select value={rescheduleTimeSlot} onValueChange={setRescheduleTimeSlot} required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select new time slot" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {timeSlots.map((slot) => (
+                                <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline">Close</Button>
+                          <Button 
+                            type="submit" 
+                            onClick={async () => {
+                              try {
+                                if (!rescheduleAppointmentId || !rescheduleDate || !rescheduleTimeSlot) {
+                                  throw new Error("Appointment ID, date and time slot are required");
+                                }
+                                const payload = {
+                                  appointmentId: Number(rescheduleAppointmentId),
+                                  newDate: rescheduleDate ? format(rescheduleDate, 'yyyy-MM-dd') : '',
+                                  newTimeSlot: rescheduleTimeSlot
+                                };
+                                const response = await fetch('http://localhost:5000/api/appointments/reschedule', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(payload)
+                                });
+                                const data = await response.json();
+                                if (!response.ok) {
+                                  throw new Error(data.message || 'Failed to reschedule appointment');
+                                }
+                                toast({
+                                  title: "Appointment Rescheduled",
+                                  description: `Patient: ${data.details?.patientUsername || reschedulePatientUsername}\nPrevious: ${data.details?.previousDate || ''} ${data.details?.previousTime || ''}\nNew: ${data.details?.newDate || payload.newDate} ${data.details?.newTimeSlot || payload.newTimeSlot}`
+                                });
+                              } catch (err) {
+                                toast({
+                                  title: "Error",
+                                  description: err instanceof Error ? err.message : 'Failed to reschedule',
+                                  variant: "destructive",
+                                });
+                              }
+                            }} 
+                            className="bg-gradient-primary text-primary-foreground"
+                          >Reschedule</Button>
+                        </div>
                       </form>
                     </DialogContent>
                   </Dialog>
@@ -368,35 +966,50 @@ const ReceptionistDashboard = () => {
                       </DialogHeader>
                       <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Appointment Cancellation");}} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="cancelPatientUsername">Patient Username</Label>
-                          <Select value={cancelPatientUsername} onValueChange={(value) => {
-                            setCancelPatientUsername(value);
-                            setCancelAppointment(""); // Reset appointment when patient changes
-                          }} required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select patient" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.keys(sampleAppointments).map((username) => (
-                                <SelectItem key={username} value={username}>{username}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="cancelAppointmentId">Appointment ID</Label>
+                          <Input 
+                            id="cancelAppointmentId" 
+                            placeholder="Enter appointment ID" 
+                            value={cancelAppointmentId}
+                            onChange={(e) => setCancelAppointmentId(e.target.value)}
+                            required 
+                          />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cancelAppointment">Appointment</Label>
-                          <Select value={cancelAppointment} onValueChange={setCancelAppointment} required disabled={!cancelPatientUsername}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select appointment to cancel" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cancelPatientUsername && sampleAppointments[cancelPatientUsername]?.map((appointment, index) => (
-                                <SelectItem key={index} value={appointment}>{appointment}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline">Close</Button>
+                          <Button 
+                            type="submit" 
+                            onClick={async () => {
+                              try {
+                                if (!cancelAppointmentId) {
+                                  throw new Error('Appointment ID is required');
+                                }
+                                const payload = { appointmentId: Number(cancelAppointmentId) };
+                                const response = await fetch('http://localhost:5000/api/appointments/cancel', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(payload)
+                                });
+                                const data = await response.json();
+                                if (!response.ok) {
+                                  throw new Error(data.message || 'Failed to cancel appointment');
+                                }
+                                toast({
+                                  title: "Appointment Cancelled",
+                                  description: `Appointment ${payload.appointmentId} status: ${data.appointment?.status || 'Cancelled'}`
+                                });
+                                setCancelAppointmentId("");
+                              } catch (err) {
+                                toast({
+                                  title: "Error",
+                                  description: err instanceof Error ? err.message : 'Failed to cancel',
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            className="bg-gradient-primary text-primary-foreground"
+                          >Cancel Appointment</Button>
                         </div>
-                        <Button type="submit" className="w-full">Cancel Appointment</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
@@ -435,23 +1048,37 @@ const ReceptionistDashboard = () => {
                         <DialogTitle className="text-xl text-primary">Register New Patient</DialogTitle>
                         <DialogDescription>Enter patient details to register them in the system</DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Patient Registration");}} className="space-y-4">
+                      <form onSubmit={handlePatientRegistration} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2 col-span-2">
-                            <Label htmlFor="patientId">Patient ID</Label>
-                            <Input id="patientId" placeholder="P001 (Auto-generated)" disabled className="bg-muted" />
-                          </div>
-                          <div className="space-y-2 col-span-2">
                             <Label htmlFor="patientName">Full Name *</Label>
-                            <Input id="patientName" placeholder="Enter patient name" required className="border-primary/20 focus:border-primary" />
+                            <Input 
+                              id="patientName" 
+                              value={patientFormData.name}
+                              onChange={(e) => setPatientFormData({...patientFormData, name: e.target.value})}
+                              placeholder="Enter patient name" 
+                              required 
+                              className="border-primary/20 focus:border-primary" 
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="patientDOB">Date of Birth *</Label>
-                            <Input id="patientDOB" type="date" required className="border-primary/20 focus:border-primary" />
+                            <Input 
+                              id="patientDOB" 
+                              type="date" 
+                              value={patientFormData.dateOfBirth}
+                              onChange={(e) => setPatientFormData({...patientFormData, dateOfBirth: e.target.value})}
+                              required 
+                              className="border-primary/20 focus:border-primary" 
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="patientGender">Gender *</Label>
-                            <Select required>
+                            <Select 
+                              value={patientFormData.gender}
+                              onValueChange={(value) => setPatientFormData({...patientFormData, gender: value})}
+                              required
+                            >
                               <SelectTrigger className="border-primary/20 focus:border-primary">
                                 <SelectValue placeholder="Select gender" />
                               </SelectTrigger>
@@ -463,24 +1090,65 @@ const ReceptionistDashboard = () => {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="patientPhone">Contact Number *</Label>
-                            <Input id="patientPhone" placeholder="Enter phone number" required className="border-primary/20 focus:border-primary" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="patientEmail">Email</Label>
-                            <Input id="patientEmail" type="email" placeholder="Enter email" className="border-primary/20 focus:border-primary" />
+                            <Label htmlFor="patientPhone">Phone Number *</Label>
+                            <Input 
+                              id="patientPhone" 
+                              value={patientFormData.phone}
+                              onChange={(e) => setPatientFormData({...patientFormData, phone: e.target.value})}
+                              placeholder="Enter phone number" 
+                              required 
+                              className="border-primary/20 focus:border-primary" 
+                            />
                           </div>
                           <div className="space-y-2 col-span-2">
-                            <Label htmlFor="patientAddress">Address *</Label>
-                            <Input id="patientAddress" placeholder="Enter address" required className="border-primary/20 focus:border-primary" />
+                            <Label htmlFor="patientAddress">Address</Label>
+                            <Input 
+                              id="patientAddress" 
+                              value={patientFormData.address}
+                              onChange={(e) => setPatientFormData({...patientFormData, address: e.target.value})}
+                              placeholder="Enter address" 
+                              className="border-primary/20 focus:border-primary" 
+                            />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="patientNIC">NIC/Passport Number *</Label>
-                            <Input id="patientNIC" placeholder="Enter NIC or Passport number" required className="border-primary/20 focus:border-primary" />
+                            <Label htmlFor="patientUsername">Username *</Label>
+                            <div className="relative">
+                              <Input 
+                                id="patientUsername" 
+                                type="text" 
+                                value={patientFormData.username}
+                                onChange={(e) => {
+                                  setPatientFormData({...patientFormData, username: e.target.value});
+                                  checkUsernameAvailability(e.target.value);
+                                }}
+                                placeholder="Enter username" 
+                                required 
+                                className="border-primary/20 focus:border-primary" 
+                              />
+                              {isCheckingUsername && (
+                                <div className="absolute right-2 top-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          </div>
+                              )}
+                              {usernameAvailable === true && (
+                                <div className="absolute right-2 top-2 text-green-500">✓</div>
+                              )}
+                              {usernameAvailable === false && (
+                                <div className="absolute right-2 top-2 text-red-500">✗</div>
+                              )}
+                          </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="emergencyContact">Emergency Contact *</Label>
-                            <Input id="emergencyContact" placeholder="Enter emergency contact number" required className="border-primary/20 focus:border-primary" />
+                            <Label htmlFor="patientPassword">Password *</Label>
+                            <Input 
+                              id="patientPassword" 
+                              type="password" 
+                              value={patientFormData.password}
+                              onChange={(e) => setPatientFormData({...patientFormData, password: e.target.value})}
+                              placeholder="Enter password" 
+                              required 
+                              className="border-primary/20 focus:border-primary" 
+                            />
                           </div>
                         </div>
                         <Button type="submit" className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
@@ -494,181 +1162,74 @@ const ReceptionistDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="doctors" className="space-y-4">
+          {/* Doctors tab removed */}
+
+          <TabsContent value="insurance" className="space-y-4">
+            {/* Pending insurances section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5" />
-                  Doctor Management
+                  Pending insurances
                 </CardTitle>
-                <CardDescription>View doctor information and schedules</CardDescription>
+                <CardDescription>Awaiting approval</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  {/* View Doctor List */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <User className="h-6 w-6" />
-                        View Doctor List
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Doctor List</DialogTitle>
-                        <DialogDescription>Complete list of doctors and their information</DialogDescription>
-                      </DialogHeader>
-                      <div className="mt-4">
+              <CardContent>
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Doctor ID</TableHead>
-                              <TableHead>Name</TableHead>
-                              <TableHead>NIC</TableHead>
-                              <TableHead>Role</TableHead>
-                              <TableHead>Specialization</TableHead>
-                              <TableHead>Contact Number</TableHead>
-                              <TableHead>Email</TableHead>
+                      <TableHead>Patient username</TableHead>
+                      <TableHead>Insurance ID</TableHead>
+                      <TableHead>Approved</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            <TableRow>
-                              <TableCell>D001</TableCell>
-                              <TableCell>Dr. John Smith</TableCell>
-                              <TableCell>123456789V</TableCell>
-                              <TableCell>Senior Consultant</TableCell>
-                              <TableCell>Cardiology</TableCell>
-                              <TableCell>+94 77 123 4567</TableCell>
-                              <TableCell>j.smith@hospital.com</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D002</TableCell>
-                              <TableCell>Dr. Sarah Johnson</TableCell>
-                              <TableCell>987654321V</TableCell>
-                              <TableCell>Consultant</TableCell>
-                              <TableCell>Neurology</TableCell>
-                              <TableCell>+94 77 234 5678</TableCell>
-                              <TableCell>s.johnson@hospital.com</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D003</TableCell>
-                              <TableCell>Dr. Michael Williams</TableCell>
-                              <TableCell>456789123V</TableCell>
-                              <TableCell>Specialist</TableCell>
-                              <TableCell>Orthopedics</TableCell>
-                              <TableCell>+94 77 345 6789</TableCell>
-                              <TableCell>m.williams@hospital.com</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D004</TableCell>
-                              <TableCell>Dr. Emily Brown</TableCell>
-                              <TableCell>789123456V</TableCell>
-                              <TableCell>Consultant</TableCell>
-                              <TableCell>Pediatrics</TableCell>
-                              <TableCell>+94 77 456 7890</TableCell>
-                              <TableCell>e.brown@hospital.com</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D005</TableCell>
-                              <TableCell>Dr. David Lee</TableCell>
-                              <TableCell>321654987V</TableCell>
-                              <TableCell>Senior Specialist</TableCell>
-                              <TableCell>Oncology</TableCell>
-                              <TableCell>+94 77 567 8901</TableCell>
-                              <TableCell>d.lee@hospital.com</TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  {/* See Doctor Schedules */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Clock className="h-6 w-6" />
-                        See Doctor Schedules
+                    {pendingInsurances.map((item, idx) => (
+                      <TableRow key={`${item.insuranceId}-${item.username}`}>
+                        <TableCell>{item.username}</TableCell>
+                        <TableCell>{item.insuranceId}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            className={item.approved ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                            variant={item.approved ? "default" : "outline"}
+                            onClick={async () => {
+                              if (!item.approved) {
+                                try {
+                                  const response = await fetch('http://localhost:5000/api/appointments/update-insurance-status', {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ insuranceId: item.insuranceId, status: 'Approved' })
+                                  });
+                                  const data = await response.json();
+                                  if (response.ok) {
+                                    setPendingInsurances(prev => prev.map((row, i) => i === idx ? { ...row, approved: true } : row));
+                                    toast({
+                                      title: "Success",
+                                      description: "Insurance status updated to Approved",
+                                    });
+                                  } else {
+                                    throw new Error(data.message || 'Failed to update insurance status');
+                                  }
+                                } catch (err) {
+                                  toast({
+                                    title: "Error",
+                                    description: err instanceof Error ? err.message : 'Failed to update insurance status',
+                                    variant: "destructive",
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            {item.approved ? "Done" : "Pending"}
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Doctor Schedules</DialogTitle>
-                        <DialogDescription>Current appointments and patient assignments</DialogDescription>
-                      </DialogHeader>
-                      <div className="mt-4">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Doctor ID</TableHead>
-                              <TableHead>Appointment Date & Time</TableHead>
-                              <TableHead>Patient Assigned</TableHead>
+                        </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell>D001</TableCell>
-                              <TableCell>2024-01-15 09:00 AM</TableCell>
-                              <TableCell>John Doe (P001)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D001</TableCell>
-                              <TableCell>2024-01-15 10:30 AM</TableCell>
-                              <TableCell>Mary Wilson (P004)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D002</TableCell>
-                              <TableCell>2024-01-15 08:00 AM</TableCell>
-                              <TableCell>Jane Smith (P002)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D002</TableCell>
-                              <TableCell>2024-01-15 11:00 AM</TableCell>
-                              <TableCell>Robert Davis (P005)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D003</TableCell>
-                              <TableCell>2024-01-15 10:00 AM</TableCell>
-                              <TableCell>Bob Johnson (P003)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D003</TableCell>
-                              <TableCell>2024-01-15 02:00 PM</TableCell>
-                              <TableCell>Lisa Anderson (P006)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D004</TableCell>
-                              <TableCell>2024-01-15 09:30 AM</TableCell>
-                              <TableCell>Tommy Garcia (P007)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D004</TableCell>
-                              <TableCell>2024-01-15 01:00 PM</TableCell>
-                              <TableCell>Sophie Martin (P008)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D005</TableCell>
-                              <TableCell>2024-01-15 11:30 AM</TableCell>
-                              <TableCell>Mark Taylor (P009)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>D005</TableCell>
-                              <TableCell>2024-01-15 03:30 PM</TableCell>
-                              <TableCell>Emma Thompson (P010)</TableCell>
-                            </TableRow>
+                    ))}
                           </TableBody>
                         </Table>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="insurance" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -693,105 +1254,45 @@ const ReceptionistDashboard = () => {
                         <DialogTitle>Submit Insurance Claim</DialogTitle>
                         <DialogDescription>Enter claim details for processing</DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Insurance Claim Submission");}} className="space-y-4">
+                      <form onSubmit={handleInsuranceClaimSubmit} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="claimId">Claim ID</Label>
-                          <Input id="claimId" placeholder="IC001 (Auto-generated)" disabled />
+                          <Label htmlFor="claimBillId">Bill ID</Label>
+                          <Input 
+                            id="claimBillId" 
+                            placeholder="Enter Bill ID" 
+                            value={claimBillId}
+                            onChange={(e) => setClaimBillId(e.target.value)}
+                            required 
+                          />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="billId">Bill ID</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select bill from billing" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="B001">B001 - John Doe - $150.00</SelectItem>
-                              <SelectItem value="B002">B002 - Jane Smith - $250.00</SelectItem>
-                              <SelectItem value="B003">B003 - Bob Johnson - $300.00</SelectItem>
-                              <SelectItem value="B004">B004 - Mary Wilson - $180.00</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="insuranceId">Insurance ID</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select patient insurance" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="INS001">INS001 - HealthCare Plus (John Doe)</SelectItem>
-                              <SelectItem value="INS002">INS002 - MediCover Pro (Jane Smith)</SelectItem>
-                              <SelectItem value="INS003">INS003 - WellnessCare (Bob Johnson)</SelectItem>
-                              <SelectItem value="INS004">INS004 - LifeGuard Insurance (Mary Wilson)</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="claimInsuranceId">Insurance ID</Label>
+                          <Input 
+                            id="claimInsuranceId" 
+                            placeholder="Enter Insurance ID" 
+                            value={claimInsuranceId}
+                            onChange={(e) => setClaimInsuranceId(e.target.value)}
+                            required 
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="claimAmount">Claim Amount</Label>
-                          <Input id="claimAmount" type="number" placeholder="Enter claim amount" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="submittedDate">Submitted Date</Label>
-                          <Input id="submittedDate" type="date" value={new Date().toISOString().split('T')[0]} disabled />
+                          <Input 
+                            id="claimAmount" 
+                            type="number" 
+                            placeholder="Enter claim amount" 
+                            value={claimAmount}
+                            onChange={(e) => setClaimAmount(e.target.value)}
+                            step="0.01"
+                            min="0"
+                            required 
+                          />
                         </div>
                         <Button type="submit" className="w-full">Submit Claim</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
 
-                  {/* Update Claim Status */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <Edit className="h-6 w-6" />
-                        Update Claim Status
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Update Claim Status</DialogTitle>
-                        <DialogDescription>Search and update insurance claim status</DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Claim Status Update");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="searchClaimId">Search Claim ID</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select claim to update" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="IC001">IC001 - John Doe - $150.00</SelectItem>
-                              <SelectItem value="IC002">IC002 - Jane Smith - $250.00</SelectItem>
-                              <SelectItem value="IC003">IC003 - Bob Johnson - $300.00</SelectItem>
-                              <SelectItem value="IC004">IC004 - Mary Wilson - $180.00</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="currentStatus">Current Status</Label>
-                          <Input id="currentStatus" placeholder="Pending" disabled />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="claimStatus">New Claim Status</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select new status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="approved">Approved</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="statusReason">Status Update Reason</Label>
-                          <Input id="statusReason" placeholder="Enter reason for status change" />
-                        </div>
-                        <Button type="submit" className="w-full">Update Status</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
 
                 </div>
               </CardContent>
@@ -823,108 +1324,93 @@ const ReceptionistDashboard = () => {
                         <DialogTitle>Generate Bill</DialogTitle>
                         <DialogDescription>Create bill for appointments/treatments</DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Bill Generation");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="billId">Bill ID</Label>
-                          <Input id="billId" placeholder="B001 (Auto-generated)" disabled />
-                        </div>
+                      <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="appointmentId">Appointment ID</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select appointment" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="A001">A001 - John Doe - Dr. Smith</SelectItem>
-                              <SelectItem value="A002">A002 - Jane Smith - Dr. Johnson</SelectItem>
-                              <SelectItem value="A003">A003 - Bob Johnson - Dr. Williams</SelectItem>
-                              <SelectItem value="A004">A004 - Mary Wilson - Dr. Brown</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input 
+                            id="appointmentId" 
+                            placeholder="Enter appointment ID" 
+                            value={billAppointmentId}
+                            onChange={(e) => {
+                              setBillAppointmentId(e.target.value);
+                            }}
+                            required 
+                          />
                         </div>
+                        
+                        {billDetails && (
+                          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                            <h4 className="font-semibold text-lg">Bill Details</h4>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium">Patient:</span> {billDetails.appointment.patient_name}
+                        </div>
+                              <div>
+                                <span className="font-medium">Doctor:</span> {billDetails.appointment.doctor_name}
+                        </div>
+                              <div>
+                                <span className="font-medium">Date:</span> {billDetails.appointment.Appointment_Date}
+                        </div>
+                              <div>
+                                <span className="font-medium">Bill ID:</span> {billDetails.billing.Bill_ID}
+                        </div>
+                            </div>
+
+                            <div className="border-t pt-4">
+                              <h5 className="font-semibold mb-2">Financial Summary</h5>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span>Total Amount:</span>
+                                  <span className="font-medium">${billDetails.totals.totalAmount.toFixed(2)}</span>
+                        </div>
+                                <div className="flex justify-between">
+                                  <span>Insured Amount:</span>
+                                  <span className="font-medium text-green-600">${billDetails.totals.insuredAmount.toFixed(2)}</span>
+                        </div>
+                                <div className="flex justify-between border-t pt-2">
+                                  <span className="font-semibold">Amount to be Paid:</span>
+                                  <span className="font-semibold text-blue-600">${billDetails.totals.amountToBePaid.toFixed(2)}</span>
+                        </div>
+                              </div>
+                            </div>
+
                         <div className="space-y-2">
-                          <Label htmlFor="totalAmount">Total Amount</Label>
-                          <Input id="totalAmount" type="number" placeholder="Enter total amount" required />
+                              <Label htmlFor="userPaymentAmount">Amount Paid by User</Label>
+                          <Input 
+                                id="userPaymentAmount" 
+                                type="number" 
+                                placeholder="Enter amount paid by user"
+                                value={userPaymentAmount}
+                                onChange={(e) => setUserPaymentAmount(e.target.value)}
+                                step="0.01"
+                                min="0"
+                              />
+                              {userPaymentAmount && parseFloat(userPaymentAmount) === billDetails.totals.amountToBePaid && (
+                                <div className="text-green-600 text-sm font-medium">
+                                  ✓ Payment Complete - No Balance Remaining
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="insuredAmount">Insured Amount</Label>
-                          <Input id="insuredAmount" type="number" placeholder="Enter insured amount" />
+                              )}
+                              {userPaymentAmount && parseFloat(userPaymentAmount) !== billDetails.totals.amountToBePaid && (
+                                <div className="text-orange-600 text-sm font-medium">
+                                  ${(billDetails.totals.amountToBePaid - parseFloat(userPaymentAmount)).toFixed(2)} remaining
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="patientAmount">Patient Amount</Label>
-                          <Input id="patientAmount" type="number" placeholder="Enter patient amount" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="dueDate">Due Date</Label>
-                          <Input id="dueDate" type="date" required />
-                        </div>
-                        <Button type="submit" className="w-full">Generate Bill</Button>
-                      </form>
+                              )}
+                            </div>
+
+                            <Button 
+                              type="button" 
+                              onClick={generateReceipt}
+                              className="w-full bg-green-600 hover:bg-green-700"
+                            >
+                              Generate Receipt
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </DialogContent>
                   </Dialog>
 
-                  {/* Mark Payment Status */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <CreditCard className="h-6 w-6" />
-                        Mark Payment Status
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Mark Payment Status</DialogTitle>
-                        <DialogDescription>Record payment details and update status</DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={(e) => {e.preventDefault(); handleFormSubmit("Payment Status Update");}} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="paymentId">Payment ID</Label>
-                          <Input id="paymentId" placeholder="PAY001 (Auto-generated)" disabled />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="billIdPayment">Bill ID</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select bill to mark payment" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="B001">B001 - John Doe - $150.00</SelectItem>
-                              <SelectItem value="B002">B002 - Jane Smith - $250.00</SelectItem>
-                              <SelectItem value="B003">B003 - Bob Johnson - $300.00</SelectItem>
-                              <SelectItem value="B004">B004 - Mary Wilson - $180.00</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="amountPaid">Amount Paid</Label>
-                          <Input id="amountPaid" type="number" placeholder="Enter amount paid" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="paymentDateTime">Date & Time</Label>
-                          <Input 
-                            id="paymentDateTime" 
-                            type="datetime-local" 
-                            value={new Date().toISOString().slice(0, 16)} 
-                            disabled 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="paymentMethod">Payment Method</Label>
-                          <Select required>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select payment method" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="cash">Cash</SelectItem>
-                              <SelectItem value="card">Card</SelectItem>
-                              <SelectItem value="online">Online</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button type="submit" className="w-full">Mark Payment</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
 
                 </div>
               </CardContent>
