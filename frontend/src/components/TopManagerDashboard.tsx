@@ -34,6 +34,8 @@ import {
 } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
 const TopManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("revenue");
   const isMobile = useIsMobile();
@@ -58,11 +60,11 @@ const TopManagerDashboard = () => {
           pendingRes,
           insuranceSummaryRes,
         ] = await Promise.all([
-          axios.get('http://localhost:5000/api/topmanagers/dashboard/bills'),
-          axios.get('http://localhost:5000/api/topmanagers/dashboard/appointments'),
-          axios.get('http://localhost:5000/api/topmanagers/dashboard/revenue'),
-          axios.get('http://localhost:5000/api/topmanagers/dashboard/pending-payments'),
-          axios.get('http://localhost:5000/api/topmanagers/dashboard/insurance-summary'),
+          axios.get(`${API_BASE_URL}/topmanagers/dashboard/bills`),
+          axios.get(`${API_BASE_URL}/topmanagers/dashboard/appointments`),
+          axios.get(`${API_BASE_URL}/topmanagers/dashboard/revenue`),
+          axios.get(`${API_BASE_URL}/topmanagers/dashboard/pending-payments`),
+          axios.get(`${API_BASE_URL}/topmanagers/dashboard/insurance-summary`),
         ]);
 
         const bills = Array.isArray(billsRes.data?.bills) ? billsRes.data.bills : [];

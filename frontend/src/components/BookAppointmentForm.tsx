@@ -25,12 +25,14 @@ export const BookAppointmentForm = () => {
   // State for dynamic data
   const [specializations, setSpecializations] = useState<string[]>([]);
   const [doctorsList, setDoctorsList] = useState<string[]>([]);
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
   
   // Fetch specializations on component mount
   useEffect(() => {
     const fetchSpecializations = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/appointments/specializations');
+        const response = await axios.get(`${API_BASE_URL}/appointments/specializations`);
         setSpecializations(response.data.map((spec: any) => spec.name));
       } catch (error) {
         console.error('Error fetching specializations:', error);
@@ -45,7 +47,7 @@ export const BookAppointmentForm = () => {
     const fetchDoctors = async () => {
       if (bookSpecialization) {
         try {
-          const response = await axios.get(`http://localhost:5000/api/appointments/doctors/${bookSpecialization}`);
+          const response = await axios.get(`${API_BASE_URL}/appointments/doctors/${bookSpecialization}`);
           setDoctorsList(response.data.map((doc: any) => doc.name));
         } catch (error) {
           console.error('Error fetching doctors:', error);
@@ -65,7 +67,7 @@ export const BookAppointmentForm = () => {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/appointments/book', {
+      await axios.post('${API_BASE_U}/appointments/book', {
         patientUsername: bookPatientUsername,
         doctor: bookDoctor,
         specialization: bookSpecialization,

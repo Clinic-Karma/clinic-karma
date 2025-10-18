@@ -37,12 +37,13 @@ const LabCoordinatorDashboard = () => {
     "ECG",
     "Ultrasound"
   ];
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
 
   // Function to fetch lab reports
   const fetchLabReports = async () => {
     setIsLoadingReports(true);
     try {
-      const response = await fetch('http://localhost:5000/api/appointments/lab-reports');
+      const response = await fetch(`${API_BASE_URL}/appointments/lab-reports`);
       const data = await response.json();
       
       if (response.ok) {
@@ -92,7 +93,7 @@ const LabCoordinatorDashboard = () => {
       formData.append('treatmentName', uploadFormData.treatmentName);
       formData.append('reportFile', uploadFormData.reportFile);
 
-      const response = await fetch('http://localhost:5000/api/appointments/upload-lab-report', {
+      const response = await fetch(`${API_BASE_URL}/appointments/upload-lab-report`, {
         method: 'POST',
         body: formData, // Don't set Content-Type header, let browser set it with boundary
       });

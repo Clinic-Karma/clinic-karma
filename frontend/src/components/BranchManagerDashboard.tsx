@@ -21,6 +21,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
 const BranchManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("doctor-management");
   const [doctorFilter, setDoctorFilter] = useState("");
@@ -41,7 +43,7 @@ const BranchManagerDashboard = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/appointments/doctors');
+        const response = await axios.get(`${API_BASE_URL}/appointments/doctors`);
         if (response.data.success) {
           setDoctorsData(response.data.doctors || []);
         }
@@ -58,7 +60,7 @@ const BranchManagerDashboard = () => {
   useEffect(() => {
     const fetchStaff = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/appointments/staff');
+        const response = await axios.get(`${API_BASE_URL}/appointments/staff`);
         if (response.data.success) {
           setStaffData(response.data.staff || []);
         }
@@ -80,7 +82,7 @@ const BranchManagerDashboard = () => {
   useEffect(() => {
     const fetchSpecializations = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/appointments/specializations');
+        const response = await axios.get(`${API_BASE_URL}/appointments/specializations`);
         if (response.data.success) {
           setSpecializations(response.data.specializations || []);
         }
@@ -98,7 +100,7 @@ const BranchManagerDashboard = () => {
     setLoading(true);
     try {
       // Call the backend API to create staff
-      const response = await axios.post('http://localhost:5000/api/appointments/staff', staffData);
+      const response = await axios.post(`${API_BASE_URL}/appointments/staff`, staffData);
       
       if (response.data.success) {
         // Add the new staff to local state
@@ -132,7 +134,7 @@ const BranchManagerDashboard = () => {
     setLoading(true);
     try {
       // For now, we'll just add to local state since the backend endpoint isn't working
-      // In a real scenario, this would be: await axios.post('http://localhost:5000/api/branchmanagers/doctors', doctorData);
+      // In a real scenario, this would be: await axios.post(`${API_BASE_URL}/branchmanagers/doctors`, doctorData);
       const newDoctor = {
         id: Date.now(), // Temporary ID
         name: doctorData.name,

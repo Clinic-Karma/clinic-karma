@@ -16,6 +16,9 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
+
 const ReceptionistDashboard = () => {
   const [activeTab, setActiveTab] = useState("appointments");
   const { toast } = useToast();
@@ -69,7 +72,7 @@ const ReceptionistDashboard = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/appointments/specializations');
+        const res = await fetch(`${API_BASE_URL}/appointments/specializations`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to load specializations');
         setSpecializationsData(Array.isArray(data.specializations) ? data.specializations : []);
@@ -84,7 +87,7 @@ const ReceptionistDashboard = () => {
     (async () => {
       try {
         console.log('Fetching pending insurances...');
-        const res = await fetch('http://localhost:5000/api/appointments/pending-insurances');
+        const res = await fetch(`${API_BASE_URL}/appointments/pending-insurances`);
         const data = await res.json();
         console.log('Pending insurances response:', data);
         if (!res.ok) throw new Error(data.message || 'Failed to load pending insurances');
@@ -109,7 +112,7 @@ const ReceptionistDashboard = () => {
         if (!bookSpecialization || !bookBranch) return;
         const selected = specializationsData.find(s => s.name === bookSpecialization);
         if (!selected) return;
-        const res = await fetch(`http://localhost:5000/api/appointments/doctors/${encodeURIComponent(selected.id)}/${encodeURIComponent(bookBranch)}`);
+        const res = await fetch(`${API_BASE_URL}/appointments/doctors/${encodeURIComponent(selected.id)}/${encodeURIComponent(bookBranch)}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to load doctors');
         setDoctorsData(Array.isArray(data.doctors) ? data.doctors : []);
@@ -128,7 +131,7 @@ const ReceptionistDashboard = () => {
         const selected = doctorsData.find(d => d.name === bookDoctor);
         if (!selected) return;
         const localDate = format(bookDate, 'yyyy-MM-dd');
-        const res = await fetch(`http://localhost:5000/api/appointments/available-slots/${selected.id}/${localDate}`);
+        const res = await fetch(`${API_BASE_URL}/appointments/available-slots/${selected.id}/${localDate}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to load time slots');
         setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : []);
@@ -154,7 +157,7 @@ const ReceptionistDashboard = () => {
   const handleFormSubmit = async (formName: string, formData?: any) => {
     try {
       if (formName === "Patient Registration" && formData) {
-        const response = await fetch('http://localhost:5000/api/patient/register', {
+        const response = await fetch(`${API_BASE_URL}/patient/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -209,7 +212,7 @@ const ReceptionistDashboard = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/appointments/submit-insurance-claim', {
+      const response = await fetch(`${API_BASE_URL}/appointments/submit-insurance-claim`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,7 +238,7 @@ const ReceptionistDashboard = () => {
         setClaimAmount("");
         
         // Refresh pending insurances
-        const res = await fetch('http://localhost:5000/api/appointments/pending-insurances');
+        const res = await fetch(`${API_BASE_URL}/appointments/pending-insurances`);
         const insuranceData = await res.json();
         if (res.ok) {
           const insurances = Array.isArray(insuranceData.insurances) ? insuranceData.insurances.map((item: any) => ({
@@ -265,7 +268,7 @@ const ReceptionistDashboard = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/appointments/bill-details/${appointmentId}`);
+      const response = await fetch(`${API_BASE_URL}/appointments/bill-details/${appointmentId}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -309,7 +312,7 @@ const ReceptionistDashboard = () => {
 
     setIsCheckingUsername(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/appointments/check-username/${encodeURIComponent(username)}`);
+      const response = await fetch(`${API_BASE_URL}/appointments/check-username/${encodeURIComponent(username)}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -352,7 +355,7 @@ const ReceptionistDashboard = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/appointments/register-patient', {
+      const response = await fetch(`${API_BASE_URL}/appointments/register-patient`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -697,7 +700,7 @@ const ReceptionistDashboard = () => {
 
                           console.log('Sending appointment data:', appointmentData);
 
-                          const response = await fetch('http://localhost:5000/api/appointments/book', {
+                          const response = await fetch(`${API_BASE_URL}/appointments/book`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
@@ -918,7 +921,7 @@ const ReceptionistDashboard = () => {
                                   newDate: rescheduleDate ? format(rescheduleDate, 'yyyy-MM-dd') : '',
                                   newTimeSlot: rescheduleTimeSlot
                                 };
-                                const response = await fetch('http://localhost:5000/api/appointments/reschedule', {
+                                const response = await fetch(`${API_BASE_URL}/appointments/reschedule`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(payload)
@@ -985,7 +988,7 @@ const ReceptionistDashboard = () => {
                                   throw new Error('Appointment ID is required');
                                 }
                                 const payload = { appointmentId: Number(cancelAppointmentId) };
-                                const response = await fetch('http://localhost:5000/api/appointments/cancel', {
+                                const response = await fetch(`${API_BASE_URL}/appointments/cancel`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(payload)
@@ -1195,7 +1198,7 @@ const ReceptionistDashboard = () => {
                             onClick={async () => {
                               if (!item.approved) {
                                 try {
-                                  const response = await fetch('http://localhost:5000/api/appointments/update-insurance-status', {
+                                  const response = await fetch(`${API_BASE_URL}/appointments/update-insurance-status`, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ insuranceId: item.insuranceId, status: 'Approved' })

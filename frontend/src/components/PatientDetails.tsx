@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+
+
 export default function PatientDetails({ patient, appointmentId, open, onOpenChange }) {
   const [diagnosis, setDiagnosis] = useState("");
   const [prescription, setPrescription] = useState("");
@@ -17,7 +20,7 @@ export default function PatientDetails({ patient, appointmentId, open, onOpenCha
 
       console.log(appointmentId, diagnosis, prescription, notes);
 
-      await axios.post  ("http://localhost:5000/api/doctor/notes", {
+      await axios.post  (`${API_BASE_URL}/doctor/notes`, {
         appointmentId: appointmentId,
         diagnosis: diagnosis,
         prescription: prescription,
