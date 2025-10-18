@@ -1,0 +1,11 @@
+# backend/.dockerignore
+node_modules
+npm-debug.log
+.env
+.vscode
+.git
+tests
+coverage
+dist
+frontend
+uploads

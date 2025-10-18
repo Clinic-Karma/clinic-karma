@@ -62,6 +62,12 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Example (add in server.js or app.js)
+app.get('/healthz', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
+
 // Route Middlewares
 app.use("/api/auth", authRouter);
 app.use("/api/patient", patientRouter);
