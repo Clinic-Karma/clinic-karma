@@ -16,33 +16,37 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors({
-  credentials: true,
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'http://localhost:5173', 
-      'http://localhost:8080', 
-      'http://localhost:8081',
-      process.env.FRONTEND_URL
-    ];
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // For development, you can also allow any local network IP
-      if (origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+// Allow multiple origins safely
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'http://localhost:8080', 
+  'http://localhost:8081',
+  "https://clinic-karma.vercel.app",              // your final production frontend
+  /\.vercel\.app$/,                               // any temporary vercel deployment
+  "http://localhost:5173",                        // local dev
+  "https://clinic-karma-production.up.railway.app" // backend itself (optional)
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.some((pattern) => {
+        if (pattern instanceof RegExp) return pattern.test(origin);
+        return origin === pattern;
+      })) {
+        return callback(null, true);
       }
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-}));
+      return callback(new Error("CORS not allowed for this origin: " + origin), false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
+
+
 app.use(cookieParser());
 app.use(bodyParser.json());
 
