@@ -26,9 +26,7 @@ app.use(cors({
       'http://localhost:5173', 
       'http://localhost:8080', 
       'http://localhost:8081',
-      'http://192.168.209.1:8080',
-      'http://192.168.209.1:8081',
-      'http://192.168.209.1:5173'
+      process.env.FRONTEND_URL
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -85,6 +83,6 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
-  console.log(`CORS enabled for origins: http://localhost:5173, http://localhost:8080, http://localhost:8081, http://192.168.209.1:8080, http://192.168.209.1:8081, http://192.168.209.1:5173`);
+  console.log(`CORS enabled for origins: http://localhost:5173, http://localhost:8080, http://localhost:8081, http://192.168.209.1:8080, http://192.168.209.1:8081, http://192.168.209.1:5173, ${process.env.FRONTEND_URL}`);
   console.log(`Database URL configured: ${process.env.DATABASE_URL ? 'Yes' : 'No (Missing DATABASE_URL)'}`);
 });
