@@ -1,6 +1,0 @@
-{
-    "scripts": {
-        "start:frontend": "cd frontend && bun run build",
-        "start:backend": "cd backend && node server.js"
-    }
-}
