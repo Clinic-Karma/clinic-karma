@@ -55,12 +55,12 @@ export async function login(req, res) {
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-            sameSite: 'strict',
+            sameSite: 'strict', 
             maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
         });
 
         return res.json({
-        user: { id: user.user_id, pid: ID, username: user.username, role: user.user_type }
+        user: { id: user.user_id, pid: ID, username: user.username, role: user.user_type, name: user.name }
         });
 
     }

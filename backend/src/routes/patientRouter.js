@@ -9,7 +9,8 @@ import {
 import {
     fetchLabReports,
     fetchAppointments,
-    fetchPayments   
+    fetchPayments,
+    fetchBills
 } from "../controllers/patientController_y.js";
 
 export const router = Router();
@@ -26,8 +27,10 @@ router.post("/appointment", storeAppointment);
     
 router.get("/appointments/:patientId", fetchAppointments);
 
-router.get("/lab-reports/:patientId", fetchLabReports);
+router.get("/labreports/:patientId", fetchLabReports);
 
 router.get("/payments/:patientId", fetchPayments);
+
+router.get("/bills/:patientId", fetchBills);
 
 export default router;

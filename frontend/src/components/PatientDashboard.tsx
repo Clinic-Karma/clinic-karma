@@ -19,6 +19,7 @@ const PatientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [labReports, setLabReports] = useState([]);
   const [payments, setPayments] = useState([]); 
+  const [bills, setBills] = useState([]);
 
         // Get the string from localStorage
   const userString = localStorage.getItem('user');
@@ -28,6 +29,7 @@ const PatientDashboard = () => {
 
       // Get the patient ID
   const patientId = user?.pid;
+  const name = user?.name || "World";
 
   const fetchAppointments = async () => {
     try {
@@ -52,9 +54,19 @@ const PatientDashboard = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/patient/payments/${patientId}`);
       setPayments(response.data);
-    }  
+    }
     catch (error) {
       console.error("Error while fetching payments");
+    }
+  };
+
+  const fetchBills = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/patient/bills/${patientId}`);
+      setBills(response.data);
+    }  
+    catch (error) {
+      console.error("Error while fetching bills");
     }
   }
 
@@ -63,6 +75,7 @@ const PatientDashboard = () => {
     fetchAppointments();
     fetchLabReports();
     fetchPayments();
+    fetchBills();
 
     console.log(appointments);
   }
@@ -138,7 +151,8 @@ const PatientDashboard = () => {
     date: '2024-09-10',
     status: 'Paid',
     method: 'Cash'
-  }];
+    }];
+  
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -167,8 +181,13 @@ const PatientDashboard = () => {
         return 'secondary';
       default:
         return 'secondary';
-    }
+    };
   };
+
+  const getTime = (time: String) => {
+      const x = time.split("T")
+      return `${x[0]} ${x[1].slice(0,8)}`; 
+    };
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
@@ -179,7 +198,7 @@ const PatientDashboard = () => {
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Patient Dashboard</h1>
-              <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Welcome back, John Doe</p>
+              <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Welcome back, {name}</p>
             </div>
             <div className="flex gap-2 items-center">
               <Button 
@@ -451,42 +470,110 @@ const PatientDashboard = () => {
             <div>
               <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Payment History</h2>
               <p className="text-muted-foreground mb-8">Track all your medical payments and transactions</p>
-            </div>
-            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 rounded-lg bg-gradient-primary">
-                    <CreditCard className="w-5 h-5 text-primary-foreground" />
+              </div>
+                    <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-gradient-primary">
+                  <CreditCard className="w-5 h-5 text-primary-foreground" />
+                </div>
+                Bills
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2"> {/* slightly less spacing between cards */}
+                  {bills.map(bill => (
+
+                <div
+                  key={bill.id} 
+                  className="border border-border/50 rounded-xl p-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="flex justify-between items-start" >
+                      <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                        Appointment ID: {bill.appointment_id}
+                        </p>
+                    <div className="text-right space-y-1">
+                      <Badge
+                        variant={getStatusColor(bill.status) as any}
+                        className="flex items-center gap-1 px-3 py-1"
+                      >
+                        {getStatusIcon(bill.status)}
+                        {bill.status}
+                      </Badge>
+                    </div>
+                      </div>
+
+                  <div className="flex justify-between items-start" >
+                    <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                        Total Amount: {bill.total_amount}
+                      </p>
                   </div>
-                  Transaction History
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {payments.map(payment => (
-                  <div key={payment.id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-lg">{payment.description}</h4>
-                        <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
-                          Payment Method: {payment.method}
+                  <div className="flex justify-between items-start" >
+                    <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                        Insured Amount: {bill.insured_amount}
                         </p>
                       </div>
-                      <div className="text-right space-y-2">
-                        <div className="font-bold text-2xl text-primary">{payment.amount}</div>
-                        <Badge variant={getStatusColor(payment.status) as any} className="flex items-center gap-1 px-3 py-1">
-                          {getStatusIcon(payment.status)}
-                          {payment.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                  <div className="flex justify-between items-start" >
+                    <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                        Patient Amount: {bill.patient_amount}
+                        </p>
+                  </div>
+
+                  {bill.status === "pending" && (
+                    <div
+                      className="text-sm text-muted-foreground bg-muted/20 p-2.5 rounded-lg"
+                      style={{ marginTop: "-10px" }}
+                    >
                       <Calendar className="w-4 h-4 inline mr-2" />
-                      Transaction Date: {payment.date}
+                      Transaction Date: {getTime(bill.date)}
+                    </div>
+                  )}
+
+                </div>
+              ))}
+            </CardContent>
+            </Card>
+
+
+
+          <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-gradient-primary">
+                  <CreditCard className="w-5 h-5 text-primary-foreground" />
+                </div>
+                Transaction History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2"> {/* slightly less spacing between cards */}
+              {payments.map(payment => (
+                <div
+                  key={payment.id}
+                  className="border border-border/50 rounded-xl p-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="flex justify-between items-start" >
+                      <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                        Payment Method: {payment.method}
+                      </p>
+                    <div className="text-right space-y-1">
+                      <div className="font-bold text-2xl text-primary">{payment.amount}</div>
+                      <Badge
+                        variant={getStatusColor(payment.status) as any}
+                        className="flex items-center gap-1 px-3 py-1"
+                      >
+                        {getStatusIcon("Paid")}
+                        {"Paid"}
+                      </Badge>
                     </div>
                   </div>
-                ))}
-              </CardContent>
+                  <div className="text-sm text-muted-foreground bg-muted/20 p-2.5 rounded-lg" style={{ marginTop: '-10px' }}>
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Transaction Date: {getTime(payment.date)}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
             </Card>
+            
           </TabsContent>
 
           {/* Lab Reports Tab */}
@@ -506,20 +593,15 @@ const PatientDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {labReports.map(report => (
-                  <div key={report.id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
+                  <div key={report.appintment_id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
                     <div className="flex justify-between items-start">
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-lg">{report.testName}</h4>
-                        <p className="text-sm text-muted-foreground">Ordered by {report.doctor}</p>
+                        <h4 className="font-semibold text-lg">{report.name}</h4>
                       </div>
-                      <Badge variant={getStatusColor(report.status) as any} className="flex items-center gap-1 px-3 py-1">
-                        {getStatusIcon(report.status)}
-                        {report.status}
-                      </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
                       <Calendar className="w-4 h-4 inline mr-2" />
-                      Test Date: {report.date}
+                      Test Date: {getTime(report.date)}
                     </div>
                     <div className="flex gap-3">
                       <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90">

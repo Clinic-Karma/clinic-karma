@@ -82,9 +82,9 @@ export async function addAppointment(patientId, doctorId, date, status, startTim
                         )
                     , p_date + INTERVAL '30 days');
                         
-                    COMMIT;  -- Commit if all is successful
+                    COMMIT;
                 EXCEPTION WHEN OTHERS THEN
-                    ROLLBACK;  -- Rollback if any error occurs
+                    ROLLBACK;  
                     RAISE NOTICE 'Transaction failed: %', SQLERRM;
                 END;
             END;
@@ -137,7 +137,14 @@ export async function getAppointmentsByPatient(patientId) {
 export async function getLabReportsByPatient(patientId) {
     try {
         const result = await sql`
-            
+            SELECT ta."Appointment_ID" as appintment_id,
+                   ta."Report_Links" as link, c."Treatment_name" as name,
+                   a."Appointment_Date" as date 
+            FROM "Treatment_Appointment" ta
+            INNER JOIN "Appointment" a ON ta."Appointment_ID" = a."Appointment_ID"
+            INNER JOIN "Catalogue" c ON ta."Catalogue_ID" = c."Catalogue_ID"
+            WHERE a."Patient_ID" = ${patientId}
+            ORDER BY a."Appointment_Date" DESC
         `;
         return result;
     }
@@ -150,15 +157,38 @@ export async function getLabReportsByPatient(patientId) {
 export async function getPaymentsByPatient(patientId) {
     try {
         const result = await sql`
-            SELECT p."Payment_ID", p."Amount", p."Payment_Date", p."Description", p."Status"
+            SELECT p."Payment_ID" as id , p."Amount" as amount, p."Date_Time" as date, p."Payment_Method" as method
             FROM "Payment" p
-            WHERE p."Patient_ID" = ${patientId}
-            ORDER BY p."Payment_Date" DESC;
+            INNER JOIN "Billing" b ON p."Bill_ID" = b."Bill_ID"
+            INNER JOIN "Appointment" a ON b."Appointment_ID" = a."Appointment_ID"
+            INNER JOIN "Patient" pt ON a."Patient_ID" = pt.patient_id
+            WHERE pt.patient_id = ${patientId}
+            ORDER BY p."Date_Time" DESC;
         `;
         return result;
     }
     catch (error) {
         console.error('Error fetching payments:', error);
+        throw error;
+    }
+}
+
+export async function getBillsByPatient(patientId) {
+    try {
+        const result = await sql`
+            SELECT b."Bill_ID" as id, b."Total_Amount" as total_amount, b."Due_Date" as due_date, 
+                   a."Appointment_ID" as appointment_id, b."Insured_Amount" as insured_amount,
+                   b."Patient_Amount" as patient_amount
+            FROM "Billing" b
+            INNER JOIN "Appointment" a ON b."Appointment_ID" = a."Appointment_ID"
+            INNER JOIN "Patient" p ON a."Patient_ID" = p.patient_id
+            WHERE p.patient_id = ${patientId}
+            ORDER BY b."Due_Date" DESC;
+        `;
+        return result;
+    }
+    catch (error) {
+        console.error('Error fetching bills:', error);
         throw error;
     }
 }

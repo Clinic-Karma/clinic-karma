@@ -69,7 +69,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
     const user = userString ? JSON.parse(userString) : null;
 
         // Get the patient ID
-    const doctorId   = user?.pid;
+    const doctorId = user?.pid;
+    const name = user?.name || "World!";
+    const username = user?.username || "doctor";
 
     useEffect(() => {
       axios.get(`${API_BASE_URL}/doctor/appointments/${doctorId}`)
@@ -122,7 +124,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
             <div className="flex justify-between items-center">
               <div className="space-y-1">
                 <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Doctor Dashboard</h1>
-                <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Dr. Priya Sharma - Cardiologist</p>
+                <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Welcome {name}!</p>
               </div>
               <div className="flex gap-2 items-center">
                 <Button 
@@ -282,7 +284,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                             }}
                           >
                             <FileText className="w-4 h-4 mr-2" />
-                            View Details
+                            Add Diagnosis Details
                           </Button>
                         </div>
                       </div>
@@ -382,11 +384,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                       <div className="space-y-4">
                         <div className="p-4 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10">
                           <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                          <p className="text-lg font-semibold">Dr. Priya Sharma</p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10">
-                          <label className="text-sm font-medium text-muted-foreground">Specialization</label>
-                          <p className="text-lg">Cardiologist</p>
+                          <p className="text-lg font-semibold">{name}</p>
                         </div>
                         <div className="p-4 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10">
                           <label className="text-sm font-medium text-muted-foreground">License Number</label>
@@ -405,7 +403,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                             </p>
                             <p className="flex items-center gap-3">
                               <Mail className="w-4 h-4 text-primary" />
-                              <span>dr.priya.sharma@hospital.com</span>
+                              <span>{ username }@hospital.com</span>
                             </p>
                           </div>
                         </div>

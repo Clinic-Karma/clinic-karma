@@ -1,4 +1,9 @@
-    import { getAppointmentsByPatient, getLabReportsByPatient, getPaymentsByPatient } from "../db_utils/patient_y.js";
+import {
+    getAppointmentsByPatient,
+    getLabReportsByPatient,
+    getPaymentsByPatient,
+    getBillsByPatient
+} from "../db_utils/patient_y.js";
 
     export async function fetchAppointments(req, res) {
         const patientId = req.params.patientId;
@@ -44,3 +49,25 @@
             return res.status(500).json({ message: error.message || "Internal Server Error" });
         }
     }
+
+export async function fetchBills(req, res) {
+    const patientId = req.params.patientId;
+
+    if (!patientId) {
+        return res.status(400).json({ message: "Patient ID is required" });
+    }
+
+    try {
+        const bills = await getBillsByPatient(patientId);
+        bills.forEach(bill => {
+            let remain = bill.total_amount - bill.insured_amount - bill.patient_amount;
+            if (remain <= 0) bill["status"] = "Paid";
+            else bill["status"] = "Pending";
+        });
+
+
+        return res.json(bills);
+    } catch (error) {
+        return res.status(500).json({ message: error.message || "Internal Server Error" });
+    }
+}
