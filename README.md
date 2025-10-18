@@ -34,7 +34,4 @@ It supports multiple user roles such as patients, doctors, receptionists, branch
 
 ---
 
-## 👨‍💻 Developer
-**Name:** Yasith Madushan  
-**GitHub:** [@yasith2003](https://github.com/yasith2003)
 
