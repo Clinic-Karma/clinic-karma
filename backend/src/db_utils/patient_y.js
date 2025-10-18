@@ -50,19 +50,29 @@ export async function getPatientID(userID) {
 export async function addAppointment(patientId, doctorId, date, status, startTime, type, branch, specializationId) {
     try {
 
-        await sql`CALL insert_appointment (
-                ${patientId},
-                ${doctorId},
-                ${date},
-                ${status},
-                ${startTime},
-                ${type},
-                ${branch},
-                ${specializationId}
-            );
-        `;  
+        const res = await sql`
+                    INSERT INTO "Appointment" ("Patient_ID", "Appointment_Date", "Status", "Type", "Branch_Name")
+                    VALUES (${patientId}, ${date}, ${status}, ${type}, ${branch})
+                    RETURNING "Appointment_ID" as id;`;
+        
+        const appintment_id = res[0].id;
 
-        console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
+        const dueDate = new Date(date);
+        dueDate.setDate(dueDate.getDate() + 30);
+
+
+        await sql`INSERT INTO "Doctor_Appointment" ("Appointment_ID", "Doctor_ID", "Start_Time", "Is_Emergency", "Specialization_ID")
+                    VALUES (${appintment_id}, ${doctorId}, ${startTime}, ${false}, ${specializationId});`;
+
+        await sql`INSERT INTO "Billing" ("Appointment_ID", "Total_Amount", "Due_Date")
+                    VALUES (${appintment_id}, 
+                        (
+                            SELECT "Consultation_Fee"
+                            FROM "Specialization"
+                            WHERE "Specialization_ID" = ${specializationId}
+                        )
+                , ${dueDate});`;
+
 
         return;
     } catch (error) {
