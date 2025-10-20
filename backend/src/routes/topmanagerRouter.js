@@ -13,21 +13,23 @@ import {
   fetchAppointments,
   fetchInsuranceSummary,
 } from '../controllers/topmanagerController.js';
+import { requireAuth, requireRole } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
-router.get('/', getAll);
-router.get('/:id', getById);
-router.post('/', create);
-router.put('/:id', update);
-router.delete('/:id', remove);
-router.delete('/:id/hard', hardDelete);
+// CRUD operations - require authentication and top-manager role
+router.get('/', requireAuth, requireRole('top-manager'), getAll);
+router.get('/:id', requireAuth, requireRole('top-manager'), getById);
+router.post('/', requireAuth, requireRole('top-manager'), create);
+router.put('/:id', requireAuth, requireRole('top-manager'), update);
+router.delete('/:id', requireAuth, requireRole('top-manager'), remove);
+router.delete('/:id/hard', requireAuth, requireRole('top-manager'), hardDelete);
 
-// Dashboard data endpoints (read-only)
-router.get('/dashboard/revenue', fetchRevenue);
-router.get('/dashboard/pending-payments', fetchPendingPayments);
-router.get('/dashboard/bills', fetchBills);
-router.get('/dashboard/appointments', fetchAppointments);
-router.get('/dashboard/insurance-summary', fetchInsuranceSummary);
+// Dashboard data endpoints (read-only) - require authentication and top-manager role
+router.get('/dashboard/revenue', requireAuth, requireRole('top-manager'), fetchRevenue);
+router.get('/dashboard/pending-payments', requireAuth, requireRole('top-manager'), fetchPendingPayments);
+router.get('/dashboard/bills', requireAuth, requireRole('top-manager'), fetchBills);
+router.get('/dashboard/appointments', requireAuth, requireRole('top-manager'), fetchAppointments);
+router.get('/dashboard/insurance-summary', requireAuth, requireRole('top-manager'), fetchInsuranceSummary);
 
 export default router;

@@ -7,7 +7,7 @@ export const router = Router();
 
 router.post("/register-patient", registerPatient);
 router.post("/login", loginLimiter, login);
-router.post("/refresh", refreshLimiter, refreshAccessToken);
+router.post("/refresh", refreshAccessToken);
 router.post("/logout", logout);
 
 export default router;

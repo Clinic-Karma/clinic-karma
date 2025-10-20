@@ -11,16 +11,12 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
+    mode === 'development' &&
+    componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
-    outDir: "dist", // ✅ tells Vite where to put production files
-    emptyOutDir: true, // ✅ clean old builds before new one
-  },
-  base: "/", // ✅ ensures correct absolute paths in production
 }));

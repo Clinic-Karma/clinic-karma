@@ -2,60 +2,101 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, FileText, CreditCard, History, Users, TrendingUp, Star, MapPin, Phone, Mail, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Calendar, FileText, CreditCard, History, Users, TrendingUp, Star, MapPin, Phone, Mail, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Heart, Activity } from 'lucide-react';
 import SignUpModal from './SignUpModal';
 import LoginModal from './LoginModal';
 import AboutUsModal from './AboutUsModal';
 import BranchDetailsModal from './BranchDetailsModal';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import heroImage from '@/assets/medical-hero.jpg';
 import doctor1 from '@/assets/doctor-1.jpg';
 import doctor2 from '@/assets/doctor-2.jpg';
 import doctor3 from '@/assets/doctor-3.jpg';
+import doctor4 from '@/assets/doctor-4.png';
+import doctor5 from '@/assets/doctor-5.png';
+import doctor6 from '@/assets/doctor-6.png';
 
 const LandingPage = () => {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
   const [isBranchDetailsOpen, setIsBranchDetailsOpen] = useState(false);
-  const [expandedBenefit, setExpandedBenefit] = useState<number | null>(null);
   const [showAllDoctors, setShowAllDoctors] = useState(false);
-  const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
+  
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDashboardRedirect = () => {
+    if (!isAuthenticated) {
+      setIsLoginOpen(true);
+      return;
+    }
+
+    switch (user?.role) {
+      case 'patient':
+        navigate('/patient-dashboard');
+        break;
+      case 'doctor':
+        navigate('/doctor-dashboard');
+        break;
+      case 'top-manager':
+        navigate('/top-manager');
+        break;
+      case 'branch-manager':
+        navigate('/branch-manager');
+        break;
+      case 'lab-coordinator':
+        navigate('/lab-coordinator');
+        break;
+      case 'receptionist':
+        navigate('/receptionist');
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
   const benefits = [{
     icon: Calendar,
-    title: "Easy Appointment Scheduling",
-    description: "Book appointments with your preferred doctors in just a few clicks",
-    expandedDescription: "Our advanced booking system allows you to select your preferred doctor, choose available time slots, and receive instant confirmation. You can also reschedule or cancel appointments with ease, and receive automated reminders via SMS and email."
+    title: "⚡ Lightning-Fast Booking",
+    description: "Book appointments with your preferred doctors in just a few clicks - no more waiting on hold!"
   }, {
     icon: FileText,
-    title: "Centralized Patient Records",
-    description: "Access all your medical records, prescriptions, and treatment history in one place",
-    expandedDescription: "Your complete medical journey is stored securely in our digital platform. View past consultations, download prescriptions, track medication schedules, and share your medical history with new healthcare providers instantly."
+    title: "📋 Your Complete Health Story",
+    description: "Access all your medical records, prescriptions, and treatment history in one secure, beautiful dashboard"
   }, {
     icon: CreditCard,
-    title: "Transparent Billing & Insurance",
-    description: "Clear billing statements with insurance integration for hassle-free payments",
-    expandedDescription: "Receive detailed billing statements with itemized charges, insurance coverage details, and co-payment information. Our system integrates with major insurance providers for direct billing and claim processing."
+    title: "💰 Zero-Hassle Billing",
+    description: "Crystal-clear billing with smart insurance integration - know exactly what you'll pay before you visit"
   }, {
     icon: History,
-    title: "Lab Reports & Treatment History",
-    description: "Digital access to all your lab reports and complete treatment history",
-    expandedDescription: "Access all your lab results, X-rays, and diagnostic reports online. Compare historical data with charts and graphs, and share reports with specialists. All reports are available 24/7 from any device."
+    title: "🔬 Smart Lab & Reports Hub",
+    description: "Digital access to all your lab reports with AI-powered insights and trend analysis"
   }];
   const doctors = [{
-    name: "Dr. Priya Sharma",
-    specialization: "Cardiologist",
-    image: doctor1,
+    name: "Dr. Nuwan Perera",
+    specialization: "General Physician",
+    image: doctor4,
     availability: "Mon-Fri 9AM-5PM",
     rating: 4.9
   }, {
-    name: "Dr. Marcus Johnson",
-    specialization: "Orthopedic Surgeon",
+    name: "Dr.Kavindi Silva",
+    specialization: "Dermatologist",
     image: doctor2,
     availability: "Tue-Sat 10AM-6PM",
     rating: 4.8
   }, {
     name: "Dr. Carlos Rodriguez",
-    specialization: "Neurologist",
+    specialization: "Cardiologist",
     image: doctor3,
     availability: "Mon-Thu 8AM-4PM",
     rating: 4.9
@@ -67,45 +108,18 @@ const LandingPage = () => {
     rating: 4.9
   }, {
     name: "Dr. Robert Kim",
-    specialization: "Dermatologist",
-    image: doctor2,
+    specialization: "Orthopedic Surgeon",
+    image: doctor5,
     availability: "Wed-Sun 9AM-5PM",
     rating: 4.7
   }, {
     name: "Dr. Maria Lopez",
-    specialization: "Gynecologist",
-    image: doctor3,
+    specialization: "Neurologist",
+    image: doctor6,
     availability: "Mon-Fri 10AM-4PM",
     rating: 4.8
   }];
 
-  const newsItems = [
-    {
-      title: "AI-Powered Diagnostics",
-      description: "Advanced AI assistance for more accurate and faster diagnosis",
-      icon: TrendingUp
-    },
-    {
-      title: "Telemedicine Integration",
-      description: "Connect with your healthcare providers from anywhere",
-      icon: Users
-    },
-    {
-      title: "Smart Health Records",
-      description: "Intelligent organization and insights from your medical data",
-      icon: FileText
-    },
-    {
-      title: "24/7 Emergency Support",
-      description: "Round-the-clock medical support for urgent healthcare needs",
-      icon: Phone
-    },
-    {
-      title: "Preventive Care Alerts",
-      description: "Automated reminders for checkups, vaccinations, and screenings",
-      icon: Calendar
-    }
-  ];
   const stats = [{
     label: "Active Patients",
     value: "12,458",
@@ -127,25 +141,61 @@ const LandingPage = () => {
       {/* Navigation */}
       <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            MedSync
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 w-12 h-12 rounded-xl flex items-center justify-center shadow-lg">
+                <Heart className="w-7 h-7 text-white fill-current" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                <Activity className="w-2.5 h-2.5 text-white" />
+              </div>
+            </div>
+            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              MedSync
+            </div>
           </div>
           <div className="hidden md:flex gap-4">
-            <Button onClick={() => setIsSignUpModalOpen(true)} variant="outline" className="shadow-button">
-              Sign Up
-            </Button>
-            <Button onClick={() => setIsLoginOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
-             Login
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button onClick={handleDashboardRedirect} variant="outline" className="shadow-button">
+                  Dashboard
+                </Button>
+                <Button onClick={handleLogout} className="bg-gradient-primary hover:opacity-90 shadow-button">
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={() => setIsSignUpModalOpen(true)} variant="outline" className="shadow-button">
+                  Sign Up
+                </Button>
+                <Button onClick={() => setIsLoginOpen(true)} className="bg-gradient-primary hover:opacity-90 shadow-button">
+                 Login
+                </Button>
+              </>
+            )}
           </div>
           {/* Mobile Menu */}
           <div className="md:hidden flex gap-1">
-            <Button onClick={() => setIsSignUpModalOpen(true)} size="sm" variant="outline" className="shadow-button text-xs px-2">
-              Sign Up
-            </Button>
-            <Button onClick={() => setIsLoginOpen(true)} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button text-xs px-2">
-             Login
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button onClick={handleDashboardRedirect} size="sm" variant="outline" className="shadow-button text-xs px-2">
+                  Dashboard
+                </Button>
+                <Button onClick={handleLogout} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button text-xs px-2">
+                 Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={() => setIsSignUpModalOpen(true)} size="sm" variant="outline" className="shadow-button text-xs px-2">
+                  Sign Up
+                </Button>
+                <Button onClick={() => setIsLoginOpen(true)} size="sm" className="bg-gradient-primary hover:opacity-90 shadow-button text-xs px-2">
+                 Login
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -165,38 +215,41 @@ const LandingPage = () => {
             for patients, doctors, and medical staff with modern technology.
           </p>
           <div className="flex justify-center">
-            <Button size="lg" onClick={() => setIsSignUpModalOpen(true)} className="bg-white text-primary hover:bg-white/90 shadow-hero">
-              Get Started Today
+            <Button size="lg" onClick={isAuthenticated ? handleDashboardRedirect : () => setIsSignUpModalOpen(true)} className="bg-white text-primary hover:bg-white/90 shadow-hero">
+              {isAuthenticated ? 'Go to Dashboard' : 'Get Started Today'}
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Why Choose CATMS Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6">
+      {/* Why Choose MedSync Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 to-purple-100/20"></div>
+        <div className="container mx-auto px-6 relative">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose MedSync?</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Experience healthcare management like never before with our comprehensive platform
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Star className="w-4 h-4" />
+              Trusted by 50,000+ Patients
+            </div>
+            <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+              Why Choose MedSync?
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Transform your healthcare experience with our cutting-edge platform that puts <span className="font-semibold text-blue-600">you</span> at the center of everything. 
+              <br />Experience healthcare management like never before with intelligent features designed for modern life.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {benefits.map((benefit, index) => <Card key={index} className="shadow-card hover:shadow-lg transition-all duration-300 group cursor-pointer" onClick={() => setExpandedBenefit(expandedBenefit === index ? null : index)}>
-                <CardContent className="p-6 text-center">
-                  <div className="bg-gradient-primary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <benefit.icon className="w-8 h-8 text-primary-foreground" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">{benefit.title}</h3>
-                  <p className="text-muted-foreground mb-3">{benefit.description}</p>
-                  {expandedBenefit === index && (
-                    <div className="border-t pt-3 mt-3">
-                      <p className="text-sm text-foreground">{benefit.expandedDescription}</p>
+            {benefits.map((benefit, index) => <Card key={index} className="relative bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 group overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <CardContent className="p-8 text-center relative z-10">
+                  <div className="mb-6">
+                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg">
+                      <benefit.icon className="w-10 h-10 text-white" />
                     </div>
-                  )}
-                  <div className="flex justify-center mt-3">
-                    {expandedBenefit === index ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />}
                   </div>
+                  <h3 className="text-2xl font-bold mb-4 text-gray-800 group-hover:text-blue-600 transition-colors duration-300">{benefit.title}</h3>
+                  <p className="text-gray-600 leading-relaxed text-base">{benefit.description}</p>
                 </CardContent>
               </Card>)}
           </div>
@@ -212,10 +265,10 @@ const LandingPage = () => {
               Our team of experienced healthcare professionals is here to provide you with the best medical care
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {(showAllDoctors ? doctors : doctors.slice(0, 3)).map((doctor, index) => <Card key={index} className="shadow-card hover:shadow-lg transition-all duration-300 group overflow-hidden">
-                <div className="relative">
-                  <img src={doctor.image} alt={doctor.name} className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+                  <img src={doctor.image} alt={doctor.name} className="w-full max-w-xs h-72 sm:h-80 object-contain object-center group-hover:scale-105 transition-transform duration-300 rounded-lg" />
                 </div>
                 <CardContent className="p-6">
                   <h3 className="text-xl font-semibold mb-2">{doctor.name}</h3>
@@ -245,56 +298,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Trending New Section */}
-      <section className="py-20 bg-gradient-subtle">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-gradient-primary text-primary-foreground">Trending Now</Badge>
-            <h2 className="text-4xl font-bold mb-4">Latest Healthcare Innovations</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Discover the newest features and improvements we've added to enhance your healthcare experience
-            </p>
-          </div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex-1"></div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setCurrentNewsIndex(Math.max(0, currentNewsIndex - 1))}
-                  disabled={currentNewsIndex === 0}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setCurrentNewsIndex(Math.min(newsItems.length - 3, currentNewsIndex + 1))}
-                  disabled={currentNewsIndex >= newsItems.length - 3}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-3 gap-8">
-              {newsItems.slice(currentNewsIndex, currentNewsIndex + 3).map((news, index) => (
-                <Card key={currentNewsIndex + index} className="shadow-card hover:shadow-lg transition-all duration-300 group">
-                  <CardContent className="p-6">
-                    <div className="bg-gradient-primary w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <news.icon className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-3">{news.title}</h3>
-                    <p className="text-muted-foreground">{news.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Statistics Section */}
       <section className="py-20 bg-gradient-card">
@@ -325,20 +328,20 @@ const LandingPage = () => {
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">MedSync</h3>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="relative">
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
+                    <Heart className="w-6 h-6 text-white fill-current" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                    <Activity className="w-2 h-2 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">MedSync</h3>
+              </div>
               <p className="opacity-90 mb-4">
                 Revolutionizing healthcare management with innovative technology and compassionate care.
               </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 opacity-90">
-                <li><button onClick={() => setIsAboutUsOpen(true)} className="hover:text-white/80 transition-colors">About Us</button></li>
-                <li><button className="hover:text-white/80 transition-colors">Services</button></li>
-                <li><button className="hover:text-white/80 transition-colors">Doctors</button></li>
-                <li><button onClick={() => setIsBranchDetailsOpen(true)} className="hover:text-white/80 transition-colors">Branch Details</button></li>
-                <li><button className="hover:text-white/80 transition-colors">Contact</button></li>
-              </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Services</h4>

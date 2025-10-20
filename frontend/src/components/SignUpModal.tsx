@@ -170,7 +170,9 @@ const SignUpModal = ({ open, onOpenChange, onOpenLogin }: SignUpModalProps) => {
     };
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/auth/register-patient`, payload);
+      const res = await axios.post(`${API_BASE_URL}/auth/register-patient`, payload, {
+        withCredentials: true
+      });
       toast({
         title: "Registration Successful!",
         description: `Welcome ${formData.username}! Your account has been created successfully.`,

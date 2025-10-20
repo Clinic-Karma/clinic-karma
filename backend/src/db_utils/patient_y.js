@@ -56,10 +56,8 @@ export async function addAppointment(patientId, doctorId, date, status, startTim
                     RETURNING "Appointment_ID" as id;`;
         
         const appintment_id = res[0].id;
-
         const dueDate = new Date(date);
         dueDate.setDate(dueDate.getDate() + 30);
-
 
         await sql`INSERT INTO "Doctor_Appointment" ("Appointment_ID", "Doctor_ID", "Start_Time", "Is_Emergency", "Specialization_ID")
                     VALUES (${appintment_id}, ${doctorId}, ${startTime}, ${false}, ${specializationId});`;
@@ -72,7 +70,6 @@ export async function addAppointment(patientId, doctorId, date, status, startTim
                             WHERE "Specialization_ID" = ${specializationId}
                         )
                 , ${dueDate});`;
-
 
         return;
     } catch (error) {

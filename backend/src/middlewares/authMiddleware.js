@@ -2,8 +2,15 @@ import { verifyAccessToken } from "../utils/token.js";
 
 export function requireAuth(req, res, next) {
   try {
-    const token = req.cookies?.accessToken;
-    if (!token) return res.status(401).json({ message: "Unauthorized" });
+    // Check for token in Authorization header first, then cookies
+    let token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      token = req.cookies?.accessToken;
+    }
+    
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
     const payload = verifyAccessToken(token);
     req.user = payload;
     return next();

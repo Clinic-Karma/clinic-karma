@@ -32,7 +32,9 @@ export const BookAppointmentForm = () => {
   useEffect(() => {
     const fetchSpecializations = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/appointments/specializations`);
+        const response = await axios.get(`${API_BASE_URL}/appointments/specializations`, {
+          withCredentials: true
+        });
         setSpecializations(response.data.map((spec: any) => spec.name));
       } catch (error) {
         console.error('Error fetching specializations:', error);
@@ -47,7 +49,9 @@ export const BookAppointmentForm = () => {
     const fetchDoctors = async () => {
       if (bookSpecialization) {
         try {
-          const response = await axios.get(`${API_BASE_URL}/appointments/doctors/${bookSpecialization}`);
+          const response = await axios.get(`${API_BASE_URL}/appointments/doctors/${bookSpecialization}`, {
+            withCredentials: true
+          });
           setDoctorsList(response.data.map((doc: any) => doc.name));
         } catch (error) {
           console.error('Error fetching doctors:', error);
@@ -67,11 +71,13 @@ export const BookAppointmentForm = () => {
     }
 
     try {
-      await axios.post('${API_BASE_U}/appointments/book', {
+      await axios.post(`${API_BASE_URL}/appointments/book`, {
         patientUsername: bookPatientUsername,
         doctor: bookDoctor,
         specialization: bookSpecialization,
         date: format(bookDate, 'yyyy-MM-dd')
+      }, {
+        withCredentials: true
       });
 
       toast({ title: "Success", description: "Appointment booked successfully" });

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as appointmentController from '../controllers/appointmentController.js';
 import { body } from 'express-validator';
 import upload from '../middlewares/uploadMiddleware.js';
+import { requireAuth, requireRole } from '../middlewares/authMiddleware.js';
 
 export const router = Router();
 
@@ -28,9 +29,10 @@ router.get('/debug-lab-reports', async (req, res) => {
     }
 });
 
-router.get('/test-db', appointmentController.testDatabaseConnection);
 router.get('/patients', appointmentController.getAllPatients);
 router.get('/doctors', appointmentController.getAllDoctors);
+router.post('/doctors', appointmentController.createDoctor);
+router.post('/doctors/test', appointmentController.createDoctorTest);
 router.get('/staff', appointmentController.getAllStaff);
 router.post('/staff', appointmentController.createStaff);
 router.get('/branches', appointmentController.getAllBranches);
@@ -62,14 +64,14 @@ const cancelAppointmentValidation = [
     body('appointmentId').isInt({ min: 1 }).withMessage('Appointment ID must be a valid positive integer')
 ];
 
-// Book appointment
-router.post('/book', bookAppointmentValidation, appointmentController.bookAppointment);
+// Book appointment - require authentication and patient role
+router.post('/book', requireAuth, requireRole('patient'), bookAppointmentValidation, appointmentController.bookAppointment);
 
-// Reschedule appointment
-router.post('/reschedule', rescheduleAppointmentValidation, appointmentController.rescheduleAppointment);
+// Reschedule appointment - require authentication and patient role
+router.post('/reschedule', requireAuth, requireRole('patient'), rescheduleAppointmentValidation, appointmentController.rescheduleAppointment);
 
-// Cancel appointment
-router.post('/cancel', cancelAppointmentValidation, appointmentController.cancelAppointment);
+// Cancel appointment - require authentication and patient role
+router.post('/cancel', requireAuth, requireRole('patient'), cancelAppointmentValidation, appointmentController.cancelAppointment);
 
 // Get appointments for patient
 // Static and specific routes first to avoid conflicts with parameterized routes
@@ -87,15 +89,31 @@ router.get('/insurance-structure', appointmentController.checkInsuranceTableStru
 router.get('/patient-insurance-structure', appointmentController.checkPatientInsuranceTableStructure);
 router.get('/insurance-claim-structure', appointmentController.checkInsuranceClaimTableStructure);
 router.get('/billing-structure', appointmentController.checkBillingTableStructure);
+router.get('/specialization-structure', appointmentController.checkSpecializationTableStructure);
+router.get('/specialization-data', appointmentController.getSpecializationData);
+router.get('/billing-data', appointmentController.getBillingData);
+router.get('/test-bill-details/:appointmentId', appointmentController.testBillDetailsWithInsurance);
+router.get('/demonstrate-insurance-calculation', appointmentController.demonstrateInsuranceCalculation);
+router.get('/test-specialization-fee', appointmentController.testSpecializationFee);
 
 // Billing endpoints
 router.get('/bill-details/:appointmentId', appointmentController.getBillDetailsByAppointment);
+router.post('/generate-bill/:appointmentId', appointmentController.generateBill);
+router.post('/update-payment', appointmentController.updatePaymentAmount);
+router.get('/payment-history/:billId', appointmentController.getPaymentHistory);
+router.post('/create-test-insurance', appointmentController.createTestInsuranceData);
+router.get('/test-insurance-calculation/:patientUsername', appointmentController.testInsuranceCalculation);
+router.get('/debug-insurance/:patientUsername', appointmentController.debugPatientInsurance);
+router.get('/billing-structure', appointmentController.checkBillingTableStructure);
+router.post('/add-insured-amount-column', appointmentController.addInsuredAmountColumn);
+router.post('/add-insurance-provider', appointmentController.addInsuranceProvider);
+router.post('/fix-insurance-schema', appointmentController.fixInsuranceTableSchema);
 
-// Lab Report endpoints
-router.post('/upload-lab-report', upload.single('reportFile'), appointmentController.uploadLabReport);
-router.get('/lab-reports', appointmentController.getLabReports);
-router.get('/lab-report/:appointmentId', appointmentController.getLabReportByAppointment);
-router.get('/download-lab-report/:appointmentId', appointmentController.downloadLabReport);
+// Lab Report endpoints - require authentication
+router.post('/upload-lab-report', requireAuth, upload.single('reportFile'), appointmentController.uploadLabReport);
+router.get('/lab-reports', requireAuth, appointmentController.getLabReports);
+router.get('/lab-report/:appointmentId', requireAuth, appointmentController.getLabReportByAppointment);
+router.get('/download-lab-report/:appointmentId', requireAuth, appointmentController.downloadLabReport);
 
 // Patient registration endpoints
 router.post('/register-patient', appointmentController.registerPatient);

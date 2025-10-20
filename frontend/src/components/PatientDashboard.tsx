@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Calendar, FileText, CreditCard, Clock, MapPin, User, Phone, Mail, Download, RefreshCw, CheckCircle, XCircle, AlertCircle, UserCircle, Bell, LogOut, FlaskConical, Activity } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
-import axios from "axios";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
+import apiClient from "../utils/axiosConfig";
 
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
@@ -20,20 +21,36 @@ const PatientDashboard = () => {
   const [labReports, setLabReports] = useState([]);
   const [payments, setPayments] = useState([]); 
   const [bills, setBills] = useState([]);
+  
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-        // Get the string from localStorage
-  const userString = localStorage.getItem('user');
-
-      // Parse it to an object
-  const user = userString ? JSON.parse(userString) : null;
-
-      // Get the patient ID
+  // Get the patient ID from authenticated user
   const patientId = user?.pid;
-  const name = user?.name || "World";
+  const name = user?.name || user?.username || "Patient";
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout Error",
+        description: "An error occurred during logout.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/patient/appointments/${patientId}`);
+      const response = await apiClient.get(`/patient/appointments/${patientId}`);
       setAppointments(response.data);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -42,7 +59,7 @@ const PatientDashboard = () => {
   
   const fetchLabReports = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/patient/labreports/${patientId}`);
+      const response = await apiClient.get(`/patient/labreports/${patientId}`);
       console.log(response.data);
       setLabReports(response.data);
     } catch (error) {
@@ -52,7 +69,7 @@ const PatientDashboard = () => {
 
   const fetchPayments = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/patient/payments/${patientId}`);
+      const response = await apiClient.get(`/patient/payments/${patientId}`);
       setPayments(response.data);
     }
     catch (error) {
@@ -62,7 +79,7 @@ const PatientDashboard = () => {
 
   const fetchBills = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/patient/bills/${patientId}`);
+      const response = await apiClient.get(`/patient/bills/${patientId}`);
       setBills(response.data);
     }  
     catch (error) {
@@ -223,11 +240,8 @@ const PatientDashboard = () => {
                     <User className="w-4 h-4 mr-2" />
                     Edit Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-primary/10">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
+                  
+                  <DropdownMenuItem onClick={handleLogout} className="hover:bg-destructive/10 text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
                   </DropdownMenuItem>

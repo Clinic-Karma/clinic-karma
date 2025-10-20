@@ -110,6 +110,16 @@ import {
     }
   };
 
+  // GET /api/branchmanagers/staff - Simple version for testing
+  export const getStaffSimple = async (req, res) => {
+    try {
+      res.json({ success: true, staff: [] });
+    } catch (error) {
+      console.error('Error in getStaffSimple:', error);
+      res.status(500).json({ success: false, message: 'Server error' });
+    }
+  };
+
   // GET /api/branchmanagers/doctors
   export const getDoctors = async (req, res) => {
     try {
@@ -178,24 +188,36 @@ import {
       const { name, role, address, username, password, contact, email, nic, branch } = req.body;
       
       // Validate required fields
-      if (!name || !role || !username || !password || !contact || !email || !nic) {
+      if (!name || !role || !username || !password || !contact || !nic) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Name, role, username, password, contact, email, and NIC are required' 
+          message: 'Name, role, username, password, contact, and NIC are required' 
         });
       }
 
-      // Validate role
-      if (!['receptionist', 'lab-assistant'].includes(role)) {
+      // Validate email format if provided
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Role must be either "receptionist" or "lab-assistant"' 
+          message: 'Invalid email format' 
         });
       }
+
+      // Validate role - updated to handle both old and new role values
+      const validRoles = ['receptionist', 'lab-assistant', 'lab-coordinator'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Role must be either "receptionist" or "lab-coordinator"' 
+        });
+      }
+
+      // Map lab-coordinator to lab-assistant for database consistency
+      const dbRole = role === 'lab-coordinator' ? 'lab-assistant' : role;
 
       const result = await createStaffForBranchManager({
         name,
-        role,
+        role: dbRole,
         address,
         username,
         password,

@@ -13,24 +13,20 @@ import {
     fetchBills
 } from "../controllers/patientController_y.js";
 
+import { requireAuth, requireRole } from "../middlewares/authMiddleware.js";
+
 export const router = Router();
 
-// Route to get all specializations
+// Public routes (no authentication required)
 router.get("/specializations", fetchSpecializations);
-
-// Route to get doctors by specialization and branch
 router.get("/doctors/:specializationId/:branch", fetchDoctorsBySpecializationAndBranch);
-
 router.get("/available-timeslots/:doctorId/:date", fetchAvailableTimeSlots);
 
-router.post("/appointment", storeAppointment);
-    
-router.get("/appointments/:patientId", fetchAppointments);
-
-router.get("/labreports/:patientId", fetchLabReports);
-
-router.get("/payments/:patientId", fetchPayments);
-
-router.get("/bills/:patientId", fetchBills);
+// Protected routes - require authentication and patient role
+router.post("/appointment", requireAuth, requireRole('patient'), storeAppointment);
+router.get("/appointments/:patientId", requireAuth, requireRole('patient'), fetchAppointments);
+router.get("/labreports/:patientId", requireAuth, requireRole('patient'), fetchLabReports);
+router.get("/payments/:patientId", requireAuth, requireRole('patient'), fetchPayments);
+router.get("/bills/:patientId", requireAuth, requireRole('patient'), fetchBills);
 
 export default router;

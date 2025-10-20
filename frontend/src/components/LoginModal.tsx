@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
 
@@ -26,6 +27,8 @@ const LoginModal = ({ open, onOpenChange }: LoginModalProps) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -39,68 +42,58 @@ const LoginModal = ({ open, onOpenChange }: LoginModalProps) => {
 
     setLoading(true);
     try {
-      const res = await axios.post(
-        `${API_BASE_URL}/auth/login`,
-        {
-          username,
-          password,
-        }
-      );
-
-      const { user } = res.data;
-
-      localStorage.setItem('user', JSON.stringify(user));
-
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${user.username}! Redirecting...`,
-      });
-
-      // Redirect based on role
-      setTimeout(() => {
-        onOpenChange(false);
-
-        switch (user.role) {
-          case "patient":
-            window.location.href = "/patient-dashboard";
-            break;
-          case "doctor":
-            window.location.href = "/doctor-dashboard";
-            break;
-          case "lab-assistant":
-            window.location.href = "/lab-coordinator";
-            break;
-          case "receptionist":
-            window.location.href = "/receptionist";
-            break;
-          case "branch-manager":
-            window.location.href = "/branch-manager";
-            break;
-          case "top-manager":
-            window.location.href = "/top-manager";
-            break;
-          default:
-            window.location.href = "/";
-        }
-      }, 500);
-
-    } catch (err: any) {
-      console.error(err);
+      const success = await login(username, password);
       
-      // Handle account lockout
-      if (err.response?.status === 423) {
+      if (success) {
         toast({
-          title: "Account Locked",
-          description: err.response?.data?.message || "Too many failed attempts. Please try again later.",
-          variant: "destructive",
+          title: "Login Successful",
+          description: "Welcome back! Redirecting to your dashboard...",
         });
+        
+        // Close modal
+        onOpenChange(false);
+        
+        // Redirect based on user role
+        const userString = localStorage.getItem('user');
+        if (userString) {
+          const user = JSON.parse(userString);
+          switch (user.role) {
+            case 'patient':
+              navigate('/patient-dashboard');
+              break;
+            case 'doctor':
+              navigate('/doctor-dashboard');
+              break;
+            case 'top-manager':
+              navigate('/top-manager');
+              break;
+            case 'branch-manager':
+              navigate('/branch-manager');
+              break;
+            case 'lab-coordinator':
+              navigate('/lab-coordinator');
+              break;
+            case 'receptionist':
+              navigate('/receptionist');
+              break;
+            default:
+              navigate('/');
+          }
+        }
       } else {
         toast({
           title: "Login Failed",
-          description: err.response?.data?.message || "Invalid credentials",
+          description: "Invalid username or password. Please try again.",
           variant: "destructive",
         });
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login Failed",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

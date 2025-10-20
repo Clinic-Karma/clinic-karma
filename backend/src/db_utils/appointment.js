@@ -1,24 +1,44 @@
 import { sql } from './db.js';
 
 // Helper function to get bill amount from Specialization table
-const getBillAmountBySpecialization = async (specialization) => {
+export const getBillAmountBySpecialization = async (specialization) => {
+    console.log(`=== Getting bill amount for specialization: "${specialization}" ===`);
+    
     try {
-        const result = await sql`
+        // Try the correct spelling first
+        console.log('Trying "Specialization" table...');
+        let result = await sql`
             SELECT "Consultation_Fee" 
             FROM "Specialization" 
             WHERE "Specialization_Name" = ${specialization}
         `;
         
-        if (result && result.length > 0) {
-            const consultationFee = result[0].Consultation_Fee;
-            console.log(`Found consultation fee for ${specialization}: $${consultationFee}`);
-            return parseFloat(consultationFee) || 100.00;
+        console.log(`Query result from "Specialization" table:`, result);
+        
+        // If no results, try the misspelled version (Specilization)
+        if (!result || result.length === 0) {
+            console.log(`Trying alternative table name "Specilization" for specialization: ${specialization}`);
+            result = await sql`
+                SELECT "Consultation_Fee" 
+                FROM "Specilization" 
+                WHERE "Specialization_Name" = ${specialization}
+            `;
+            console.log(`Query result from "Specilization" table:`, result);
         }
         
-        console.log(`No specialization found for: ${specialization}, using default $100.00`);
+        if (result && result.length > 0) {
+            const consultationFee = result[0].Consultation_Fee;
+            console.log(`✅ Found consultation fee for "${specialization}": $${consultationFee}`);
+            const parsedFee = parseFloat(consultationFee) || 100.00;
+            console.log(`✅ Returning parsed fee: $${parsedFee}`);
+            return parsedFee;
+        }
+        
+        console.log(`❌ No specialization found for: "${specialization}", using default $100.00`);
         return 100.00; // Default amount if specialization not found
     } catch (error) {
-        console.error('Error fetching specialization consultation fee:', error);
+        console.error('❌ Error fetching specialization consultation fee:', error);
+        console.error('Error details:', error.message);
         return 100.00; // Default amount on error
     }
 };
@@ -71,16 +91,64 @@ export const createAppointment = async (appointmentData) => {
     const appointment = result[0];
 
     // Auto-generate bill based on appointment type/specialization
+    console.log(`=== Creating bill for appointment ${appointment.Appointment_ID} ===`);
+    console.log(`Specialization passed to getBillAmountBySpecialization: "${specialization}"`);
     const billAmount = await getBillAmountBySpecialization(specialization);
+    console.log(`Final bill amount determined: $${billAmount}`);
     
-    // Generate a unique numeric Bill_ID based on appointment ID and timestamp
-    const billId = parseInt(`${appointment.Appointment_ID}${Date.now().toString().slice(-6)}`);
+    // Calculate insurance amounts
+    let insuredAmount = 0;
+    let patientAmount = billAmount;
+    let insuranceId = null;
+    
+    // Check if patient has approved insurance
+    const insuranceResult = await sql`
+        SELECT 
+            pi."Insurance_ID",
+            pi."Policy_Number",
+            pi."Status" as insurance_status,
+            i."Provider_Name",
+            i."Coverage_Percentage"
+        FROM "Patient_Insurance" pi
+        JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
+        WHERE pi."Patient_ID" = ${patientId}
+        AND pi."Status" = 'Approved'
+        ORDER BY pi."Insurance_ID" DESC
+        LIMIT 1
+    `;
+    
+    if (insuranceResult && insuranceResult.length > 0) {
+        const insurance = insuranceResult[0];
+        const coveragePercentage = parseFloat(insurance.Coverage_Percentage) || 0;
+        insuredAmount = (billAmount * coveragePercentage) / 100;
+        patientAmount = billAmount - insuredAmount;
+        insuranceId = insurance.Insurance_ID;
+        
+        console.log(`✅ Found insurance: ${insurance.Provider_Name} (${coveragePercentage}% coverage)`);
+        console.log(`💰 Total: $${billAmount}, Insured: $${insuredAmount.toFixed(2)}, Patient pays: $${patientAmount.toFixed(2)}`);
+    } else {
+        console.log(`❌ No approved insurance found for patient ${patientId}`);
+    }
     
     const billResult = await sql`
-        INSERT INTO "Billing" ("Bill_ID", "Appointment_ID", "Total_Amount")
-        VALUES (${billId}, ${appointment.Appointment_ID}, ${billAmount})
-        RETURNING "Bill_ID", "Appointment_ID", "Total_Amount"
+        INSERT INTO "Billing" (
+            "Appointment_ID", 
+            "Total_Amount", 
+            "Insured_Amount", 
+            "Patient_Amount", 
+            "Insurance_ID"
+        )
+        VALUES (
+            ${appointment.Appointment_ID}, 
+            ${billAmount}, 
+            ${insuredAmount}, 
+            ${patientAmount}, 
+            ${insuranceId}
+        )
+        RETURNING "Bill_ID", "Appointment_ID", "Total_Amount", "Insured_Amount", "Patient_Amount", "Insurance_ID"
     `;
+    
+    console.log(`✅ Bill created successfully:`, billResult[0]);
 
     return {
         appointment: appointment,
@@ -257,8 +325,8 @@ export const getAvailableTimeSlots = async (doctorId, date) => {
     
     // Generate all possible time slots (9 AM to 5 PM)
     const timeSlots = [
-        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-        "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
+        "09:00", "10:00", "11:00",
+        "14:00", "15:00", "16:00"
     ];
 
     return timeSlots;
@@ -700,11 +768,22 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
         // Get the consultation fee from Specialization table
         let consultationFee = 100.00; // Default
         try {
-            const feeResult = await sql`
+            // Try the correct spelling first
+            let feeResult = await sql`
                 SELECT "Consultation_Fee" 
                 FROM "Specialization" 
                 WHERE "Specialization_Name" = ${appointment.specialization}
             `;
+            
+            // If no results, try the misspelled version (Specilization)
+            if (!feeResult || feeResult.length === 0) {
+                console.log(`Trying alternative table name "Specilization" for specialization: ${appointment.specialization}`);
+                feeResult = await sql`
+                    SELECT "Consultation_Fee" 
+                    FROM "Specilization" 
+                    WHERE "Specialization_Name" = ${appointment.specialization}
+                `;
+            }
             
             if (feeResult && feeResult.length > 0) {
                 consultationFee = parseFloat(feeResult[0].Consultation_Fee) || 100.00;
@@ -717,11 +796,14 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
         // Add consultation fee to appointment data
         appointment.consultation_fee = consultationFee;
 
-        // Get billing details for this appointment (using only existing columns)
+        // Get billing details for this appointment (including insurance columns)
         const billingResult = await sql`
             SELECT 
                 b."Bill_ID",
-                b."Total_Amount"
+                b."Total_Amount",
+                b."Insured_Amount",
+                b."Patient_Amount",
+                b."Insurance_ID"
             FROM "Billing" b
             WHERE b."Appointment_ID" = ${appointmentId}
             ORDER BY b."Bill_ID" DESC
@@ -734,6 +816,9 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
             billing = {
                 Bill_ID: 'TBD',
                 Total_Amount: '0.00',
+                Insured_Amount: '0.00',
+                Patient_Amount: '0.00',
+                Insurance_ID: null,
                 bill_date: new Date().toISOString().split('T')[0],
                 due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
             };
@@ -747,7 +832,10 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
 
         // Get insurance claims for this bill (only if bill exists)
         let insuranceClaimsResult = [];
+        let patientInsuranceInfo = null;
+        
         if (billing.Bill_ID !== 'TBD') {
+            // Get insurance claims
             insuranceClaimsResult = await sql`
                 SELECT 
                     ic."Insurance_Claim_ID",
@@ -760,19 +848,55 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
                 JOIN "Insurance" i ON ic."Insurance_ID" = i."Insurance_ID"
                 WHERE ic."Bill_ID" = ${billing.Bill_ID}
             `;
+
+            // Get patient's insurance information to calculate coverage
+            // First get the Patient_ID from the appointment
+            const appointmentPatientResult = await sql`
+                SELECT "Patient_ID" 
+                FROM "Appointment" 
+                WHERE "Appointment_ID" = ${appointmentId}
+            `;
+            
+            if (appointmentPatientResult && appointmentPatientResult.length > 0) {
+                const patientId = appointmentPatientResult[0].Patient_ID;
+                
+                const patientInsuranceResult = await sql`
+                    SELECT 
+                        pi."Patient_ID",
+                        pi."Insurance_ID",
+                        pi."Policy_Number",
+                        pi."Status" as insurance_status,
+                        i."Provider_Name",
+                        i."Coverage_Percentage"
+                    FROM "Patient_Insurance" pi
+                    JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
+                    WHERE pi."Patient_ID" = ${patientId}
+                    AND pi."Status" = 'Approved'
+                    ORDER BY pi."Insurance_ID" DESC
+                    LIMIT 1
+                `;
+
+                if (patientInsuranceResult && patientInsuranceResult.length > 0) {
+                    patientInsuranceInfo = patientInsuranceResult[0];
+                }
+            }
         }
 
-        // Calculate totals
+        // Use database values instead of calculating
         const totalAmount = parseFloat(billing.Total_Amount);
-        const insuredAmount = insuranceClaimsResult.reduce((sum, claim) => {
-            return sum + (claim.Claim_Status === 'Approved' ? parseFloat(claim.Claim_Amount) : 0);
-        }, 0);
-        const amountToBePaid = totalAmount - insuredAmount;
+        const insuredAmount = parseFloat(billing.Insured_Amount) || 0;
+        const amountToBePaid = parseFloat(billing.Patient_Amount) || totalAmount;
+        
+        console.log(`Using database values for Bill ${billing.Bill_ID}:`);
+        console.log(`  - Total Amount: $${totalAmount}`);
+        console.log(`  - Insured Amount: $${insuredAmount}`);
+        console.log(`  - Amount to be Paid: $${amountToBePaid}`);
 
         return {
             appointment: appointment,
             billing: billing,
             insuranceClaims: insuranceClaimsResult,
+            patientInsurance: patientInsuranceInfo,
             totals: {
                 totalAmount: totalAmount,
                 insuredAmount: insuredAmount,

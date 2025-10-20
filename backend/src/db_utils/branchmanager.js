@@ -1,7 +1,7 @@
 // backend/src/db_utils/branchmanager.js
 import { sql } from './db.js';
 
-// ✅ Create branch manager
+// Create branch manager
 export async function createBranchManager(data) {
   const {
     name,
@@ -31,7 +31,7 @@ export async function createBranchManager(data) {
   }
 }
 
-// ✅ Get branch manager by ID
+// Get branch manager by ID
 export async function getBranchManagerById(id) {
   try {
     const result = await sql`
@@ -46,7 +46,7 @@ export async function getBranchManagerById(id) {
   }
 }
 
-// ✅ Get all branch managers (optional filters)
+// Get all branch managers (optional filters)
 export async function getAllBranchManagers({ search = '', branch_id = null, is_active = null } = {}) {
   try {
     let whereClauses = sql``;
@@ -79,7 +79,7 @@ export async function getAllBranchManagers({ search = '', branch_id = null, is_a
   }
 }
 
-// ✅ Update branch manager
+// Update branch manager
 export async function updateBranchManager(id, data) {
   const fields = Object.entries(data);
   if (fields.length === 0) return getBranchManagerById(id);
@@ -102,7 +102,7 @@ export async function updateBranchManager(id, data) {
   }
 }
 
-// ✅ Soft delete (deactivate)
+// Soft delete (deactivate)
 export async function softDeleteBranchManager(id) {
   try {
     const result = await sql`
@@ -118,7 +118,7 @@ export async function softDeleteBranchManager(id) {
   }
 }
 
-// ✅ Hard delete (permanent)
+// Hard delete (permanent)
 export async function deleteBranchManager(id) {
   try {
     await sql`
@@ -268,30 +268,26 @@ export async function createStaffForBranchManager(data) {
   } = data;
 
   try {
-    // Start transaction
-    const result = await sql.begin(async sql => {
-      // 1. Create user first
-      const userResult = await sql`
-        INSERT INTO "User" (name, nic, contact_number, email, address, username, password_hash, user_type)
-        VALUES (${name}, ${nic}, ${contact}, ${email}, ${address}, ${username}, ${password}, ${role})
-        RETURNING user_id
-      `;
-      
-      const userId = userResult[0].user_id;
+    // Create staff without transaction (neon serverless doesn't support transactions)
+    // 1. Create user first - let database handle auto-increment
+    const userResult = await sql`
+      INSERT INTO "User" (name, nic, contact_number, address, username, password_hash, user_type, email)
+      VALUES (${name}, ${nic}, ${contact}, ${address}, ${username}, ${password}, ${role}, ${email || null})
+      RETURNING user_id
+    `;
+    
+    const userId = userResult[0].user_id;
 
-      // 2. Create staff record
-      const staffResult = await sql`
-        INSERT INTO "Staff" ("User_ID", "Branch_Name")
-        VALUES (${userId}, ${branch})
-        RETURNING "Staff_ID"
-      `;
-      
-      const staffId = staffResult[0].Staff_ID;
+    // 2. Create staff record - let database handle auto-increment
+    const staffResult = await sql`
+      INSERT INTO "Staff" ("User_ID", "Branch_Name")
+      VALUES (${userId}, ${branch})
+      RETURNING "Staff_ID"
+    `;
+    
+    const staffId = staffResult[0].Staff_ID;
 
-      return { userId, staffId };
-    });
-
-    return result;
+    return { userId, staffId };
   } catch (error) {
     console.error('Error creating staff:', error);
     throw error;

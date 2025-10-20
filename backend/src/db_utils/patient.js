@@ -69,21 +69,3 @@ export async function getPatientByUsername(username) {
     `;
     return result[0];
 }
-
-export async function getAppointmentsByPatient(patientId) {
-    // TODO: Implement actual query for appointments by patientId
-    // Example:
-    // const result = await sql`SELECT * FROM appointments WHERE patient_id = ${patientId}`;
-    // return result;
-    return [];
-}
-
-export async function getLabReportsByPatient(patientId) {
-    // TODO: Implement actual query for lab reports by patientId
-    return [];
-}
-
-export async function getPaymentsByPatient(patientId) {
-    // TODO: Implement actual query for payments by patientId
-    return [];
-}

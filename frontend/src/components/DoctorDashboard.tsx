@@ -6,6 +6,9 @@
   import { Input } from '@/components/ui/input';
   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
   import PatientDetails from './PatientDetails';
+  import { useAuth } from '../contexts/AuthContext';
+  import { useNavigate } from 'react-router-dom';
+  import { useToast } from '@/hooks/use-toast';
 
   import { 
     Calendar,
@@ -45,6 +48,27 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
 
     const isMobile = useIsMobile();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const { toast } = useToast();
+
+    const handleLogout = async () => {
+      try {
+        await logout();
+        toast({
+          title: "Logged Out",
+          description: "You have been successfully logged out.",
+        });
+        navigate('/');
+      } catch (error) {
+        console.error('Logout error:', error);
+        toast({
+          title: "Logout Error",
+          description: "An error occurred during logout.",
+          variant: "destructive",
+        });
+      }
+    };
 
     
 
@@ -62,23 +86,20 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
     const [appointments, setAppointments] = useState([]);
     const [patients, setPatients] = useState([]);
 
-            // Get the string from localStorage
-    const userString = localStorage.getItem('user');
-
-        // Parse it to an object
-    const user = userString ? JSON.parse(userString) : null;
-
-        // Get the patient ID
+    // Get the doctor ID from authenticated user
     const doctorId = user?.pid;
-    const name = user?.name || "World!";
-    const username = user?.username || "doctor";
+    const name = user?.name || user?.username || "Doctor";
 
     useEffect(() => {
-      axios.get(`${API_BASE_URL}/doctor/appointments/${doctorId}`)
+      axios.get(`${API_BASE_URL}/doctor/appointments/${doctorId}`, {
+        withCredentials: true
+      })
         .then(res => setAppointments(res.data))
         .catch(err => console.error(err));
 
-      axios.get(`${API_BASE_URL}/doctor/patients/${doctorId}`)
+      axios.get(`${API_BASE_URL}/doctor/patients/${doctorId}`, {
+        withCredentials: true
+      })
         .then(res => setPatients(res.data))
         .catch(err => console.error(err));
     }, []);
@@ -145,15 +166,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
-                    <DropdownMenuItem className="hover:bg-primary/10">
-                      <User className="w-4 h-4 mr-2" />
-                      Profile Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="hover:bg-primary/10">
-                      <Bell className="w-4 h-4 mr-2" />
-                      Notifications
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.location.href = '/'} className="hover:bg-destructive/10 text-destructive">
+                    
+                    <DropdownMenuItem onClick={handleLogout} className="hover:bg-destructive/10 text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
                       Logout
                     </DropdownMenuItem>
@@ -403,7 +417,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                             </p>
                             <p className="flex items-center gap-3">
                               <Mail className="w-4 h-4 text-primary" />
-                              <span>{ username }@hospital.com</span>
+                              <span>{ name }@hospital.com</span>
                             </p>
                           </div>
                         </div>

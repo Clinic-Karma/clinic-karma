@@ -6,6 +6,16 @@ import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
 
+// Cookie options helper to handle dev vs prod cross-site behavior
+function getCookieOptions() {
+    const isProd = process.env.NODE_ENV === 'production';
+    return {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax'
+    };
+}
+
 export async function registerPatient(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
@@ -45,18 +55,15 @@ export async function login(req, res) {
 
         await storeRefreshToken(user.user_id, refreshToken, payload.jti);
 
+        const baseCookie = getCookieOptions();
         res.cookie('accessToken', accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-            sameSite: 'strict',
+            ...baseCookie,
             maxAge: 15 * 60 * 1000 // 15 minutes
-          });
+        });
 
         res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-            sameSite: 'strict', 
-            maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+            ...baseCookie,
+            maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
         });
 
         return res.json({
@@ -72,7 +79,9 @@ export async function login(req, res) {
 
 export async function refreshAccessToken(req, res) {
     const refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) return res.status(401).json({ message: 'Missing token' });
+    if (!refreshToken) {
+        return res.status(401).json({ message: 'Missing token' });
+    }
   
     try {
       // Verify the JWT structure/signature
@@ -89,33 +98,41 @@ export async function refreshAccessToken(req, res) {
       }
 
       // Rotate: delete old jti, issue new tokens
-      await deleteRefreshToken(payload.jti);
+      try {
+        await deleteRefreshToken(payload.jti);
+      } catch (deleteErr) {
+        // Continue with token rotation even if deletion fails
+      }
 
       const newJti = uuidv4();
-      const newPayload = { sub: payload.sub, sid: payload.sid, jti: newJti };
+      const newPayload = { sub: payload.sub, role: payload.role, sid: payload.sid, jti: newJti };
       const newAccessToken = signAccessToken(newPayload);
       const newRefreshToken = signRefreshToken(newPayload);
 
-      await storeRefreshToken(payload.sub, newRefreshToken, newJti);
+      try {
+        await storeRefreshToken(payload.sub, newRefreshToken, newJti);
+      } catch (storeErr) {
+        return res.status(500).json({ message: 'Failed to store refresh token' });
+      }
 
+      const baseCookie = getCookieOptions();
       res.cookie('accessToken', newAccessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-            sameSite: 'strict',
+            ...baseCookie,
             maxAge: 15 * 60 * 1000 // 15 minutes
-          });
-
-      res.cookie('refreshToken', newRefreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-            sameSite: 'strict',
-            maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
       });
 
-      // No body needed; cookies carry the tokens
-      return res.status(204).end();
+      res.cookie('refreshToken', newRefreshToken, {
+            ...baseCookie,
+            maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
+      });
+
+      // Return new access token in response body for immediate use
+      return res.status(200).json({ 
+        accessToken: newAccessToken,
+        message: 'Tokens refreshed successfully' 
+      });
     } catch (err) {
-      console.error(err);
+      console.error('refreshAccessToken error:', err?.message || err);
       return res.status(403).json({ message: 'Invalid token' });
     }
   }
@@ -132,15 +149,12 @@ export async function refreshAccessToken(req, res) {
             }
         }
 
+        const baseCookie = getCookieOptions();
         res.clearCookie('accessToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            ...baseCookie
         });
         res.clearCookie('refreshToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            ...baseCookie
         });
 
         return res.status(204).end();

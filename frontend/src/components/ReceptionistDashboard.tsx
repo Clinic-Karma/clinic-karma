@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import html2pdf from 'html2pdf.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
 
@@ -45,6 +46,7 @@ const ReceptionistDashboard = () => {
   const [billAppointmentId, setBillAppointmentId] = useState("");
   const [billDetails, setBillDetails] = useState<any>(null);
   const [userPaymentAmount, setUserPaymentAmount] = useState("");
+  const [isGeneratingBill, setIsGeneratingBill] = useState(false);
 
   // State for Patient Registration
   const [patientFormData, setPatientFormData] = useState({
@@ -267,28 +269,61 @@ const ReceptionistDashboard = () => {
       return;
     }
 
+    setIsGeneratingBill(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/appointments/bill-details/${appointmentId}`);
+      const response = await fetch(`${API_BASE_URL}/appointments/generate-bill/${appointmentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const data = await response.json();
 
       if (response.ok) {
         console.log('=== FRONTEND RECEIVED BILL DATA ===');
         console.log('Full response data:', data);
         console.log('Appointment data:', data.data?.appointment);
-        console.log('Patient username:', data.data?.appointment?.patient_username);
-        console.log('Patient name:', data.data?.appointment?.patient_name);
-        setBillDetails(data.data);
+        console.log('Bill data:', data.data?.bill);
+        
+        // Transform the data to match the expected structure
+        const transformedData = {
+          appointment: data.data.appointment,
+          bill: data.data.bill,
+          totals: {
+            totalAmount: parseFloat(data.data.bill.Total_Amount),
+            insuredAmount: parseFloat(data.data.bill.Insured_Amount || 0),
+            amountToBePaid: parseFloat(data.data.paymentInfo?.remainingAmount || data.data.bill.Patient_Amount || data.data.bill.Total_Amount)
+          },
+          paymentInfo: data.data.paymentInfo,
+          patientInsurance: data.data.bill.insurance_provider ? {
+            Provider_Name: data.data.bill.insurance_provider,
+            Coverage_Percentage: '80', // This would need to be fetched separately if needed
+            Policy_Number: 'N/A' // This would need to be fetched separately if needed
+          } : null,
+          insuranceClaims: [] // Empty for now, could be populated if needed
+        };
+        
+        setBillDetails(transformedData);
+        
+        toast({
+          title: data.data.isNewBill ? "Bill Generated Successfully" : "Bill Retrieved",
+          description: data.data.isNewBill ? 
+            `New bill created for appointment ${appointmentId}` : 
+            `Existing bill retrieved for appointment ${appointmentId}`,
+        });
       } else {
-        throw new Error(data.message || 'Failed to fetch bill details');
+        throw new Error(data.message || 'Failed to generate bill');
       }
     } catch (error) {
-      console.error('Error fetching bill details:', error);
+      console.error('Error generating bill:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to fetch bill details',
+        description: error instanceof Error ? error.message : 'Failed to generate bill',
         variant: "destructive",
       });
       setBillDetails(null);
+    } finally {
+      setIsGeneratingBill(false);
     }
   };
 
@@ -395,8 +430,62 @@ const ReceptionistDashboard = () => {
     }
   };
 
-  const generateReceipt = () => {
+  const generateReceipt = async () => {
     if (!billDetails) return;
+
+    // Update payment amount in the database if user has entered an amount
+    if (userPaymentAmount && parseFloat(userPaymentAmount) > 0) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/appointments/update-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            billId: billDetails.bill.Bill_ID,
+            amountPaid: parseFloat(userPaymentAmount)
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          toast({
+            title: "Payment Recorded Successfully",
+            description: `Payment of $${userPaymentAmount} recorded. Total paid: $${data.data.totalPaidSoFar.toFixed(2)}. Remaining: $${data.data.remainingAmount.toFixed(2)}`,
+          });
+          
+          // Update the bill details to reflect the new payment status
+          if (billDetails) {
+            const updatedBillDetails = {
+              ...billDetails,
+              totals: {
+                ...billDetails.totals,
+                amountToBePaid: data.data.remainingAmount
+              }
+            };
+            setBillDetails(updatedBillDetails);
+          }
+        } else {
+          throw new Error(data.message || 'Failed to record payment');
+        }
+      } catch (error) {
+        console.error('Error updating payment:', error);
+        
+        // Try to parse error message for better user feedback
+        let errorMessage = 'Failed to record payment';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        toast({
+          title: "Payment Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return; // Don't generate receipt if payment update fails
+      }
+    }
 
     // Create PDF content using HTML
     const pdfContent = `
@@ -448,15 +537,15 @@ const ReceptionistDashboard = () => {
           <div class="info-grid">
             <div class="info-item">
               <span><strong>Bill ID:</strong></span>
-              <span>${billDetails.billing.Bill_ID}</span>
+              <span>${billDetails.bill.Bill_ID}</span>
             </div>
             <div class="info-item">
               <span><strong>Bill Date:</strong></span>
-              <span>${new Date(billDetails.billing.bill_date).toLocaleDateString()}</span>
+              <span>${new Date(billDetails.bill.Due_Date).toLocaleDateString()}</span>
             </div>
             <div class="info-item">
               <span><strong>Due Date:</strong></span>
-              <span>${new Date(billDetails.billing.due_date).toLocaleDateString()}</span>
+              <span>${new Date(billDetails.bill.Due_Date).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
@@ -468,6 +557,20 @@ const ReceptionistDashboard = () => {
               <span>Total Amount:</span>
               <span>$${billDetails.totals.totalAmount.toFixed(2)}</span>
             </div>
+            ${billDetails.patientInsurance ? `
+            <div class="info-item">
+              <span>Insurance Provider:</span>
+              <span>${billDetails.patientInsurance.Provider_Name}</span>
+            </div>
+            <div class="info-item">
+              <span>Coverage Percentage:</span>
+              <span>${billDetails.patientInsurance.Coverage_Percentage}%</span>
+            </div>
+            <div class="info-item">
+              <span>Policy Number:</span>
+              <span>${billDetails.patientInsurance.Policy_Number}</span>
+            </div>
+            ` : ''}
             <div class="info-item">
               <span>Insured Amount:</span>
               <span>$${billDetails.totals.insuredAmount.toFixed(2)}</span>
@@ -510,23 +613,36 @@ const ReceptionistDashboard = () => {
       </html>
     `;
 
-    // Create a new window with the PDF content
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(pdfContent);
-      printWindow.document.close();
-      
-      // Wait for content to load, then trigger print dialog
-      printWindow.onload = () => {
-        printWindow.print();
-        printWindow.close();
-      };
-    }
+    // Generate PDF using html2pdf.js
+    try {
+      const element = document.createElement('div');
+      element.innerHTML = pdfContent;
+      document.body.appendChild(element);
 
-    toast({
-      title: "Success",
-      description: "PDF receipt generated successfully!",
-    });
+      const opt = {
+        margin: 0.5,
+        filename: `medical-receipt-${billDetails.bill.Bill_ID}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      
+      document.body.removeChild(element);
+
+      toast({
+        title: "Success",
+        description: "PDF receipt downloaded successfully!",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -1338,10 +1454,20 @@ const ReceptionistDashboard = () => {
                               setBillAppointmentId(e.target.value);
                             }}
                             required 
+                            disabled={isGeneratingBill}
                           />
                         </div>
                         
-                        {billDetails && (
+                        {isGeneratingBill && (
+                          <div className="flex items-center justify-center p-4 bg-blue-50 rounded-lg">
+                            <div className="flex items-center gap-2 text-blue-600">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              <span className="font-medium">Please wait for a moment!</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {billDetails && !isGeneratingBill && (
                           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
                             <h4 className="font-semibold text-lg">Bill Details</h4>
                             
@@ -1356,7 +1482,7 @@ const ReceptionistDashboard = () => {
                                 <span className="font-medium">Date:</span> {billDetails.appointment.Appointment_Date}
                         </div>
                               <div>
-                                <span className="font-medium">Bill ID:</span> {billDetails.billing.Bill_ID}
+                                <span className="font-medium">Bill ID:</span> {billDetails.bill.Bill_ID}
                         </div>
                             </div>
 
@@ -1367,6 +1493,22 @@ const ReceptionistDashboard = () => {
                                   <span>Total Amount:</span>
                                   <span className="font-medium">${billDetails.totals.totalAmount.toFixed(2)}</span>
                         </div>
+                                {billDetails.patientInsurance && (
+                                  <>
+                                    <div className="flex justify-between">
+                                      <span>Insurance Provider:</span>
+                                      <span className="font-medium text-blue-600">{billDetails.patientInsurance.Provider_Name}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Coverage:</span>
+                                      <span className="font-medium text-blue-600">{billDetails.patientInsurance.Coverage_Percentage}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Policy Number:</span>
+                                      <span className="font-medium text-blue-600">{billDetails.patientInsurance.Policy_Number}</span>
+                                    </div>
+                                  </>
+                                )}
                                 <div className="flex justify-between">
                                   <span>Insured Amount:</span>
                                   <span className="font-medium text-green-600">${billDetails.totals.insuredAmount.toFixed(2)}</span>

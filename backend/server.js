@@ -22,7 +22,7 @@ const allowedOrigins = [
   'http://localhost:8080', 
   'http://localhost:8081',
   "https://clinic-karma.vercel.app",              // your final production frontend
-  /\.vercel\.app$/,                               // any temporary vercel deployment
+   /\.vercel\.app$/,                               // any temporary vercel deployment
   "http://localhost:5173",                        // local dev
   "https://clinic-karma-production.up.railway.app" // backend itself (optional)
 ];
@@ -49,7 +49,7 @@ app.use(
 
 app.use(cookieParser());
 app.use(bodyParser.json());
-
+  
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
 

@@ -25,6 +25,8 @@ export default function PatientDetails({ patient, appointmentId, open, onOpenCha
         diagnosis: diagnosis,
         prescription: prescription,
         additional_notes: notes
+      }, {
+        withCredentials: true
       });
 
       toast({

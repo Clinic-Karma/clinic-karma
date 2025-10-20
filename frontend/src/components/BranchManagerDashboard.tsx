@@ -26,11 +26,21 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
 const BranchManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("doctor-management");
   const [doctorFilter, setDoctorFilter] = useState("");
-  const [specializationFilter, setSpecializationFilter] = useState("");
+  const [specializationFilter, setSpecializationFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
   const [showDoctorRegistration, setShowDoctorRegistration] = useState(false);
   const [showStaffRegistration, setShowStaffRegistration] = useState(false);
+  const [staffFormData, setStaffFormData] = useState({
+    name: '',
+    role: '',
+    address: '',
+    username: '',
+    password: '',
+    contact: '',
+    email: '',
+    nic: ''
+  });
   const isMobile = useIsMobile();
 
   // Real data from backend
@@ -43,7 +53,9 @@ const BranchManagerDashboard = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/appointments/doctors`);
+        const response = await axios.get(`${API_BASE_URL}/appointments/doctors`, {
+          withCredentials: true
+        });
         if (response.data.success) {
           setDoctorsData(response.data.doctors || []);
         }
@@ -60,7 +72,9 @@ const BranchManagerDashboard = () => {
   useEffect(() => {
     const fetchStaff = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/appointments/staff`);
+        const response = await axios.get(`${API_BASE_URL}/appointments/staff`, {
+          withCredentials: true
+        });
         if (response.data.success) {
           setStaffData(response.data.staff || []);
         }
@@ -82,7 +96,9 @@ const BranchManagerDashboard = () => {
   useEffect(() => {
     const fetchSpecializations = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/appointments/specializations`);
+        const response = await axios.get(`${API_BASE_URL}/appointments/specializations`, {
+          withCredentials: true
+        });
         if (response.data.success) {
           setSpecializations(response.data.specializations || []);
         }
@@ -95,59 +111,32 @@ const BranchManagerDashboard = () => {
     fetchSpecializations();
   }, []);
 
-  // Handle staff registration
-  const handleStaffRegistration = async (staffData: any) => {
-    setLoading(true);
-    try {
-      // Call the backend API to create staff
-      const response = await axios.post(`${API_BASE_URL}/appointments/staff`, staffData);
-      
-      if (response.data.success) {
-        // Add the new staff to local state
-        const newStaff = {
-          id: response.data.data.staffId,
-          name: staffData.name,
-          role: staffData.role === 'receptionist' ? 'Receptionist' : 'Lab Coordinator',
-          username: staffData.username,
-          branch: staffData.branch || 'Colombo'
-        };
-        
-        setStaffData(prev => [...prev, newStaff]);
-        setShowStaffRegistration(false);
-        
-        // Show success message
-        alert('Staff member registered successfully!');
-      } else {
-        alert('Failed to register staff: ' + response.data.message);
-      }
-    } catch (error: any) {
-      console.error('Error registering staff:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to register staff';
-      alert('Error: ' + errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Handle doctor registration
   const handleDoctorRegistration = async (doctorData: any) => {
     setLoading(true);
     try {
-      // For now, we'll just add to local state since the backend endpoint isn't working
-      // In a real scenario, this would be: await axios.post(`${API_BASE_URL}/branchmanagers/doctors`, doctorData);
-      const newDoctor = {
-        id: Date.now(), // Temporary ID
-        name: doctorData.name,
-        branch: doctorData.branch || 'Colombo',
-        user_type: 'doctor',
-        username: doctorData.username
-      };
+      // Call the backend API to create doctor
+      const response = await axios.post(`${API_BASE_URL}/appointments/doctors`, doctorData, {
+        withCredentials: true
+      });
       
-      setDoctorsData(prev => [...prev, newDoctor]);
-      setShowDoctorRegistration(false);
-      
-      // Show success message
-      alert('Doctor registered successfully!');
+      if (response.data.success) {
+        // Refresh the doctors list to get the updated data with specializations
+        const doctorsResponse = await axios.get(`${API_BASE_URL}/appointments/doctors`, {
+          withCredentials: true
+        });
+        if (doctorsResponse.data.success) {
+          setDoctorsData(doctorsResponse.data.doctors || []);
+        }
+        
+        setShowDoctorRegistration(false);
+        
+        // Show success message
+        alert('Doctor registered successfully!');
+      } else {
+        alert('Failed to register doctor: ' + response.data.message);
+      }
     } catch (error) {
       console.error('Error registering doctor:', error);
       alert('Error registering doctor. Please try again.');
@@ -156,15 +145,24 @@ const BranchManagerDashboard = () => {
     }
   };
 
+  // Get unique specializations from doctors data
+  const uniqueSpecializations = [...new Set(doctorsData.flatMap(doctor => doctor.specializations || []))];
+
   const filteredDoctors = doctorsData.filter(doctor => {
     const matchesName = doctor.name.toLowerCase().includes(doctorFilter.toLowerCase());
-    const matchesBranch = !specializationFilter || doctor.branch === specializationFilter;
-    return matchesName && matchesBranch;
+    
+    // Specialization filter logic
+    let matchesSpecialization = true;
+    if (specializationFilter && specializationFilter !== 'all') {
+      matchesSpecialization = doctor.specializations && doctor.specializations.includes(specializationFilter);
+    }
+    
+    return matchesName && matchesSpecialization;
   });
 
   const filteredStaff = staffData.filter(staff => {
     const matchesName = staff.name.toLowerCase().includes(nameFilter.toLowerCase());
-    const matchesRole = !roleFilter || staff.role === roleFilter;
+    const matchesRole = !roleFilter || roleFilter === "all" || staff.role === roleFilter;
     return matchesName && matchesRole;
   });
 
@@ -264,28 +262,184 @@ const BranchManagerDashboard = () => {
     </Dialog>
   );
 
-  const StaffRegistrationForm = () => (
-    <Dialog open={showStaffRegistration} onOpenChange={setShowStaffRegistration}>
-      <DialogContent className="sm:max-w-[425px]">
+  const StaffRegistrationForm = () => {
+    const [localFormData, setLocalFormData] = useState({
+      name: '',
+      role: '',
+      address: '',
+      username: '',
+      password: '',
+      contact: '',
+      nic: ''
+    });
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Reset form when dialog opens
+    useEffect(() => {
+      if (showStaffRegistration) {
+        setLocalFormData({
+          name: '',
+          role: '',
+          address: '',
+          username: '',
+          password: '',
+          contact: '',
+          nic: ''
+        });
+        setFormErrors({});
+      }
+    }, [showStaffRegistration]);
+
+    const handleFieldChange = (field: string, value: string) => {
+      setLocalFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+      // Clear error when user starts typing
+      if (formErrors[field]) {
+        setFormErrors(prev => ({
+          ...prev,
+          [field]: ''
+        }));
+      }
+    };
+
+    const validateForm = () => {
+      const errors: Record<string, string> = {};
+      
+      if (!localFormData.name.trim()) {
+        errors.name = 'Name is required';
+      }
+      if (!localFormData.role) {
+        errors.role = 'Role is required';
+      }
+      if (!localFormData.username.trim()) {
+        errors.username = 'Username is required';
+      }
+      if (!localFormData.password.trim()) {
+        errors.password = 'Password is required';
+      } else if (localFormData.password.length < 6) {
+        errors.password = 'Password must be at least 6 characters';
+      }
+      if (!localFormData.contact.trim()) {
+        errors.contact = 'Contact number is required';
+      } else if (!/^\d{10}$/.test(localFormData.contact.replace(/\D/g, ''))) {
+        errors.contact = 'Please enter a valid 10-digit contact number';
+      }
+      if (!localFormData.nic.trim()) {
+        errors.nic = 'NIC number is required';
+      } else if (!/^\d{12}$/.test(localFormData.nic.replace(/\D/g, ''))) {
+        errors.nic = 'Please enter a valid 12-digit NIC number';
+      }
+      
+      setFormErrors(errors);
+      return Object.keys(errors).length === 0;
+    };
+
+    const handleSubmit = async () => {
+      if (!validateForm()) {
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const formData = {
+          ...localFormData,
+          branch: 'Colombo'
+        };
+        
+        // Call the backend API to create staff
+        const response = await axios.post(`${API_BASE_URL}/appointments/staff`, formData, {
+          withCredentials: true
+        });
+        
+        if (response.data.success) {
+          // Add the new staff to local state
+          const newStaff = {
+            id: response.data.data.staffId,
+            name: localFormData.name,
+            role: localFormData.role === 'receptionist' ? 'Receptionist' : 'Lab Coordinator',
+            username: localFormData.username,
+            branch: 'Colombo'
+          };
+          
+          setStaffData(prev => [...prev, newStaff]);
+          setShowStaffRegistration(false);
+          
+          // Show success message
+          alert('Staff member registered successfully!');
+        } else {
+          alert('Failed to register staff: ' + response.data.message);
+        }
+      } catch (error: any) {
+        console.error('Error registering staff:', error);
+        console.error('Error response:', error.response?.data);
+        const errorMessage = error.response?.data?.message || 'Failed to register staff';
+        alert('Error: ' + errorMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    const handleDialogClose = (open: boolean) => {
+      setShowStaffRegistration(open);
+      if (!open) {
+        // Reset form when closing
+        setLocalFormData({
+          name: '',
+          role: '',
+          address: '',
+          username: '',
+          password: '',
+          contact: '',
+          nic: ''
+        });
+        setFormErrors({});
+      }
+    };
+
+    return (
+      <Dialog open={showStaffRegistration} onOpenChange={handleDialogClose}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Staff Registration</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">Staff Registration</DialogTitle>
           <DialogDescription>
-            Register new receptionist or lab coordinator.
+              Register new receptionist or lab coordinator for your branch.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="staffName" className="text-right">
-              Name
+          
+          <div className="space-y-6 py-4">
+            {/* Personal Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Personal Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="staffName" className="text-sm font-medium">
+                    Full Name *
             </Label>
-            <Input id="staffName" placeholder="John Smith" className="col-span-3" />
+                  <Input 
+                    id="staffName" 
+                    placeholder="John Smith" 
+                    value={localFormData.name}
+                    onChange={(e) => handleFieldChange('name', e.target.value)}
+                    className={formErrors.name ? 'border-red-500' : ''}
+                  />
+                  {formErrors.name && (
+                    <p className="text-sm text-red-500">{formErrors.name}</p>
+                  )}
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
-              Role
+
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="text-sm font-medium">
+                    Role *
             </Label>
-            <Select>
-              <SelectTrigger className="col-span-3">
+                  <Select 
+                    value={localFormData.role} 
+                    onValueChange={(value) => handleFieldChange('role', value)}
+                  >
+                    <SelectTrigger className={formErrors.role ? 'border-red-500' : ''}>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
@@ -293,69 +447,123 @@ const BranchManagerDashboard = () => {
                 <SelectItem value="lab-coordinator">Lab Coordinator</SelectItem>
               </SelectContent>
             </Select>
+                  {formErrors.role && (
+                    <p className="text-sm text-red-500">{formErrors.role}</p>
+                  )}
+                </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="address" className="text-right">
+
+              <div className="space-y-2">
+                <Label htmlFor="address" className="text-sm font-medium">
               Address
             </Label>
-            <Input id="address" placeholder="123 Main Street, City" className="col-span-3" />
+                <Input 
+                  id="address" 
+                  placeholder="123 Main Street, City, State" 
+                  value={localFormData.address}
+                  onChange={(e) => handleFieldChange('address', e.target.value)}
+                />
+              </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="username" className="text-right">
-              Username
+
+            {/* Contact Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Contact Information</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="contact" className="text-sm font-medium">
+                  Contact Number *
+                </Label>
+                <Input 
+                  id="contact" 
+                  placeholder="0771234567" 
+                  value={localFormData.contact}
+                  onChange={(e) => handleFieldChange('contact', e.target.value)}
+                  className={formErrors.contact ? 'border-red-500' : ''}
+                />
+                {formErrors.contact && (
+                  <p className="text-sm text-red-500">{formErrors.contact}</p>
+                )}
+              </div>
+          </div>
+
+            {/* Account Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Account Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username" className="text-sm font-medium">
+                    Username *
             </Label>
-            <Input id="username" placeholder="staff.username" className="col-span-3" />
+                  <Input 
+                    id="username" 
+                    placeholder="john.smith" 
+                    value={localFormData.username}
+                    onChange={(e) => handleFieldChange('username', e.target.value)}
+                    className={formErrors.username ? 'border-red-500' : ''}
+                  />
+                  {formErrors.username && (
+                    <p className="text-sm text-red-500">{formErrors.username}</p>
+                  )}
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="password" className="text-right">
-              Password
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password *
             </Label>
-            <Input id="password" type="password" placeholder="Enter password" className="col-span-3" />
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="Enter secure password" 
+                    value={localFormData.password}
+                    onChange={(e) => handleFieldChange('password', e.target.value)}
+                    className={formErrors.password ? 'border-red-500' : ''}
+                  />
+                  {formErrors.password && (
+                    <p className="text-sm text-red-500">{formErrors.password}</p>
+                  )}
+                </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="contact" className="text-right">
-              Contact
+
+              <div className="space-y-2">
+                <Label htmlFor="nicStaff" className="text-sm font-medium">
+                  NIC Number *
             </Label>
-            <Input id="contact" placeholder="555-0000" className="col-span-3" />
+                <Input 
+                  id="nicStaff" 
+                  placeholder="199012345678" 
+                  value={localFormData.nic}
+                  onChange={(e) => handleFieldChange('nic', e.target.value)}
+                  className={formErrors.nic ? 'border-red-500' : ''}
+                />
+                {formErrors.nic && (
+                  <p className="text-sm text-red-500">{formErrors.nic}</p>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input id="email" placeholder="staff@hospital.com" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nicStaff" className="text-right">
-              NIC No
-            </Label>
-            <Input id="nicStaff" placeholder="199012345678" className="col-span-3" />
-          </div>
-        </div>
-        <DialogFooter>
+
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowStaffRegistration(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
           <Button 
-            type="submit" 
-            onClick={() => {
-              const formData = {
-                name: (document.getElementById('staffName') as HTMLInputElement)?.value,
-                role: (document.querySelector('[data-role]') as HTMLSelectElement)?.value,
-                address: (document.getElementById('address') as HTMLInputElement)?.value,
-                username: (document.getElementById('username') as HTMLInputElement)?.value,
-                password: (document.getElementById('password') as HTMLInputElement)?.value,
-                contact: (document.getElementById('contact') as HTMLInputElement)?.value,
-                email: (document.getElementById('email') as HTMLInputElement)?.value,
-                nic: (document.getElementById('nicStaff') as HTMLInputElement)?.value,
-                branch: 'Colombo'
-              };
-              handleStaffRegistration(formData);
-            }}
-            disabled={loading}
-          >
-            {loading ? 'Registering...' : 'Register Staff'}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="bg-gradient-hero hover:opacity-90"
+            >
+              {isSubmitting ? 'Registering...' : 'Register Staff'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+  };
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
@@ -486,9 +694,9 @@ const BranchManagerDashboard = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All specializations</SelectItem>
-                          {specializations.map((spec) => (
-                            <SelectItem key={spec.id} value={spec.name}>
-                              {spec.name}
+                          {uniqueSpecializations.map((spec, index) => (
+                            <SelectItem key={index} value={spec}>
+                              {spec}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -505,8 +713,28 @@ const BranchManagerDashboard = () => {
                     <div className="p-2 rounded-lg bg-gradient-secondary">
                       <Stethoscope className="w-5 h-5 text-secondary-foreground" />
                     </div>
-                    Doctors List
+                    <div>
+                      <div>Doctors List</div>
+                      <div className="text-sm text-muted-foreground font-normal">
+                        {specializationFilter === 'all' || !specializationFilter 
+                          ? `Showing all ${filteredDoctors.length} doctors`
+                          : `Showing ${filteredDoctors.length} doctors in ${specializationFilter}`
+                        }
+                      </div>
+                    </div>
                   </CardTitle>
+                  {(specializationFilter && specializationFilter !== 'all') && (
+                    <div className="mt-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSpecializationFilter('all')}
+                        className="flex items-center gap-2"
+                      >
+                        Clear Filter
+                      </Button>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <div className={isMobile ? "overflow-x-auto" : ""}>
@@ -515,9 +743,7 @@ const BranchManagerDashboard = () => {
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Branch</TableHead>
-                          {!isMobile && <TableHead>Type</TableHead>}
-                          {!isMobile && <TableHead>Username</TableHead>}
-                          {!isMobile && <TableHead>ID</TableHead>}
+                          {!isMobile && <TableHead>Specialization</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -527,9 +753,13 @@ const BranchManagerDashboard = () => {
                             <TableCell>
                               <Badge variant="secondary">{doctor.branch}</Badge>
                             </TableCell>
-                            {!isMobile && <TableCell>{doctor.user_type}</TableCell>}
-                            {!isMobile && <TableCell>{doctor.username || 'N/A'}</TableCell>}
-                            {!isMobile && <TableCell>{doctor.id}</TableCell>}
+                            {!isMobile && <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {(doctor.specializations || []).map((spec, index) => (
+                                  <Badge key={index} variant="outline">{spec}</Badge>
+                                ))}
+                              </div>
+                            </TableCell>}
                           </TableRow>
                         ))}
                       </TableBody>
@@ -607,9 +837,7 @@ const BranchManagerDashboard = () => {
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Role</TableHead>
-                          {!isMobile && <TableHead>Username</TableHead>}
                           {!isMobile && <TableHead>Branch</TableHead>}
-                          {!isMobile && <TableHead>ID</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -619,9 +847,7 @@ const BranchManagerDashboard = () => {
                             <TableCell>
                               <Badge variant="outline">{staff.role}</Badge>
                             </TableCell>
-                            {!isMobile && <TableCell>{staff.username || 'N/A'}</TableCell>}
                             {!isMobile && <TableCell>{staff.branch || 'N/A'}</TableCell>}
-                            {!isMobile && <TableCell>{staff.id}</TableCell>}
                           </TableRow>
                         ))}
                       </TableBody>
