@@ -8,7 +8,13 @@
   import PatientDetails from './PatientDetails';
   import { useAuth } from '../contexts/AuthContext';
   import { useNavigate } from 'react-router-dom';
-  import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
+  // Add these imports at the top
+import MedicalHistoryModal from './modals/MedicalHistoryModal';
+import LabReportsModal from './modals/LabReportsModal';
+import AppointmentsModal from './modals/AppointmentsModal';
+
+
 
   import { 
     Calendar,
@@ -46,6 +52,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
     const [showPatientDetails, setShowPatientDetails] = useState(false);
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
+
+    const [showMedicalHistory, setShowMedicalHistory] = useState(false);
+    const [showLabReports, setShowLabReports] = useState(false);
+    const [showAppointments, setShowAppointments] = useState(false);
+    const [selectedPatientForModal, setSelectedPatientForModal] = useState<any>(null);
 
     const isMobile = useIsMobile();
     const { user, logout } = useAuth();
@@ -357,18 +368,42 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                           </div>
                         </div>
                         <div className={`flex gap-2 pt-3 ${isMobile ? 'flex-col' : 'flex-row'}`}>
-                          <Button size="sm" variant="outline" className="flex-1 hover:bg-muted/50">
-                            <FileText className="w-4 h-4 mr-2" />
-                            Medical History
-                          </Button>
-                          <Button size="sm" variant="outline" className="flex-1 hover:bg-muted/50">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Appointments
-                          </Button>
-                          <Button size="sm" variant="outline" className="flex-1 hover:bg-muted/50">
-                            <BarChart3 className="w-4 h-4 mr-2" />
-                            Lab Reports
-                          </Button>
+                          <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1 hover:bg-muted/50"
+                              onClick={() => {
+                                setSelectedPatientForModal(patient);
+                                setShowMedicalHistory(true);
+                              }}
+                            >
+                              <FileText className="w-4 h-4 mr-2" />
+                              Medical History
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="flex-1 hover:bg-muted/50"
+                                onClick={() => {
+                                  setSelectedPatientForModal(patient);
+                                  setShowLabReports(true);
+                                }}
+                              >
+                                <BarChart3 className="w-4 h-4 mr-2" />
+                                Lab Reports
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="flex-1 hover:bg-muted/50"
+                                onClick={() => {
+                                  setSelectedPatientForModal(patient);
+                                  setShowAppointments(true);
+                                }}
+                              >
+                                <Calendar className="w-4 h-4 mr-2" />
+                                Appointments
+                              </Button>
                         </div>
                       </div>
                     ))}
@@ -525,6 +560,28 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
           open={showPatientDetails}
           onOpenChange={setShowPatientDetails}
         />
+
+        {/* Medical History Modal */}
+        <MedicalHistoryModal 
+          patient={selectedPatientForModal}
+          open={showMedicalHistory}
+          onOpenChange={setShowMedicalHistory}
+        />
+
+        {/* Lab Reports Modal */}
+        <LabReportsModal 
+          patient={selectedPatientForModal}
+          open={showLabReports}
+          onOpenChange={setShowLabReports}
+        />
+
+        {/* Appointments Modal */}
+        <AppointmentsModal 
+          patient={selectedPatientForModal}
+          open={showAppointments}
+          onOpenChange={setShowAppointments}
+        />
+
       </div>
     );
   };
