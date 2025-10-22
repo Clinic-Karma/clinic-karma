@@ -136,13 +136,13 @@ import {
   // POST /api/branchmanagers/doctors
   export const createDoctor = async (req, res) => {
     try {
-      const { name, specialization, address, username, password, contact, email, nic, branch } = req.body;
+      const { name, specialization, address, username, password, contact, nic, branch } = req.body;
       
       // Validate required fields
-      if (!name || !username || !password || !contact || !email || !nic) {
+      if (!name || !username || !password || !contact || !nic) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Name, username, password, contact, email, and NIC are required' 
+          message: 'Name, username, password, contact, and NIC are required' 
         });
       }
 
@@ -153,7 +153,6 @@ import {
         username,
         password,
         contact,
-        email,
         nic,
         branch
       });

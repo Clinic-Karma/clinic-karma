@@ -71,6 +71,7 @@ const LoginModal = ({ open, onOpenChange }: LoginModalProps) => {
               navigate('/branch-manager');
               break;
             case 'lab-coordinator':
+            case 'lab-assistant': // Backwards compatibility
               navigate('/lab-coordinator');
               break;
             case 'receptionist':

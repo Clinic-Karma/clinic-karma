@@ -72,9 +72,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         withCredentials: true
       });
 
-      const { user: userData } = response.data;
+      const { user: userData, accessToken } = response.data;
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Store access token for Authorization header
+      if (accessToken) {
+        localStorage.setItem('accessToken', accessToken);
+      }
+      
       return true;
     } catch (error) {
       console.error('Login failed:', error);
@@ -92,6 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null);
       localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
     }
   };
 

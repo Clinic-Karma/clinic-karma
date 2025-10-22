@@ -60,7 +60,8 @@ export async function login(req, res) {
         });
 
         return res.json({
-        user: { id: user.user_id, pid: ID, username: user.username, role: user.user_type }
+        user: { id: user.user_id, pid: ID, username: user.username, role: user.user_type },
+        accessToken: accessToken  // Include access token in response for frontend
         });
 
     }
@@ -92,7 +93,7 @@ export async function refreshAccessToken(req, res) {
       await deleteRefreshToken(payload.jti);
 
       const newJti = uuidv4();
-      const newPayload = { sub: payload.sub, sid: payload.sid, jti: newJti };
+      const newPayload = { sub: payload.sub, role: payload.role, sid: payload.sid, jti: newJti };
       const newAccessToken = signAccessToken(newPayload);
       const newRefreshToken = signRefreshToken(newPayload);
 
@@ -112,8 +113,8 @@ export async function refreshAccessToken(req, res) {
             maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
       });
 
-      // No body needed; cookies carry the tokens
-      return res.status(204).end();
+      // Return new access token for frontend to store in localStorage
+      return res.json({ accessToken: newAccessToken });
     } catch (err) {
       console.error(err);
       return res.status(403).json({ message: 'Invalid token' });

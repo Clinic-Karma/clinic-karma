@@ -11,7 +11,8 @@ router.get('/test', (req, res) => {
     res.json({ 
         success: true, 
         message: 'Appointment router is working',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        version: '2.0 - Reschedule fix applied'
     });
 });
 
@@ -19,6 +20,35 @@ router.get('/test', (req, res) => {
 router.get('/debug-lab-reports', async (req, res) => {
     try {
         const reports = await appointmentController.getLabReports(req, res);
+    } catch (error) {
+        console.error('Debug error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Debug error',
+            error: error.message
+        });
+    }
+});
+
+// Debug endpoint to check appointments without Doctor_Appointment records
+router.get('/debug-appointments-integrity', async (req, res) => {
+    try {
+        const { sql } = await import('../db_utils/db.js');
+        
+        // Find appointments without Doctor_Appointment records
+        const orphanedAppointments = await sql`
+            SELECT a."Appointment_ID", a."Appointment_Date", a."Status", a."Type"
+            FROM "Appointment" a
+            LEFT JOIN "Doctor_Appointment" da ON a."Appointment_ID" = da."Appointment_ID"
+            WHERE da."Appointment_ID" IS NULL
+        `;
+        
+        res.json({
+            success: true,
+            message: 'Appointments without Doctor_Appointment records',
+            count: orphanedAppointments.length,
+            appointments: orphanedAppointments
+        });
     } catch (error) {
         console.error('Debug error:', error);
         res.status(500).json({
@@ -64,14 +94,14 @@ const cancelAppointmentValidation = [
     body('appointmentId').isInt({ min: 1 }).withMessage('Appointment ID must be a valid positive integer')
 ];
 
-// Book appointment - require authentication and patient role
-router.post('/book', requireAuth, requireRole('patient'), bookAppointmentValidation, appointmentController.bookAppointment);
+// Book appointment - allow patients and receptionists
+router.post('/book', requireAuth, requireRole('patient', 'receptionist'), bookAppointmentValidation, appointmentController.bookAppointment);
 
-// Reschedule appointment - require authentication and patient role
-router.post('/reschedule', requireAuth, requireRole('patient'), rescheduleAppointmentValidation, appointmentController.rescheduleAppointment);
+// Reschedule appointment - allow patients and receptionists
+router.post('/reschedule', requireAuth, requireRole('patient', 'receptionist'), rescheduleAppointmentValidation, appointmentController.rescheduleAppointment);
 
-// Cancel appointment - require authentication and patient role
-router.post('/cancel', requireAuth, requireRole('patient'), cancelAppointmentValidation, appointmentController.cancelAppointment);
+// Cancel appointment - allow patients and receptionists
+router.post('/cancel', requireAuth, requireRole('patient', 'receptionist'), cancelAppointmentValidation, appointmentController.cancelAppointment);
 
 // Get appointments for patient
 // Static and specific routes first to avoid conflicts with parameterized routes
@@ -84,6 +114,9 @@ router.get('/doctor/:doctorId/date/:date', appointmentController.getAppointments
 // Insurance endpoints
 router.get('/pending-insurances', appointmentController.getPendingInsurances);
 router.put('/update-insurance-status', appointmentController.updateInsuranceStatus);
+router.get('/insurance-providers', appointmentController.getAllInsuranceProviders);
+router.post('/add-patient-insurance', appointmentController.addPatientInsurance);
+router.get('/patient-insurances-by-bill/:billId', appointmentController.getPatientInsurancesByBillId);
 router.post('/submit-insurance-claim', appointmentController.submitInsuranceClaim);
 router.get('/insurance-structure', appointmentController.checkInsuranceTableStructure);
 router.get('/patient-insurance-structure', appointmentController.checkPatientInsuranceTableStructure);
@@ -108,12 +141,14 @@ router.get('/billing-structure', appointmentController.checkBillingTableStructur
 router.post('/add-insured-amount-column', appointmentController.addInsuredAmountColumn);
 router.post('/add-insurance-provider', appointmentController.addInsuranceProvider);
 router.post('/fix-insurance-schema', appointmentController.fixInsuranceTableSchema);
+router.post('/add-patient-insurance-status-column', appointmentController.addPatientInsuranceStatusColumn);
 
 // Lab Report endpoints - require authentication
 router.post('/upload-lab-report', requireAuth, upload.single('reportFile'), appointmentController.uploadLabReport);
 router.get('/lab-reports', requireAuth, appointmentController.getLabReports);
 router.get('/lab-report/:appointmentId', requireAuth, appointmentController.getLabReportByAppointment);
 router.get('/download-lab-report/:appointmentId', requireAuth, appointmentController.downloadLabReport);
+router.delete('/lab-report/:appointmentId', requireAuth, appointmentController.deleteLabReport);
 
 // Patient registration endpoints
 router.post('/register-patient', appointmentController.registerPatient);

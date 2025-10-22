@@ -2,6 +2,9 @@ import { sql } from '../db_utils/db.js';
 import * as appointmentDb from '../db_utils/appointment.js';
 import * as doctorDb from '../db_utils/doctor.js';
 import { validationResult } from 'express-validator';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 12;
 
 
 // Get all patients for testing
@@ -131,11 +134,20 @@ export const createStaff = async (req, res) => {
         // Map lab-coordinator to lab-assistant for database consistency
         const dbRole = role === 'lab-coordinator' ? 'lab-assistant' : role;
 
+        // Hash the password before storing
+        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+        // Sanitize phone number to fit database constraint (VARCHAR 15)
+        let sanitizedContact = contact.replace(/[\s\-\(\)]/g, '');
+        if (sanitizedContact.length > 15) {
+            sanitizedContact = sanitizedContact.substring(0, 15);
+        }
+
         // Create staff without transaction (neon serverless doesn't support transactions)
         // 1. Create user first - let database handle auto-increment
         const userResult = await sql`
             INSERT INTO "User" (name, nic, contact_number, address, username, password_hash, user_type, email)
-            VALUES (${name}, ${nic}, ${contact}, ${address}, ${username}, ${password}, ${dbRole}, ${email || null})
+            VALUES (${name}, ${nic}, ${sanitizedContact}, ${address}, ${username}, ${passwordHash}, ${dbRole}, ${email || null})
             RETURNING user_id
         `;
         
@@ -176,18 +188,27 @@ export const createDoctor = async (req, res) => {
             });
         }
 
+        // Hash the password before storing
+        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
         // Create doctor without transaction (neon serverless doesn't support transactions)
         // Use a retry mechanism to handle sequence conflicts
         let userResult;
         let retryCount = 0;
         const maxRetries = 3;
 
+        // Sanitize phone number to fit database constraint (VARCHAR 15)
+        let sanitizedContact = contact.replace(/[\s\-\(\)]/g, '');
+        if (sanitizedContact.length > 15) {
+            sanitizedContact = sanitizedContact.substring(0, 15);
+        }
+
         while (retryCount < maxRetries) {
             try {
                 // 1. Create user first - let database handle auto-increment
                 userResult = await sql`
                     INSERT INTO "User" (name, nic, contact_number, address, username, password_hash, user_type)
-                    VALUES (${name}, ${nic}, ${contact}, ${address}, ${username}, ${password}, 'doctor')
+                    VALUES (${name}, ${nic}, ${sanitizedContact}, ${address}, ${username}, ${passwordHash}, 'doctor')
                     RETURNING user_id
                 `;
                 break; // Success, exit retry loop
@@ -263,10 +284,10 @@ export const createDoctor = async (req, res) => {
         const doctorId = doctorResult[0].Doctor_ID;
 
         // 4. Add specialization if provided
-        if (specialization && specialization !== 'No Specialization') {
+        if (specialization && specialization.trim() !== '' && specialization !== 'No Specialization') {
             const specResult = await sql`
                 SELECT "Specialization_ID" FROM "Specialization" 
-                WHERE "Specialization_Name" = ${specialization}
+                WHERE LOWER("Specialization_Name") = LOWER(${specialization})
             `;
             
             if (specResult.length > 0) {
@@ -274,6 +295,9 @@ export const createDoctor = async (req, res) => {
                     INSERT INTO "Doctor_Specialization" ("Doctor_ID", "Specialization_ID")
                     VALUES (${doctorId}, ${specResult[0].Specialization_ID})
                 `;
+                console.log(`Added specialization ${specialization} for doctor ${doctorId}`);
+            } else {
+                console.warn(`Specialization not found: ${specialization}`);
             }
         }
 
@@ -577,7 +601,7 @@ export const rescheduleAppointment = async (req, res) => {
         });
     }
 
-    const { appointmentId, newDate } = req.body;
+    const { appointmentId, newDate, newTimeSlot } = req.body;
 
     try {
         // First, get the current appointment details
@@ -590,21 +614,78 @@ export const rescheduleAppointment = async (req, res) => {
             });
         }
 
-        // Update only the appointment date (time is not stored in Appointment table)
-        const updatedAppointment = await appointmentDb.updateAppointment(
-            appointmentId,
-            { appointment_date: newDate }
-        );
+        console.log(`Attempting to update appointment ${appointmentId}`);
+        console.log('Current date:', currentAppointment.Appointment_Date);
+        console.log('New date:', newDate);
+        console.log('New time:', newTimeSlot);
+
+        // Format the date as a Date object to ensure proper type
+        const dateToUpdate = new Date(newDate);
+        console.log('Formatted date object:', dateToUpdate.toISOString());
+
+        // Update the appointment date in Appointment table
+        // Use TO_DATE for explicit PostgreSQL date conversion
+        const updatedAppointment = await sql`
+            UPDATE "Appointment"
+            SET "Appointment_Date" = TO_DATE(${newDate}, 'YYYY-MM-DD')
+            WHERE "Appointment_ID" = ${appointmentId}
+            RETURNING "Appointment_ID", "Patient_ID", "Appointment_Date", "Status", "Type", "Branch_Name"
+        `;
+
+        console.log('✅ UPDATE query executed');
+        console.log('Rows affected:', updatedAppointment.length);
+
+        if (!updatedAppointment || updatedAppointment.length === 0) {
+            throw new Error(`No rows updated for appointment ID: ${appointmentId}. Appointment may not exist.`);
+        }
+
+        console.log('✅ Updated record:', JSON.stringify(updatedAppointment[0], null, 2));
+
+        // Verify the update by querying again
+        const verifyUpdate = await sql`
+            SELECT "Appointment_ID", "Appointment_Date", TO_CHAR("Appointment_Date", 'YYYY-MM-DD') as date_string
+            FROM "Appointment"
+            WHERE "Appointment_ID" = ${appointmentId}
+        `;
+        console.log('🔍 Verification query:', JSON.stringify(verifyUpdate[0], null, 2));
+        
+        const dateMatches = verifyUpdate[0].date_string === newDate;
+        console.log(`🔍 Date update successful? ${dateMatches} (expected: ${newDate}, got: ${verifyUpdate[0].date_string})`);
+
+        // Check if Doctor_Appointment record exists for this appointment
+        const doctorAppointmentCheck = await sql`
+            SELECT "Appointment_ID"
+            FROM "Doctor_Appointment"
+            WHERE "Appointment_ID" = ${appointmentId}
+        `;
+
+        let updatedTime = null;
+        if (doctorAppointmentCheck && doctorAppointmentCheck.length > 0) {
+            // Update the time in Doctor_Appointment table
+            updatedTime = await sql`
+                UPDATE "Doctor_Appointment"
+                SET "Start_Time" = ${newTimeSlot}
+                WHERE "Appointment_ID" = ${appointmentId}
+                RETURNING *
+            `;
+            console.log('✅ Updated appointment time:', updatedTime[0]);
+        } else {
+            console.log('⚠️ No Doctor_Appointment record found for this appointment. Only date was updated.');
+        }
 
         res.json({
             success: true,
-            message: 'Appointment rescheduled successfully',
+            message: updatedTime 
+                ? 'Appointment rescheduled successfully' 
+                : 'Appointment date updated successfully (time slot not applicable for this appointment)',
             details: {
                 patientUsername: currentAppointment.patient_username,
                 previousDate: currentAppointment.appointment_date,
-                newDate
+                newDate,
+                newTimeSlot: updatedTime ? newTimeSlot : 'N/A'
             },
-            appointment: updatedAppointment
+            appointment: updatedAppointment[0],
+            timeUpdate: updatedTime ? updatedTime[0] : null
         });
     } catch (error) {
         console.error('Error rescheduling appointment:', error);
@@ -1207,18 +1288,102 @@ export const testSpecializationFee = async (req, res) => {
     }
 };
 
+export const getAllInsuranceProviders = async (req, res) => {
+    try {
+        const insuranceProviders = await appointmentDb.getAllInsuranceProviders();
+
+        res.json({
+            success: true,
+            message: 'Insurance providers retrieved successfully',
+            data: {
+                insuranceProviders: insuranceProviders
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching insurance providers:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch insurance providers',
+            error: error.message
+        });
+    }
+};
+
+export const addPatientInsurance = async (req, res) => {
+    try {
+        const { patientUsername, insuranceId, policyNumber } = req.body;
+
+        // Validate input
+        if (!patientUsername || !insuranceId || !policyNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'Patient username, insurance ID, and policy number are required'
+            });
+        }
+
+        const result = await appointmentDb.addPatientInsurance(patientUsername, insuranceId, policyNumber);
+
+        res.json({
+            success: true,
+            message: 'Patient insurance added successfully',
+            data: {
+                patientInsurance: result
+            }
+        });
+    } catch (error) {
+        console.error('Error adding patient insurance:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to add patient insurance',
+            error: error.message
+        });
+    }
+};
+
+export const getPatientInsurancesByBillId = async (req, res) => {
+    try {
+        const { billId } = req.params;
+
+        if (!billId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bill ID is required'
+            });
+        }
+
+        const result = await appointmentDb.getPatientInsurancesByBillId(billId);
+
+        res.json({
+            success: true,
+            message: 'Patient insurances retrieved successfully',
+            data: {
+                patientId: result.patientId,
+                insurances: result.insurances
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching patient insurances by bill ID:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message === 'Bill not found' ? 'Bill not found' : 'Failed to fetch patient insurances',
+            error: error.message
+        });
+    }
+};
+
 export const submitInsuranceClaim = async (req, res) => {
     const { billId, insuranceId, claimAmount } = req.body;
 
     // Validate input
-    if (!billId || !insuranceId || !claimAmount) {
+    if (!billId || !insuranceId) {
         return res.status(400).json({
             success: false,
-            message: 'Bill ID, Insurance ID, and Claim Amount are required'
+            message: 'Bill ID and Insurance ID are required'
         });
     }
 
-    if (isNaN(parseFloat(claimAmount)) || parseFloat(claimAmount) <= 0) {
+    // If claimAmount is provided, validate it
+    if (claimAmount && (isNaN(parseFloat(claimAmount)) || parseFloat(claimAmount) <= 0)) {
         return res.status(400).json({
             success: false,
             message: 'Claim Amount must be a positive number'
@@ -1238,7 +1403,7 @@ export const submitInsuranceClaim = async (req, res) => {
                 claimAmount: result.claim.Claim_Amount,
                 status: result.claim.Claim_Status,
                 originalBillAmount: result.originalAmount,
-                newBillAmount: result.newAmount
+                insuredAmount: result.insuredAmount
             }
         });
     } catch (error) {
@@ -1260,7 +1425,8 @@ export const registerPatient = async (req, res) => {
         phone,
         dateOfBirth,
         gender,
-        address
+        address,
+        emergencyContact
     } = req.body;
 
     // Validate required fields
@@ -1271,12 +1437,12 @@ export const registerPatient = async (req, res) => {
         });
     }
 
-    // Validate phone format (more lenient validation)
+    // Validate phone format (digits with optional formatting)
     const phoneRegex = /^[\+]?[\d\s\-\(\)]{7,20}$/;
     if (!phoneRegex.test(phone)) {
         return res.status(400).json({
             success: false,
-            message: 'Please provide a valid phone number (7-20 characters)'
+            message: 'Please provide a valid phone number'
         });
     }
 
@@ -1298,7 +1464,8 @@ export const registerPatient = async (req, res) => {
             phone,
             dateOfBirth,
             gender,
-            address: address || ''
+            address: address || '',
+            emergencyContact: emergencyContact || null
         });
 
         res.status(201).json({
@@ -1622,6 +1789,69 @@ export const downloadLabReport = async (req, res) => {
     }
 };
 
+export const deleteLabReport = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        
+        console.log('Delete request for appointment ID:', appointmentId);
+        
+        if (!appointmentId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Appointment ID is required'
+            });
+        }
+
+        // Get the report first to get the file path
+        const report = await appointmentDb.getTreatmentAppointment(parseInt(appointmentId));
+        
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lab report not found for this appointment'
+            });
+        }
+
+        // Delete the file from disk if it exists
+        if (report.Report_Links && report.Report_Links.startsWith('/uploads/')) {
+            try {
+                const path = await import('path');
+                const fs = await import('fs');
+                const { fileURLToPath } = await import('url');
+                
+                const __filename = fileURLToPath(import.meta.url);
+                const __dirname = path.dirname(__filename);
+                
+                const fileName = path.basename(report.Report_Links);
+                const filePath = path.join(__dirname, '../../uploads/lab-reports', fileName);
+                
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                    console.log('File deleted:', filePath);
+                }
+            } catch (fileError) {
+                console.error('Error deleting file:', fileError);
+                // Continue with database deletion even if file deletion fails
+            }
+        }
+
+        // Delete from database
+        await appointmentDb.deleteLabReport(parseInt(appointmentId));
+
+        res.json({
+            success: true,
+            message: 'Lab report deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting lab report:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting lab report',
+            error: error.message
+        });
+    }
+};
+
 // Simple test endpoint for doctor creation (bypasses sequence issues)
 export const createDoctorTest = async (req, res) => {
     try {
@@ -1750,6 +1980,18 @@ export const updatePaymentAmount = async (req, res) => {
 
         const remainingAmount = newPatientAmount;
 
+        // Ensure Status column exists, then update it based on remaining amount
+        await sql`
+            ALTER TABLE "Billing"
+            ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
+        `;
+        const newStatus = remainingAmount <= 0 ? 'Done' : 'Pending';
+        await sql`
+            UPDATE "Billing"
+            SET "Status" = ${newStatus}
+            WHERE "Bill_ID" = ${billId}
+        `;
+
         res.json({
             success: true,
             message: 'Payment recorded successfully',
@@ -1760,7 +2002,8 @@ export const updatePaymentAmount = async (req, res) => {
                 totalPaidSoFar: newTotalPaid,
                 remainingAmount: remainingAmount,
                 updatedPatientAmount: newPatientAmount,
-                isFullyPaid: remainingAmount <= 0
+                isFullyPaid: remainingAmount <= 0,
+                status: newStatus
             }
         });
 
@@ -1892,7 +2135,7 @@ export const generateBill = async (req, res) => {
 
         const appointment = appointmentResult[0];
 
-        // Check if bill already exists
+        // Check if bill already exists; if so, enrich it if missing values
         const existingBillResult = await sql`
             SELECT 
                 b."Bill_ID",
@@ -1900,33 +2143,101 @@ export const generateBill = async (req, res) => {
                 b."Insured_Amount",
                 b."Patient_Amount",
                 b."Insurance_ID",
+                b."Due_Date",
                 i."Provider_Name" as insurance_provider,
-                i."Coverage_Percentage"
+                i."Coverage_Percentage",
+                pi."Policy_Number"
             FROM "Billing" b
             LEFT JOIN "Insurance" i ON b."Insurance_ID" = i."Insurance_ID"
+            LEFT JOIN "Patient_Insurance" pi ON pi."Insurance_ID" = b."Insurance_ID" AND pi."Patient_ID" = ${appointment.patient_id}
             WHERE b."Appointment_ID" = ${appointmentId}
+            ORDER BY b."Bill_ID" DESC
+            LIMIT 1
         `;
 
         if (existingBillResult && existingBillResult.length > 0) {
-            const bill = existingBillResult[0];
-            
-            // Get payment information for this existing bill
+            let bill = existingBillResult[0];
+
+            // If insurance missing, compute and update now
+            const needsInsuranceUpdate = (!bill.Insurance_ID || parseFloat(bill.Insured_Amount || 0) <= 0);
+            if (needsInsuranceUpdate) {
+                const insuranceResult = await sql`
+                    SELECT 
+                        pi."Insurance_ID",
+                        pi."Policy_Number",
+                        pi."Status" as insurance_status,
+                        i."Provider_Name",
+                        i."Coverage_Percentage"
+                    FROM "Patient_Insurance" pi
+                    JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
+                    WHERE pi."Patient_ID" = ${appointment.patient_id}
+                    ORDER BY pi."Insurance_ID" DESC
+                    LIMIT 1
+                `;
+
+                if (insuranceResult && insuranceResult.length > 0) {
+                    const insurance = insuranceResult[0];
+                    const coveragePercentage = parseFloat(insurance.Coverage_Percentage) || 0;
+                    const insuredAmount = (parseFloat(bill.Total_Amount) * coveragePercentage) / 100;
+                    const updatedPatientAmount = parseFloat(bill.Total_Amount) - insuredAmount;
+
+                    await sql`
+                        UPDATE "Billing"
+                        SET "Insured_Amount" = ${insuredAmount},
+                            "Patient_Amount" = ${updatedPatientAmount},
+                            "Insurance_ID" = ${insurance.Insurance_ID}
+                        WHERE "Bill_ID" = ${bill.Bill_ID}
+                    `;
+
+                    const updated = await sql`
+                        SELECT 
+                            b."Bill_ID",
+                            b."Total_Amount",
+                            b."Insured_Amount",
+                            b."Patient_Amount",
+                            b."Insurance_ID",
+                            b."Due_Date",
+                            i."Provider_Name" as insurance_provider,
+                            i."Coverage_Percentage",
+                            pi."Policy_Number"
+                        FROM "Billing" b
+                        LEFT JOIN "Insurance" i ON b."Insurance_ID" = i."Insurance_ID"
+                        LEFT JOIN "Patient_Insurance" pi ON pi."Insurance_ID" = b."Insurance_ID" AND pi."Patient_ID" = ${appointment.patient_id}
+                        WHERE b."Bill_ID" = ${bill.Bill_ID}
+                    `;
+                    if (updated && updated.length > 0) {
+                        bill = updated[0];
+                    }
+                }
+            }
+
+            // Payment info and status
             const paymentInfoResult = await sql`
                 SELECT COALESCE(SUM("Amount"), 0) as total_paid
                 FROM "Payment"
                 WHERE "Bill_ID" = ${bill.Bill_ID}
             `;
-
             const totalPaid = parseFloat(paymentInfoResult[0].total_paid);
             const patientAmount = parseFloat(bill.Patient_Amount || bill.Total_Amount);
             const remainingAmount = patientAmount - totalPaid;
+
+            await sql`
+                ALTER TABLE "Billing"
+                ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
+            `;
+            const billStatus = remainingAmount <= 0 ? 'Done' : 'Pending';
+            await sql`
+                UPDATE "Billing"
+                SET "Status" = ${billStatus}
+                WHERE "Bill_ID" = ${bill.Bill_ID}
+            `;
 
             return res.json({
                 success: true,
                 message: 'Bill already exists for this appointment',
                 data: {
                     appointment: appointment,
-                    bill: bill,
+                    bill: { ...bill, Status: billStatus },
                     paymentInfo: {
                         totalPaid: totalPaid,
                         remainingAmount: remainingAmount,
@@ -1957,7 +2268,6 @@ export const generateBill = async (req, res) => {
             FROM "Patient_Insurance" pi
             JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
             WHERE pi."Patient_ID" = ${appointment.patient_id}
-            AND pi."Status" = 'Approved'
             ORDER BY pi."Insurance_ID" DESC
             LIMIT 1
         `;
@@ -2005,6 +2315,18 @@ export const generateBill = async (req, res) => {
         const billPatientAmount = parseFloat(newBill.Patient_Amount || newBill.Total_Amount);
         const remainingAmount = billPatientAmount - totalPaid;
 
+        // Ensure Status column exists and set it according to remaining amount
+        await sql`
+            ALTER TABLE "Billing"
+            ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
+        `;
+        const billStatus = remainingAmount <= 0 ? 'Done' : 'Pending';
+        await sql`
+            UPDATE "Billing"
+            SET "Status" = ${billStatus}
+            WHERE "Bill_ID" = ${newBill.Bill_ID}
+        `;
+
         res.json({
             success: true,
             message: 'Bill generated successfully',
@@ -2012,7 +2334,10 @@ export const generateBill = async (req, res) => {
                 appointment: appointment,
                 bill: {
                     ...newBill,
-                    insurance_provider: insuranceProvider
+                    insurance_provider: insuranceProvider,
+                    coverage_percentage: (insuranceResult && insuranceResult.length > 0) ? insuranceResult[0].Coverage_Percentage : null,
+                    policy_number: (insuranceResult && insuranceResult.length > 0) ? insuranceResult[0].Policy_Number : null,
+                    Status: billStatus
                 },
                 paymentInfo: {
                     totalPaid: totalPaid,
@@ -2480,6 +2805,47 @@ export const fixInsuranceTableSchema = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fix Insurance table schema',
+            error: error.message
+        });
+    }
+};
+
+// Add Status column to Patient_Insurance table if it doesn't exist
+export const addPatientInsuranceStatusColumn = async (req, res) => {
+    try {
+        // Check if Status column exists
+        const columnCheck = await sql`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'Patient_Insurance' 
+            AND table_schema = 'public'
+            AND column_name = 'Status'
+        `;
+
+        if (columnCheck.length === 0) {
+            // Column doesn't exist, add it
+            await sql`
+                ALTER TABLE "Patient_Insurance"
+                ADD COLUMN "Status" VARCHAR(20) DEFAULT 'Approved'
+            `;
+            
+            res.json({
+                success: true,
+                message: 'Status column added to Patient_Insurance table successfully',
+                action: 'added_column'
+            });
+        } else {
+            res.json({
+                success: true,
+                message: 'Status column already exists in Patient_Insurance table',
+                action: 'no_change_needed'
+            });
+        }
+    } catch (error) {
+        console.error('Error adding Status column to Patient_Insurance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to add Status column to Patient_Insurance table',
             error: error.message
         });
     }

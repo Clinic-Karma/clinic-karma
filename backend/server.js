@@ -89,4 +89,13 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
   console.log(`CORS enabled for origins: http://localhost:5173, http://localhost:8080, http://localhost:8081, http://192.168.209.1:8080, http://192.168.209.1:8081, http://192.168.209.1:5173, ${process.env.FRONTEND_URL}`);
   console.log(`Database URL configured: ${process.env.DATABASE_URL ? 'Yes' : 'No (Missing DATABASE_URL)'}`);
+  // Warm up Neon connection (non-blocking)
+  import('./src/db_utils/db.js').then(async ({ sql }) => {
+    try {
+      await sql`SELECT 1`;
+      console.log('Database warm-up successful');
+    } catch (e) {
+      console.warn('Database warm-up failed:', e?.message || e);
+    }
+  });
 });

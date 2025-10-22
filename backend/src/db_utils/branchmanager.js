@@ -1,5 +1,8 @@
 // backend/src/db_utils/branchmanager.js
 import { sql } from './db.js';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 12;
 
 // Create branch manager
 export async function createBranchManager(data) {
@@ -7,6 +10,7 @@ export async function createBranchManager(data) {
     name,
     email,
     phone = null,
+    password = null,
     password_hash = null,
     address = null,
     NIC = null,
@@ -17,11 +21,17 @@ export async function createBranchManager(data) {
   } = data;
 
   try {
+    // Hash the password if provided as plain text
+    let hashedPassword = password_hash;
+    if (password && !password_hash) {
+      hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    }
+
     const result = await sql`
       INSERT INTO "branch_managers" 
         ("name", "email", "phone", "password_hash", "address", "NIC", "username", "user_type", "branch_id", "is_active")
       VALUES 
-        (${name}, ${email}, ${phone}, ${password_hash}, ${address}, ${NIC}, ${username}, ${user_type}, ${branch_id}, ${is_active})
+        (${name}, ${email}, ${phone}, ${hashedPassword}, ${address}, ${NIC}, ${username}, ${user_type}, ${branch_id}, ${is_active})
       RETURNING *;
     `;
     return result[0];
@@ -85,7 +95,14 @@ export async function updateBranchManager(id, data) {
   if (fields.length === 0) return getBranchManagerById(id);
 
   try {
-    const setClauses = fields.map(
+    // Hash password if it's being updated
+    if (data.password) {
+      data.password_hash = await bcrypt.hash(data.password, SALT_ROUNDS);
+      delete data.password;
+    }
+
+    const updatedFields = Object.entries(data);
+    const setClauses = updatedFields.map(
       ([key, value], index) => sql`${sql.unsafe('"' + key + '"')} = ${value}`
     );
 
@@ -165,18 +182,26 @@ export async function createDoctorForBranchManager(data) {
     username,
     password,
     contact,
-    email,
     nic,
     branch = 'Colombo' // Default branch
   } = data;
 
   try {
+    // Hash the password before storing
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Sanitize phone number to fit database constraint (VARCHAR 15)
+    let sanitizedContact = contact.replace(/[\s\-\(\)]/g, '');
+    if (sanitizedContact.length > 15) {
+      sanitizedContact = sanitizedContact.substring(0, 15);
+    }
+
     // Start transaction
     const result = await sql.begin(async sql => {
       // 1. Create user first
       const userResult = await sql`
-        INSERT INTO "User" (name, nic, contact_number, email, address, username, password_hash, user_type)
-        VALUES (${name}, ${nic}, ${contact}, ${email}, ${address}, ${username}, ${password}, 'doctor')
+        INSERT INTO "User" (name, nic, contact_number, address, username, password_hash, user_type)
+        VALUES (${name}, ${nic}, ${sanitizedContact}, ${address}, ${username}, ${passwordHash}, 'doctor')
         RETURNING user_id
       `;
       
@@ -201,10 +226,10 @@ export async function createDoctorForBranchManager(data) {
       const doctorId = doctorResult[0].Doctor_ID;
 
       // 4. Add specialization if provided
-      if (specialization) {
+      if (specialization && specialization.trim() !== '') {
         const specResult = await sql`
           SELECT "Specialization_ID" FROM "Specialization" 
-          WHERE "Specialization_Name" = ${specialization}
+          WHERE LOWER("Specialization_Name") = LOWER(${specialization})
         `;
         
         if (specResult.length > 0) {
@@ -212,6 +237,8 @@ export async function createDoctorForBranchManager(data) {
             INSERT INTO "Doctor_Specialization" ("Doctor_ID", "Specialization_ID")
             VALUES (${doctorId}, ${specResult[0].Specialization_ID})
           `;
+        } else {
+          console.warn(`Specialization not found: ${specialization}`);
         }
       }
 
@@ -268,11 +295,20 @@ export async function createStaffForBranchManager(data) {
   } = data;
 
   try {
+    // Hash the password before storing
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Sanitize phone number to fit database constraint (VARCHAR 15)
+    let sanitizedContact = contact.replace(/[\s\-\(\)]/g, '');
+    if (sanitizedContact.length > 15) {
+      sanitizedContact = sanitizedContact.substring(0, 15);
+    }
+
     // Create staff without transaction (neon serverless doesn't support transactions)
     // 1. Create user first - let database handle auto-increment
     const userResult = await sql`
       INSERT INTO "User" (name, nic, contact_number, address, username, password_hash, user_type, email)
-      VALUES (${name}, ${nic}, ${contact}, ${address}, ${username}, ${password}, ${role}, ${email || null})
+      VALUES (${name}, ${nic}, ${sanitizedContact}, ${address}, ${username}, ${passwordHash}, ${role}, ${email || null})
       RETURNING user_id
     `;
     
@@ -280,7 +316,7 @@ export async function createStaffForBranchManager(data) {
 
     // 2. Create staff record - let database handle auto-increment
     const staffResult = await sql`
-      INSERT INTO "Staff" ("User_ID", "Branch_Name", "")
+      INSERT INTO "Staff" ("User_ID", "Branch_Name")
       VALUES (${userId}, ${branch})
       RETURNING "Staff_ID"
     `;

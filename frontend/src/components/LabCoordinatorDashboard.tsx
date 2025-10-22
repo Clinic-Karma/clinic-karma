@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Upload, FileText, FlaskConical, Activity, FileCheck, Home, Bell, LogOut, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import apiClient from "@/utils/axiosConfig";
 
 const LabCoordinatorDashboard = () => {
   const [activeTab, setActiveTab] = useState("upload");
@@ -43,13 +44,12 @@ const LabCoordinatorDashboard = () => {
   const fetchLabReports = async () => {
     setIsLoadingReports(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/appointments/lab-reports`);
-      const data = await response.json();
+      const response = await apiClient.get('/appointments/lab-reports');
       
-      if (response.ok) {
-        setLabReports(data.data || []);
+      if (response.status === 200) {
+        setLabReports(response.data.data || []);
       } else {
-        throw new Error(data.message || 'Failed to fetch lab reports');
+        throw new Error(response.data.message || 'Failed to fetch lab reports');
       }
     } catch (error) {
       console.error('Error fetching lab reports:', error);
@@ -93,14 +93,13 @@ const LabCoordinatorDashboard = () => {
       formData.append('treatmentName', uploadFormData.treatmentName);
       formData.append('reportFile', uploadFormData.reportFile);
 
-      const response = await fetch(`${API_BASE_URL}/appointments/upload-lab-report`, {
-        method: 'POST',
-        body: formData, // Don't set Content-Type header, let browser set it with boundary
+      const response = await apiClient.post('/appointments/upload-lab-report', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         toast({
           title: "Success",
           description: "Lab report uploaded successfully!",
@@ -120,13 +119,13 @@ const LabCoordinatorDashboard = () => {
           fetchLabReports();
         }
       } else {
-        throw new Error(data.message || 'Failed to upload lab report');
+        throw new Error(response.data.message || 'Failed to upload lab report');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading lab report:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to upload lab report',
+        description: error?.response?.data?.message || error.message || 'Failed to upload lab report',
         variant: "destructive",
       });
     }
@@ -420,19 +419,21 @@ const LabCoordinatorDashboard = () => {
                           {report.Report_Links && (
                             <>
                               {report.Report_Links.startsWith('/uploads/') ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const directUrl = `http://localhost:5000${report.Report_Links}`;
-                                    console.log('Opening file:', directUrl);
-                                    window.open(directUrl, '_blank');
-                                  }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <FileText className="w-4 h-4" />
-                                  View Report
-                                </Button>
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const directUrl = `http://localhost:5000${report.Report_Links}`;
+                                      console.log('Opening file:', directUrl);
+                                      window.open(directUrl, '_blank');
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    View Report
+                                  </Button>
+                                </>
                               ) : (
                                 <div className="flex flex-col gap-2">
                                   <Button

@@ -10,7 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Calendar as CalendarIcon, Users, UserPlus, Search, Stethoscope, FileText, DollarSign, Clock, User, Eye, Edit, CreditCard, CalendarDays, X, CheckCircle, Home, Bell, LogOut, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
+import { Calendar as CalendarIcon, Users, UserPlus, Search, Stethoscope, FileText, DollarSign, Clock, User, Eye, Edit, CreditCard, CalendarDays, X, CheckCircle, Home, Bell, LogOut, Shield, Info, Receipt, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -35,12 +38,20 @@ const ReceptionistDashboard = () => {
   const [specializationsData, setSpecializationsData] = useState<{ id: number; name: string }[]>([]);
   const [doctorsData, setDoctorsData] = useState<{ id: number; name: string }[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [pendingInsurances, setPendingInsurances] = useState<{ username: string; insuranceId: string; approved: boolean; }[]>([]);
+  const [pendingInsurances, setPendingInsurances] = useState<{ username: string; insuranceId: string; approved: boolean; policyNumber?: string; providerName?: string; coveragePercentage?: string; }[]>([]);
   
   // State for Insurance Claim submission
   const [claimBillId, setClaimBillId] = useState("");
   const [claimInsuranceId, setClaimInsuranceId] = useState("");
-  const [claimAmount, setClaimAmount] = useState("");
+  const [availableInsurances, setAvailableInsurances] = useState<{ Insurance_ID: number; Provider_Name: string; Policy_Number: string; Coverage_Percentage: string; }[]>([]);
+  const [isLoadingInsurances, setIsLoadingInsurances] = useState(false);
+  
+  // State for Add Patient Insurance
+  const [insuranceProviders, setInsuranceProviders] = useState<{ Insurance_ID: number; Provider_Name: string; Coverage_Percentage: string; }[]>([]);
+  const [addInsurancePatientUsername, setAddInsurancePatientUsername] = useState("");
+  const [addInsuranceProviderId, setAddInsuranceProviderId] = useState("");
+  const [addInsurancePolicyNumber, setAddInsurancePolicyNumber] = useState("");
+  const selectedInsuranceProvider = insuranceProviders.find((p) => p.Insurance_ID.toString() === addInsuranceProviderId);
   
   // State for Billing
   const [billAppointmentId, setBillAppointmentId] = useState("");
@@ -96,12 +107,29 @@ const ReceptionistDashboard = () => {
         const insurances = Array.isArray(data.insurances) ? data.insurances.map((item: any) => ({
           username: item.patient_username,
           insuranceId: item.insurance_id,
-          approved: item.status === 'Approved'
+          approved: item.status === 'Approved',
+          policyNumber: item.policy_number,
+          providerName: item.provider_name,
+          coveragePercentage: item.coverage_percentage
         })) : [];
         console.log('Processed insurances:', insurances);
         setPendingInsurances(insurances);
       } catch (err) {
         console.error('Error loading pending insurances:', err);
+      }
+    })();
+  }, []);
+
+  // Load insurance providers
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/appointments/insurance-providers`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to load insurance providers');
+        setInsuranceProviders(Array.isArray(data.data.insuranceProviders) ? data.data.insuranceProviders : []);
+      } catch (err) {
+        console.error('Error loading insurance providers:', err);
       }
     })();
   }, []);
@@ -192,10 +220,10 @@ const ReceptionistDashboard = () => {
     }
   };
 
-  const handleInsuranceClaimSubmit = async (e: React.FormEvent) => {
+  const handleAddPatientInsurance = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!claimBillId || !claimInsuranceId || !claimAmount) {
+    if (!addInsurancePatientUsername || !addInsuranceProviderId || !addInsurancePolicyNumber) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -204,10 +232,108 @@ const ReceptionistDashboard = () => {
       return;
     }
 
-    if (isNaN(parseFloat(claimAmount)) || parseFloat(claimAmount) <= 0) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/appointments/add-patient-insurance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patientUsername: addInsurancePatientUsername,
+          insuranceId: parseInt(addInsuranceProviderId),
+          policyNumber: addInsurancePolicyNumber
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Patient insurance registered successfully! Status: waiting approval",
+        });
+        
+        // Reset form
+        setAddInsurancePatientUsername("");
+        setAddInsuranceProviderId("");
+        setAddInsurancePolicyNumber("");
+        
+        // Refresh pending insurances
+        const res = await fetch(`${API_BASE_URL}/appointments/pending-insurances`);
+        const insuranceData = await res.json();
+        if (res.ok) {
+          const insurances = Array.isArray(insuranceData.insurances) ? insuranceData.insurances.map((item: any) => ({
+            username: item.patient_username,
+            insuranceId: item.insurance_id,
+            approved: item.status === 'Approved',
+            policyNumber: item.policy_number,
+            providerName: item.provider_name,
+            coveragePercentage: item.coverage_percentage
+          })) : [];
+          setPendingInsurances(insurances);
+        }
+      } else {
+        throw new Error(data.message || 'Failed to add patient insurance');
+      }
+    } catch (error) {
+      console.error('Error adding patient insurance:', error);
       toast({
         title: "Error",
-        description: "Claim amount must be a positive number",
+        description: error instanceof Error ? error.message : 'Failed to add patient insurance',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchPatientInsurancesByBillId = async (billId: string) => {
+    if (!billId || billId.trim() === '') {
+      setAvailableInsurances([]);
+      return;
+    }
+
+    setIsLoadingInsurances(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/appointments/patient-insurances-by-bill/${billId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setAvailableInsurances(data.data.insurances || []);
+        
+        if (data.data.insurances && data.data.insurances.length > 0) {
+          toast({
+            title: "Insurances Found",
+            description: `Found ${data.data.insurances.length} insurance(s) for this patient`,
+          });
+        } else {
+          toast({
+            title: "No Insurance Found",
+            description: "This patient doesn't have any registered insurance",
+            variant: "default",
+          });
+        }
+      } else {
+        throw new Error(data.message || 'Failed to fetch patient insurances');
+      }
+    } catch (error) {
+      console.error('Error fetching patient insurances:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to fetch patient insurances',
+        variant: "destructive",
+      });
+      setAvailableInsurances([]);
+    } finally {
+      setIsLoadingInsurances(false);
+    }
+  };
+
+  const handleInsuranceClaimSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!claimBillId || !claimInsuranceId) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
         variant: "destructive",
       });
       return;
@@ -221,8 +347,7 @@ const ReceptionistDashboard = () => {
         },
         body: JSON.stringify({
           billId: parseInt(claimBillId),
-          insuranceId: parseInt(claimInsuranceId),
-          claimAmount: parseFloat(claimAmount)
+          insuranceId: parseInt(claimInsuranceId)
         }),
       });
 
@@ -237,7 +362,7 @@ const ReceptionistDashboard = () => {
         // Reset form
         setClaimBillId("");
         setClaimInsuranceId("");
-        setClaimAmount("");
+        setAvailableInsurances([]);
         
         // Refresh pending insurances
         const res = await fetch(`${API_BASE_URL}/appointments/pending-insurances`);
@@ -246,7 +371,10 @@ const ReceptionistDashboard = () => {
           const insurances = Array.isArray(insuranceData.insurances) ? insuranceData.insurances.map((item: any) => ({
             username: item.patient_username,
             insuranceId: item.insurance_id,
-            approved: item.status === 'Approved'
+            approved: item.status === 'Approved',
+            policyNumber: item.policy_number,
+            providerName: item.provider_name,
+            coveragePercentage: item.coverage_percentage
           })) : [];
           setPendingInsurances(insurances);
         }
@@ -285,25 +413,84 @@ const ReceptionistDashboard = () => {
         console.log('Appointment data:', data.data?.appointment);
         console.log('Bill data:', data.data?.bill);
         
+        // Derive monetary values robustly
+        const totalAmountNum = parseFloat(data.data.bill.Total_Amount) || 0;
+        const insuredAmountNum = parseFloat(data.data.bill.Insured_Amount || 0) || 0;
+        const totalPaidNum = parseFloat(data.data.paymentInfo?.totalPaid || 0) || 0;
+        const computedDue = Math.max(0, parseFloat((totalAmountNum - insuredAmountNum - totalPaidNum).toFixed(2)));
+
         // Transform the data to match the expected structure
         const transformedData = {
           appointment: data.data.appointment,
           bill: data.data.bill,
           totals: {
-            totalAmount: parseFloat(data.data.bill.Total_Amount),
-            insuredAmount: parseFloat(data.data.bill.Insured_Amount || 0),
-            amountToBePaid: parseFloat(data.data.paymentInfo?.remainingAmount || data.data.bill.Patient_Amount || data.data.bill.Total_Amount)
+            totalAmount: totalAmountNum,
+            insuredAmount: insuredAmountNum,
+            amountToBePaid: computedDue
           },
           paymentInfo: data.data.paymentInfo,
           patientInsurance: data.data.bill.insurance_provider ? {
             Provider_Name: data.data.bill.insurance_provider,
-            Coverage_Percentage: '80', // This would need to be fetched separately if needed
-            Policy_Number: 'N/A' // This would need to be fetched separately if needed
+            Coverage_Percentage: String(data.data.bill.coverage_percentage ?? '0'),
+            Policy_Number: data.data.bill.policy_number ?? 'N/A'
           } : null,
           insuranceClaims: [] // Empty for now, could be populated if needed
         };
         
-        setBillDetails(transformedData);
+        // Try to enrich with actual patient insurance info and compute fallback insured amount if missing
+        let finalData = transformedData;
+        try {
+          const billId = data.data?.bill?.Bill_ID;
+          if (billId) {
+            const insRes = await fetch(`${API_BASE_URL}/appointments/patient-insurances-by-bill/${billId}`);
+            const insJson = await insRes.json();
+            if (insRes.ok && Array.isArray(insJson?.data?.insurances) && insJson.data.insurances.length > 0) {
+              const firstIns = insJson.data.insurances[0];
+              const coveragePct = parseFloat(firstIns?.Coverage_Percentage || '0') || 0;
+              const providerName = firstIns?.Provider_Name || finalData.patientInsurance?.Provider_Name || null;
+              const policyNumber = firstIns?.Policy_Number || 'N/A';
+
+              // Compute insured amount if backend didn't provide one (>0 means backend already applied insurance)
+              if (!isNaN(finalData.totals.totalAmount)) {
+                const backendInsured = finalData.totals.insuredAmount || 0;
+                if (backendInsured <= 0 && coveragePct > 0) {
+                  const computedInsured = parseFloat(((finalData.totals.totalAmount * coveragePct) / 100).toFixed(2));
+                  const totalPaid = parseFloat(finalData.paymentInfo?.totalPaid || 0);
+                  const computedPatientAmount = finalData.totals.totalAmount - computedInsured;
+                  const computedRemaining = Math.max(0, parseFloat((computedPatientAmount - totalPaid).toFixed(2)));
+
+                  finalData = {
+                    ...finalData,
+                    patientInsurance: providerName ? {
+                      Provider_Name: providerName,
+                      Coverage_Percentage: String(coveragePct),
+                      Policy_Number: policyNumber
+                    } : finalData.patientInsurance,
+                    totals: {
+                      ...finalData.totals,
+                      insuredAmount: computedInsured,
+                      amountToBePaid: computedRemaining
+                    }
+                  };
+                } else if (providerName) {
+                  // Even if backend insured is present, enrich provider/coverage/policy for display
+                  finalData = {
+                    ...finalData,
+                    patientInsurance: {
+                      Provider_Name: providerName,
+                      Coverage_Percentage: String(coveragePct || parseFloat(finalData.patientInsurance?.Coverage_Percentage || '0') || 0),
+                      Policy_Number: policyNumber
+                    }
+                  };
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error enriching bill with insurance details:', e);
+        }
+
+        setBillDetails(finalData);
         
         toast({
           title: data.data.isNewBill ? "Bill Generated Successfully" : "Bill Retrieved",
@@ -312,7 +499,36 @@ const ReceptionistDashboard = () => {
             `Existing bill retrieved for appointment ${appointmentId}`,
         });
       } else {
-        throw new Error(data.message || 'Failed to generate bill');
+        // Fallback: try to fetch existing bill details via GET endpoint
+        console.warn('Generate bill failed, attempting fallback fetch...', data);
+        const fbRes = await fetch(`${API_BASE_URL}/appointments/bill-details/${appointmentId}`);
+        const fbJson = await fbRes.json();
+        if (fbRes.ok) {
+          const gb = fbJson.data;
+          const transformed = {
+            appointment: gb.appointment,
+            bill: gb.billing,
+            totals: gb.totals,
+            paymentInfo: {
+              totalPaid: 0,
+              remainingAmount: gb.totals?.amountToBePaid ?? 0,
+              isFullyPaid: (gb.totals?.amountToBePaid ?? 0) <= 0
+            },
+            patientInsurance: gb.patientInsurance ? {
+              Provider_Name: gb.patientInsurance.Provider_Name,
+              Coverage_Percentage: String(gb.patientInsurance.Coverage_Percentage ?? '0'),
+              Policy_Number: gb.patientInsurance.Policy_Number ?? 'N/A'
+            } : null,
+            insuranceClaims: Array.isArray(gb.insuranceClaims) ? gb.insuranceClaims : []
+          };
+          setBillDetails(transformed);
+          toast({
+            title: "Bill Retrieved",
+            description: `Existing bill retrieved for appointment ${appointmentId}`,
+          });
+        } else {
+          throw new Error(data?.error || data?.message || fbJson?.error || fbJson?.message || 'Failed to generate bill');
+        }
       }
     } catch (error) {
       console.error('Error generating bill:', error);
@@ -337,6 +553,19 @@ const ReceptionistDashboard = () => {
 
     return () => clearTimeout(timeoutId);
   }, [billAppointmentId]);
+
+  // Add useEffect for fetching patient insurances when bill ID changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (claimBillId) {
+        fetchPatientInsurancesByBillId(claimBillId);
+      } else {
+        setAvailableInsurances([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [claimBillId]);
 
   // Patient registration functions
   const checkUsernameAvailability = async (username: string) => {
@@ -435,6 +664,17 @@ const ReceptionistDashboard = () => {
 
     // Update payment amount in the database if user has entered an amount
     if (userPaymentAmount && parseFloat(userPaymentAmount) > 0) {
+      // Validate that payment doesn't exceed amount owed
+      const paymentAmount = parseFloat(userPaymentAmount);
+      if (paymentAmount > billDetails.totals.amountToBePaid) {
+        toast({
+          title: "Invalid Payment Amount",
+          description: `Payment amount ($${paymentAmount.toFixed(2)}) cannot exceed the amount owed ($${billDetails.totals.amountToBePaid.toFixed(2)})`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       try {
         const response = await fetch(`${API_BASE_URL}/appointments/update-payment`, {
           method: 'POST',
@@ -443,7 +683,7 @@ const ReceptionistDashboard = () => {
           },
           body: JSON.stringify({
             billId: billDetails.bill.Bill_ID,
-            amountPaid: parseFloat(userPaymentAmount)
+            amountPaid: paymentAmount
           }),
         });
 
@@ -526,7 +766,7 @@ const ReceptionistDashboard = () => {
               <span>${billDetails.appointment.doctor_name}</span>
             </div>
             <div class="info-item">
-              <span><strong>Date:</strong></span>
+              <span><strong>Appointment Date:</strong></span>
               <span>${new Date(billDetails.appointment.Appointment_Date).toLocaleDateString()}</span>
             </div>
           </div>
@@ -541,11 +781,7 @@ const ReceptionistDashboard = () => {
             </div>
             <div class="info-item">
               <span><strong>Bill Date:</strong></span>
-              <span>${new Date(billDetails.bill.Due_Date).toLocaleDateString()}</span>
-            </div>
-            <div class="info-item">
-              <span><strong>Due Date:</strong></span>
-              <span>${new Date(billDetails.bill.Due_Date).toLocaleDateString()}</span>
+              <span>${new Date().toLocaleDateString()}</span>
             </div>
           </div>
         </div>
@@ -622,9 +858,9 @@ const ReceptionistDashboard = () => {
       const opt = {
         margin: 0.5,
         filename: `medical-receipt-${billDetails.bill.Bill_ID}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
       };
 
       await html2pdf().set(opt).from(element).save();
@@ -816,11 +1052,16 @@ const ReceptionistDashboard = () => {
 
                           console.log('Sending appointment data:', appointmentData);
 
+                          // Get access token from localStorage for authentication
+                          const accessToken = localStorage.getItem('accessToken');
+                          
                           const response = await fetch(`${API_BASE_URL}/appointments/book`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
+                              ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
                             },
+                            credentials: 'include', // Include cookies for authentication
                             body: JSON.stringify(appointmentData)
                           });
 
@@ -1037,9 +1278,15 @@ const ReceptionistDashboard = () => {
                                   newDate: rescheduleDate ? format(rescheduleDate, 'yyyy-MM-dd') : '',
                                   newTimeSlot: rescheduleTimeSlot
                                 };
+                                
+                                const accessToken = localStorage.getItem('accessToken');
                                 const response = await fetch(`${API_BASE_URL}/appointments/reschedule`, {
                                   method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
+                                  headers: { 
+                                    'Content-Type': 'application/json',
+                                    ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
+                                  },
+                                  credentials: 'include',
                                   body: JSON.stringify(payload)
                                 });
                                 const data = await response.json();
@@ -1104,9 +1351,15 @@ const ReceptionistDashboard = () => {
                                   throw new Error('Appointment ID is required');
                                 }
                                 const payload = { appointmentId: Number(cancelAppointmentId) };
+                                
+                                const accessToken = localStorage.getItem('accessToken');
                                 const response = await fetch(`${API_BASE_URL}/appointments/cancel`, {
                                   method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
+                                  headers: { 
+                                    'Content-Type': 'application/json',
+                                    ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
+                                  },
+                                  credentials: 'include',
                                   body: JSON.stringify(payload)
                                 });
                                 const data = await response.json();
@@ -1284,138 +1537,107 @@ const ReceptionistDashboard = () => {
           {/* Doctors tab removed */}
 
           <TabsContent value="insurance" className="space-y-4">
-            {/* Pending insurances section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Pending insurances
+            {/* Add Patient Insurance Section */}
+            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <div className="p-3 rounded-full bg-gradient-primary">
+                    <Shield className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  Register Patient Insurance
                 </CardTitle>
-                <CardDescription>Awaiting approval</CardDescription>
+                <CardDescription className="ml-12">Add insurance details for patients</CardDescription>
               </CardHeader>
               <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                      <TableHead>Patient username</TableHead>
-                      <TableHead>Insurance ID</TableHead>
-                      <TableHead>Approved</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                    {pendingInsurances.map((item, idx) => (
-                      <TableRow key={`${item.insuranceId}-${item.username}`}>
-                        <TableCell>{item.username}</TableCell>
-                        <TableCell>{item.insuranceId}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            className={item.approved ? "bg-green-600 hover:bg-green-700 text-white" : ""}
-                            variant={item.approved ? "default" : "outline"}
-                            onClick={async () => {
-                              if (!item.approved) {
-                                try {
-                                  const response = await fetch(`${API_BASE_URL}/appointments/update-insurance-status`, {
-                                    method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ insuranceId: item.insuranceId, status: 'Approved' })
-                                  });
-                                  const data = await response.json();
-                                  if (response.ok) {
-                                    setPendingInsurances(prev => prev.map((row, i) => i === idx ? { ...row, approved: true } : row));
-                                    toast({
-                                      title: "Success",
-                                      description: "Insurance status updated to Approved",
-                                    });
-                                  } else {
-                                    throw new Error(data.message || 'Failed to update insurance status');
-                                  }
-                                } catch (err) {
-                                  toast({
-                                    title: "Error",
-                                    description: err instanceof Error ? err.message : 'Failed to update insurance status',
-                                    variant: "destructive",
-                                  });
-                                }
-                              }
-                            }}
-                          >
-                            {item.approved ? "Done" : "Pending"}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Card className="hover:shadow-2xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/30 ring-1 ring-primary/20 shadow-lg shadow-primary/20 cursor-pointer max-w-md mx-auto">
+                      <CardContent className="p-8 text-center">
+                        <div className="p-4 rounded-full bg-gradient-primary mx-auto mb-4 w-fit">
+                          <Shield className="w-10 h-10 text-primary-foreground" />
+                        </div>
+                        <h3 className="font-semibold text-xl mb-2">Add Patient Insurance</h3>
+                        <p className="text-sm text-muted-foreground">Register insurance for a patient</p>
+                      </CardContent>
+                    </Card>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px] bg-gradient-to-b from-card to-primary/5 border-primary/20">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl bg-gradient-primary bg-clip-text text-transparent">Add Patient Insurance</DialogTitle>
+                      <DialogDescription className="text-muted-foreground">Enter patient and insurance details to register</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddPatientInsurance} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="addInsurancePatientUsername">Patient Username *</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                          <Input 
+                            id="addInsurancePatientUsername" 
+                            placeholder="Enter patient username" 
+                            value={addInsurancePatientUsername}
+                            onChange={(e) => setAddInsurancePatientUsername(e.target.value)}
+                            required 
+                            className="border-primary/20 focus:border-primary pl-10"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Use the patient's portal username.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="addInsuranceProviderId">Insurance Provider *</Label>
+                        <Select 
+                          value={addInsuranceProviderId} 
+                          onValueChange={setAddInsuranceProviderId}
+                          required
+                        >
+                          <div className="relative">
+                            <Shield className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                            <SelectTrigger className="border-primary/20 focus:border-primary pl-10">
+                              <SelectValue placeholder="Select insurance provider" />
+                            </SelectTrigger>
+                          </div>
+                          <SelectContent>
+                            {insuranceProviders.map((provider) => (
+                              <SelectItem key={provider.Insurance_ID} value={provider.Insurance_ID.toString()}>
+                                {provider.Provider_Name} - {provider.Coverage_Percentage}% coverage
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {selectedInsuranceProvider && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="secondary">{selectedInsuranceProvider.Coverage_Percentage}% coverage</Badge>
+                            <span className="text-xs text-muted-foreground">Provider: {selectedInsuranceProvider.Provider_Name}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="addInsurancePolicyNumber">Policy Number *</Label>
+                        <div className="relative">
+                          <FileText className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                          <Input 
+                            id="addInsurancePolicyNumber" 
+                            placeholder="Enter policy number" 
+                            value={addInsurancePolicyNumber}
+                            onChange={(e) => setAddInsurancePolicyNumber(e.target.value)}
+                            required 
+                            className="border-primary/20 focus:border-primary pl-10"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">As shown on the patient's insurance card.</p>
+                      </div>
+                      <Button type="submit" className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/30">
+                        <ShieldCheck className="w-4 h-4 mr-2" />
+                        Register Insurance
                       </Button>
-                        </TableCell>
-                            </TableRow>
-                    ))}
-                          </TableBody>
-                        </Table>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Insurance Claims
-                </CardTitle>
-                <CardDescription>Submit and manage insurance claims</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  {/* Submit Claim */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2 h-20 flex-col">
-                        <FileText className="h-6 w-6" />
-                        Submit Claim
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Submit Insurance Claim</DialogTitle>
-                        <DialogDescription>Enter claim details for processing</DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={handleInsuranceClaimSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="claimBillId">Bill ID</Label>
-                          <Input 
-                            id="claimBillId" 
-                            placeholder="Enter Bill ID" 
-                            value={claimBillId}
-                            onChange={(e) => setClaimBillId(e.target.value)}
-                            required 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="claimInsuranceId">Insurance ID</Label>
-                          <Input 
-                            id="claimInsuranceId" 
-                            placeholder="Enter Insurance ID" 
-                            value={claimInsuranceId}
-                            onChange={(e) => setClaimInsuranceId(e.target.value)}
-                            required 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="claimAmount">Claim Amount</Label>
-                          <Input 
-                            id="claimAmount" 
-                            type="number" 
-                            placeholder="Enter claim amount" 
-                            value={claimAmount}
-                            onChange={(e) => setClaimAmount(e.target.value)}
-                            step="0.01"
-                            min="0"
-                            required 
-                          />
-                        </div>
-                        <Button type="submit" className="w-full">Submit Claim</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
+            
 
-
-                </div>
-              </CardContent>
-            </Card>
+            
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-4">
@@ -1424,6 +1646,7 @@ const ReceptionistDashboard = () => {
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
                   Billing
+                  <Badge variant="secondary" className="ml-1">Secure</Badge>
                 </CardTitle>
                 <CardDescription>Generate bills and manage payment status</CardDescription>
               </CardHeader>
@@ -1457,6 +1680,12 @@ const ReceptionistDashboard = () => {
                             disabled={isGeneratingBill}
                           />
                         </div>
+                        {!billDetails && !isGeneratingBill && (
+                          <div className="p-6 rounded-lg border border-dashed text-center text-muted-foreground">
+                            <Receipt className="w-8 h-8 mx-auto mb-2 opacity-70" />
+                            <p className="text-sm">Enter an Appointment ID to fetch billing details.</p>
+                          </div>
+                        )}
                         
                         {isGeneratingBill && (
                           <div className="flex items-center justify-center p-4 bg-blue-50 rounded-lg">
@@ -1470,16 +1699,12 @@ const ReceptionistDashboard = () => {
                         {billDetails && !isGeneratingBill && (
                           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
                             <h4 className="font-semibold text-lg">Bill Details</h4>
-                            
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div>
                                 <span className="font-medium">Patient:</span> {billDetails.appointment.patient_name}
                         </div>
                               <div>
-                                <span className="font-medium">Doctor:</span> {billDetails.appointment.doctor_name}
-                        </div>
-                              <div>
-                                <span className="font-medium">Date:</span> {billDetails.appointment.Appointment_Date}
+                                <span className="font-medium">Date:</span> {format(new Date(billDetails.appointment.Appointment_Date), 'yyyy-MM-dd')}
                         </div>
                               <div>
                                 <span className="font-medium">Bill ID:</span> {billDetails.bill.Bill_ID}
@@ -1493,22 +1718,6 @@ const ReceptionistDashboard = () => {
                                   <span>Total Amount:</span>
                                   <span className="font-medium">${billDetails.totals.totalAmount.toFixed(2)}</span>
                         </div>
-                                {billDetails.patientInsurance && (
-                                  <>
-                                    <div className="flex justify-between">
-                                      <span>Insurance Provider:</span>
-                                      <span className="font-medium text-blue-600">{billDetails.patientInsurance.Provider_Name}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Coverage:</span>
-                                      <span className="font-medium text-blue-600">{billDetails.patientInsurance.Coverage_Percentage}%</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Policy Number:</span>
-                                      <span className="font-medium text-blue-600">{billDetails.patientInsurance.Policy_Number}</span>
-                                    </div>
-                                  </>
-                                )}
                                 <div className="flex justify-between">
                                   <span>Insured Amount:</span>
                                   <span className="font-medium text-green-600">${billDetails.totals.insuredAmount.toFixed(2)}</span>
@@ -1525,20 +1734,22 @@ const ReceptionistDashboard = () => {
                           <Input 
                                 id="userPaymentAmount" 
                                 type="number" 
-                                placeholder="Enter amount paid by user"
+                                placeholder={`Max: $${billDetails.totals.amountToBePaid.toFixed(2)}`}
                                 value={userPaymentAmount}
                                 onChange={(e) => setUserPaymentAmount(e.target.value)}
                                 step="0.01"
                                 min="0"
+                                max={billDetails.totals.amountToBePaid}
                               />
-                              {userPaymentAmount && parseFloat(userPaymentAmount) === billDetails.totals.amountToBePaid && (
-                                <div className="text-green-600 text-sm font-medium">
-                                  ✓ Payment Complete - No Balance Remaining
+                              <p className="text-xs text-muted-foreground">Maximum allowed: ${billDetails.totals.amountToBePaid.toFixed(2)}</p>
+                              {userPaymentAmount && parseFloat(userPaymentAmount) > billDetails.totals.amountToBePaid && (
+                                <div className="text-red-600 text-sm font-medium">
+                                  ⚠️ Amount cannot exceed ${billDetails.totals.amountToBePaid.toFixed(2)} (amount owed)
                         </div>
                               )}
-                              {userPaymentAmount && parseFloat(userPaymentAmount) !== billDetails.totals.amountToBePaid && (
+                              {userPaymentAmount && parseFloat(userPaymentAmount) > 0 && parseFloat(userPaymentAmount) <= billDetails.totals.amountToBePaid && parseFloat(userPaymentAmount) !== billDetails.totals.amountToBePaid && (
                                 <div className="text-orange-600 text-sm font-medium">
-                                  ${(billDetails.totals.amountToBePaid - parseFloat(userPaymentAmount)).toFixed(2)} remaining
+                                  ${Math.max(0, billDetails.totals.amountToBePaid - parseFloat(userPaymentAmount)).toFixed(2)} remaining
                         </div>
                               )}
                             </div>
@@ -1621,3 +1832,4 @@ const ReceptionistDashboard = () => {
 };
 
 export default ReceptionistDashboard;
+

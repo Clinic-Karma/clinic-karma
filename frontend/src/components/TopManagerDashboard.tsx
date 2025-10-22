@@ -107,12 +107,18 @@ const TopManagerDashboard = () => {
         })));
 
         const pending = Array.isArray(pendingRes.data?.data) ? pendingRes.data.data : [];
-        setHalfPaymentData(pending.map((p: any, idx: number) => ({
-          id: idx + 1,
+        setHalfPaymentData(pending.map((p: any) => ({
+          id: p.bill_id,
+          patientId: p.patient_id,
           patient: p.patient,
+          patientPhone: p.patient_phone,
+          patientEmail: p.patient_email,
+          totalAmount: p.total_amount,
           amount: p.amount,
           remaining: p.remaining,
-          dueDate: p.due_date,
+          dueDate: p.due_date || p.appointment_date,
+          appointmentId: p.appointment_id,
+          appointmentDate: p.appointment_date,
         })));
 
         const summary = insuranceSummaryRes.data;
@@ -380,14 +386,36 @@ const TopManagerDashboard = () => {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Pending Payments</p>
+                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Outstanding</p>
                         <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                          {halfPaymentData.length}
+                          ${halfPaymentData.reduce((sum, item) => sum + (Number(item.remaining) || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">Outstanding</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400">{halfPaymentData.length} patients with outstanding bills</p>
                       </div>
                       <div className="p-3 bg-blue-500/10 rounded-full group-hover:bg-blue-500/20 transition-colors">
                         <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="group hover:shadow-2xl transition-all duration-500 transform hover:scale-105 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 border-orange-200 dark:border-orange-800">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Patients with Dues</p>
+                        <p className="text-3xl font-bold text-orange-700 dark:text-orange-300">
+                          {halfPaymentData.length}
+                        </p>
+                        <p className="text-xs text-orange-600 dark:text-orange-400">
+                          Avg: ${halfPaymentData.length > 0 
+                            ? (halfPaymentData.reduce((sum, item) => sum + (Number(item.remaining) || 0), 0) / halfPaymentData.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            : '0.00'
+                          }
+                        </p>
+                      </div>
+                      <div className="p-3 bg-orange-500/10 rounded-full group-hover:bg-orange-500/20 transition-colors">
+                        <Users className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                       </div>
                     </div>
                   </CardContent>
@@ -494,7 +522,7 @@ const TopManagerDashboard = () => {
                         </div>
                         Pending Payments
                       </CardTitle>
-                      <CardDescription className="text-base">Half payments requiring follow-up and collection</CardDescription>
+                      <CardDescription className="text-base">Patients with outstanding bill amounts requiring collection</CardDescription>
                     </div>
                     <Badge variant="destructive" className="text-sm font-medium px-3 py-1">
                       {halfPaymentData.length} Outstanding
@@ -507,43 +535,59 @@ const TopManagerDashboard = () => {
                       <TableHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
                         <TableRow className="hover:bg-transparent">
                           <TableHead className="font-semibold text-foreground">Patient Name</TableHead>
-                          <TableHead className="font-semibold text-foreground">Paid Amount</TableHead>
-                          <TableHead className="font-semibold text-foreground">Remaining</TableHead>
+                          <TableHead className="font-semibold text-foreground">Contact</TableHead>
+                          <TableHead className="font-semibold text-foreground">Total Amount</TableHead>
+                          <TableHead className="font-semibold text-foreground">Amount Due</TableHead>
                           <TableHead className="font-semibold text-foreground">Due Date</TableHead>
                           <TableHead className="font-semibold text-foreground">Status</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                        {halfPaymentData.map((payment, index) => (
+                        {halfPaymentData.map((payment, index) => {
+                          const dueDate = payment.dueDate ? new Date(payment.dueDate) : null;
+                          const isOverdue = dueDate && dueDate < new Date();
+                          return (
                           <TableRow 
                             key={payment.id} 
                             className="group/row hover:bg-gradient-to-r hover:from-muted/30 hover:to-muted/10 transition-all duration-300"
                           >
                             <TableCell className="font-medium group-hover/row:text-primary transition-colors">
-                              {payment.patient}
+                              <div className="flex flex-col">
+                                <span className="font-semibold">{payment.patient}</span>
+                                {payment.patientEmail && (
+                                  <span className="text-xs text-muted-foreground">{payment.patientEmail}</span>
+                                )}
+                              </div>
                             </TableCell>
-                            <TableCell className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                              ${payment.amount}
+                            <TableCell className="text-sm text-muted-foreground">
+                              {payment.patientPhone || 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-blue-600 dark:text-blue-400 font-semibold">
+                              ${Number(payment.totalAmount || 0).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-destructive font-bold text-lg">
-                              ${payment.remaining}
+                              ${Number(payment.remaining || 0).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
-                              {payment.dueDate}
+                              {payment.dueDate ? new Date(payment.dueDate).toLocaleDateString() : 'N/A'}
                             </TableCell>
                             <TableCell>
                               <Badge 
-                                variant="destructive" 
-                                className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0"
+                                variant={isOverdue ? "destructive" : "default"}
+                                className={isOverdue 
+                                  ? "bg-gradient-to-r from-red-500 to-red-600 text-white border-0" 
+                                  : "bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0"
+                                }
                               >
-                                Overdue
+                                {isOverdue ? 'Overdue' : 'Pending'}
                               </Badge>
                             </TableCell>
                               </TableRow>
-                            ))}
+                          );
+                        })}
                         {halfPaymentData.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                               <div className="flex flex-col items-center space-y-2">
                                 <CreditCard className="w-8 h-8 opacity-50" />
                                 <p>No pending payments found</p>

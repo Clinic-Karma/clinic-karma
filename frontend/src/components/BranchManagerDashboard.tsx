@@ -166,101 +166,106 @@ const BranchManagerDashboard = () => {
     return matchesName && matchesRole;
   });
 
-  const DoctorRegistrationForm = () => (
-    <Dialog open={showDoctorRegistration} onOpenChange={setShowDoctorRegistration}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Doctor Registration</DialogTitle>
-          <DialogDescription>
-            Register a new doctor in the system.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="doctorName" className="text-right">
-              Name
-            </Label>
-            <Input id="doctorName" placeholder="Dr. John Doe" className="col-span-3" />
+  const DoctorRegistrationForm = () => {
+    const [selectedSpecialization, setSelectedSpecialization] = useState('');
+
+    const handleDialogChange = (open: boolean) => {
+      setShowDoctorRegistration(open);
+      if (!open) {
+        // Reset specialization when dialog closes
+        setSelectedSpecialization('');
+      }
+    };
+
+    return (
+      <Dialog open={showDoctorRegistration} onOpenChange={handleDialogChange}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Doctor Registration</DialogTitle>
+            <DialogDescription>
+              Register a new doctor in the system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="doctorName" className="text-right">
+                Name
+              </Label>
+              <Input id="doctorName" placeholder="Dr. John Doe" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="specialization" className="text-right">
+                Specialization
+              </Label>
+              <Select value={selectedSpecialization} onValueChange={setSelectedSpecialization}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select specialization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {specializations.map((spec) => (
+                    <SelectItem key={spec.id} value={spec.name}>
+                      {spec.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="address" className="text-right">
+                Address
+              </Label>
+              <Input id="address" placeholder="123 Main Street, City" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Username
+              </Label>
+              <Input id="username" placeholder="dr.john.doe" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input id="password" type="password" placeholder="Enter password" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="contact" className="text-right">
+                Contact
+              </Label>
+              <Input id="contact" placeholder="555-0000" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nic" className="text-right">
+                NIC No
+              </Label>
+              <Input id="nic" placeholder="199012345678" className="col-span-3" />
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="specialization" className="text-right">
-              Specialization
-            </Label>
-            <Select>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select specialization" />
-              </SelectTrigger>
-              <SelectContent>
-                {specializations.map((spec) => (
-                  <SelectItem key={spec.id} value={spec.name}>
-                    {spec.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="address" className="text-right">
-              Address
-            </Label>
-            <Input id="address" placeholder="123 Main Street, City" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="username" className="text-right">
-              Username
-            </Label>
-            <Input id="username" placeholder="dr.john.doe" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="password" className="text-right">
-              Password
-            </Label>
-            <Input id="password" type="password" placeholder="Enter password" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="contact" className="text-right">
-              Contact
-            </Label>
-            <Input id="contact" placeholder="555-0000" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input id="email" placeholder="doctor@hospital.com" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nic" className="text-right">
-              NIC No
-            </Label>
-            <Input id="nic" placeholder="199012345678" className="col-span-3" />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button 
-            type="submit" 
-            onClick={() => {
-              const formData = {
-                name: (document.getElementById('doctorName') as HTMLInputElement)?.value,
-                specialization: (document.querySelector('[data-specialization]') as HTMLSelectElement)?.value,
-                address: (document.getElementById('address') as HTMLInputElement)?.value,
-                username: (document.getElementById('username') as HTMLInputElement)?.value,
-                password: (document.getElementById('password') as HTMLInputElement)?.value,
-                contact: (document.getElementById('contact') as HTMLInputElement)?.value,
-                email: (document.getElementById('email') as HTMLInputElement)?.value,
-                nic: (document.getElementById('nic') as HTMLInputElement)?.value,
-                branch: 'Colombo'
-              };
-              handleDoctorRegistration(formData);
-            }}
-            disabled={loading}
-          >
-            {loading ? 'Registering...' : 'Register Doctor'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+          <DialogFooter>
+            <Button 
+              type="submit" 
+              onClick={() => {
+                const formData = {
+                  name: (document.getElementById('doctorName') as HTMLInputElement)?.value,
+                  specialization: selectedSpecialization,
+                  address: (document.getElementById('address') as HTMLInputElement)?.value,
+                  username: (document.getElementById('username') as HTMLInputElement)?.value,
+                  password: (document.getElementById('password') as HTMLInputElement)?.value,
+                  contact: (document.getElementById('contact') as HTMLInputElement)?.value,
+                  nic: (document.getElementById('nic') as HTMLInputElement)?.value,
+                  branch: 'Colombo'
+                };
+                handleDoctorRegistration(formData);
+              }}
+              disabled={loading}
+            >
+              {loading ? 'Registering...' : 'Register Doctor'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   const StaffRegistrationForm = () => {
     const [localFormData, setLocalFormData] = useState({

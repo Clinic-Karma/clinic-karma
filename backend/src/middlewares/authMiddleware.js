@@ -21,7 +21,14 @@ export function requireAuth(req, res, next) {
 
 export function requireRole(...roles) {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    // Map lab-assistant to lab-coordinator for backwards compatibility
+    const userRole = req.user.role === 'lab-assistant' ? 'lab-coordinator' : req.user.role;
+    
+    if (!roles.includes(userRole)) {
       return res.status(403).json({ message: "Forbidden" });
     }
     next();

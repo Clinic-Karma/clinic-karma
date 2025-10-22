@@ -66,8 +66,12 @@ export async function login(req, res) {
             maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
         });
 
+        // Map lab-assistant to lab-coordinator for frontend consistency
+        const frontendRole = user.user_type === 'lab-assistant' ? 'lab-coordinator' : user.user_type;
+
         return res.json({
-        user: { id: user.user_id, pid: ID, username: user.username, role: user.user_type, name: user.name }
+        user: { id: user.user_id, pid: ID, username: user.username, role: frontendRole, name: user.name },
+        accessToken: accessToken  // Include access token in response for frontend
         });
 
     }
@@ -104,8 +108,11 @@ export async function refreshAccessToken(req, res) {
         // Continue with token rotation even if deletion fails
       }
 
+      // Map lab-assistant to lab-coordinator for frontend consistency
+      const frontendRole = payload.role === 'lab-assistant' ? 'lab-coordinator' : payload.role;
+
       const newJti = uuidv4();
-      const newPayload = { sub: payload.sub, role: payload.role, sid: payload.sid, jti: newJti };
+      const newPayload = { sub: payload.sub, role: frontendRole, sid: payload.sid, jti: newJti };
       const newAccessToken = signAccessToken(newPayload);
       const newRefreshToken = signRefreshToken(newPayload);
 

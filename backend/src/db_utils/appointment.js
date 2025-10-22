@@ -1,4 +1,7 @@
 import { sql } from './db.js';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 12;
 
 // Helper function to get bill amount from Specialization table
 export const getBillAmountBySpecialization = async (specialization) => {
@@ -112,7 +115,6 @@ export const createAppointment = async (appointmentData) => {
         FROM "Patient_Insurance" pi
         JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
         WHERE pi."Patient_ID" = ${patientId}
-        AND pi."Status" = 'Approved'
         ORDER BY pi."Insurance_ID" DESC
         LIMIT 1
     `;
@@ -148,6 +150,18 @@ export const createAppointment = async (appointmentData) => {
         RETURNING "Bill_ID", "Appointment_ID", "Total_Amount", "Insured_Amount", "Patient_Amount", "Insurance_ID"
     `;
     
+    // Ensure Status column exists and set initial status based on patient responsibility
+    await sql`
+        ALTER TABLE "Billing"
+        ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
+    `;
+    const initialStatus = (parseFloat(patientAmount) <= 0) ? 'Done' : 'Pending';
+    await sql`
+        UPDATE "Billing"
+        SET "Status" = ${initialStatus}
+        WHERE "Bill_ID" = ${billResult[0].Bill_ID}
+    `;
+
     console.log(`✅ Bill created successfully:`, billResult[0]);
 
     return {
@@ -348,74 +362,191 @@ export const cancelAppointment = async (appointmentId) => {
 };
 
 export const getPendingInsurances = async () => {
-    // Using Insurance_Claim table which has Claim_Status column
+    // Fetch patient insurances with Pending status only
     const result = await sql`
         SELECT 
-            ic."Insurance_Claim_ID" as insurance_id,
+            pi."Insurance_ID" as insurance_id,
             u.username as patient_username,
-            COALESCE(ic."Claim_Status", 'Pending') as status
-        FROM "Insurance_Claim" ic
-        JOIN "Patient_Insurance" pi ON ic."Insurance_ID" = pi."Insurance_ID"
+            pi."Status" as status,
+            pi."Policy_Number" as policy_number,
+            i."Provider_Name" as provider_name,
+            i."Coverage_Percentage" as coverage_percentage
+        FROM "Patient_Insurance" pi
         JOIN "Patient" p ON pi."Patient_ID" = p.patient_id
         JOIN "User" u ON p.user_id = u.user_id
-        WHERE ic."Claim_Status" = 'Pending' OR ic."Claim_Status" IS NULL
-        ORDER BY ic."Insurance_Claim_ID"
+        JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
+        WHERE pi."Status" = 'Pending'
+        ORDER BY pi."Insurance_ID" DESC
     `;
     
     return result;
 };
 
 export const updateInsuranceStatus = async (insuranceId, status) => {
-    // Update the Claim_Status in Insurance_Claim table
+    // Update the Status in Patient_Insurance table
     try {
         // First, check if the record exists
         const checkResult = await sql`
-            SELECT ic."Insurance_Claim_ID"
-            FROM "Insurance_Claim" ic
-            WHERE ic."Insurance_Claim_ID" = ${insuranceId}
+            SELECT pi."Insurance_ID", pi."Patient_ID"
+            FROM "Patient_Insurance" pi
+            WHERE pi."Insurance_ID" = ${insuranceId}
         `;
 
         if (!checkResult || checkResult.length === 0) {
-            throw new Error('Insurance claim record not found');
+            throw new Error('Patient insurance record not found');
         }
 
-        // Update the claim status
+        // Update the insurance status
         const result = await sql`
-            UPDATE "Insurance_Claim"
-            SET "Claim_Status" = ${status}
-            WHERE "Insurance_Claim_ID" = ${insuranceId}
+            UPDATE "Patient_Insurance"
+            SET "Status" = ${status}
+            WHERE "Insurance_ID" = ${insuranceId}
             RETURNING 
-                "Insurance_Claim_ID" as insurance_id,
-                "Claim_Status" as status
+                "Insurance_ID" as insurance_id,
+                "Status" as status
         `;
 
         // Get the updated record with patient username
         const updatedRecord = await sql`
             SELECT 
-                ic."Insurance_Claim_ID" as insurance_id,
+                pi."Insurance_ID" as insurance_id,
                 u.username as patient_username,
-                ic."Claim_Status" as status
-            FROM "Insurance_Claim" ic
-            JOIN "Patient_Insurance" pi ON ic."Insurance_ID" = pi."Insurance_ID"
+                pi."Status" as status,
+                pi."Policy_Number" as policy_number,
+                i."Provider_Name" as provider_name
+            FROM "Patient_Insurance" pi
             JOIN "Patient" p ON pi."Patient_ID" = p.patient_id
             JOIN "User" u ON p.user_id = u.user_id
-            WHERE ic."Insurance_Claim_ID" = ${insuranceId}
+            JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
+            WHERE pi."Insurance_ID" = ${insuranceId}
         `;
 
         return updatedRecord[0];
     } catch (error) {
-        console.error('Error updating insurance claim status:', error);
+        console.error('Error updating patient insurance status:', error);
         throw error;
     }
 };
 
-export const submitInsuranceClaim = async (billId, insuranceId, claimAmount) => {
+export const getAllInsuranceProviders = async () => {
     try {
-        // First, check if the bill exists
+        const insuranceProviders = await sql`
+            SELECT 
+                "Insurance_ID",
+                "Provider_Name",
+                "Coverage_Percentage",
+                "Type"
+            FROM "Insurance"
+            ORDER BY "Provider_Name" ASC
+        `;
+
+        return insuranceProviders;
+    } catch (error) {
+        console.error('Error fetching insurance providers:', error);
+        throw error;
+    }
+};
+
+export const addPatientInsurance = async (patientUsername, insuranceId, policyNumber) => {
+    try {
+        // Get patient ID from username
+        const patientResult = await sql`
+            SELECT p.patient_id
+            FROM "Patient" p
+            JOIN "User" u ON p.user_id = u.user_id
+            WHERE u.username = ${patientUsername}
+        `;
+
+        if (!patientResult || patientResult.length === 0) {
+            throw new Error('Patient not found');
+        }
+
+        const patientId = patientResult[0].patient_id;
+
+        // Check if insurance exists
+        const insuranceCheck = await sql`
+            SELECT "Insurance_ID"
+            FROM "Insurance"
+            WHERE "Insurance_ID" = ${insuranceId}
+        `;
+
+        if (!insuranceCheck || insuranceCheck.length === 0) {
+            throw new Error('Insurance provider not found');
+        }
+
+        // Check if patient already has this insurance
+        const existingInsurance = await sql`
+            SELECT "Patient_ID", "Insurance_ID"
+            FROM "Patient_Insurance"
+            WHERE "Patient_ID" = ${patientId} AND "Insurance_ID" = ${insuranceId}
+        `;
+
+        if (existingInsurance && existingInsurance.length > 0) {
+            throw new Error('Patient already has this insurance registered');
+        }
+
+        // Add patient insurance
+        const patientInsuranceResult = await sql`
+            INSERT INTO "Patient_Insurance" ("Patient_ID", "Insurance_ID", "Policy_Number", "Status")
+            VALUES (${patientId}, ${insuranceId}, ${policyNumber}, 'waiting')
+            RETURNING "Patient_ID", "Insurance_ID", "Policy_Number", "Status"
+        `;
+
+        return patientInsuranceResult[0];
+    } catch (error) {
+        console.error('Error adding patient insurance:', error);
+        throw error;
+    }
+};
+
+export const getPatientInsurancesByBillId = async (billId) => {
+    try {
+        // First, get the patient ID from the bill
+        const billResult = await sql`
+            SELECT a."Patient_ID"
+            FROM "Billing" b
+            JOIN "Appointment" a ON b."Appointment_ID" = a."Appointment_ID"
+            WHERE b."Bill_ID" = ${billId}
+        `;
+
+        if (!billResult || billResult.length === 0) {
+            throw new Error('Bill not found');
+        }
+
+        const patientId = billResult[0].Patient_ID;
+
+        // Get all approved insurances for this patient
+        const insurancesResult = await sql`
+            SELECT 
+                pi."Insurance_ID",
+                pi."Policy_Number",
+                pi."Status",
+                i."Provider_Name",
+                i."Coverage_Percentage"
+            FROM "Patient_Insurance" pi
+            JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
+            WHERE pi."Patient_ID" = ${patientId}
+            AND pi."Status" = 'Approved'
+            ORDER BY pi."Insurance_ID" DESC
+        `;
+
+        return {
+            patientId: patientId,
+            insurances: insurancesResult
+        };
+    } catch (error) {
+        console.error('Error fetching patient insurances by bill ID:', error);
+        throw error;
+    }
+};
+
+export const submitInsuranceClaim = async (billId, insuranceId, claimAmount = null) => {
+    try {
+        // First, check if the bill exists and get its details
         const billCheck = await sql`
-            SELECT "Bill_ID", "Total_Amount", "Patient_ID"
-            FROM "Billing"
-            WHERE "Bill_ID" = ${billId}
+            SELECT b."Bill_ID", b."Total_Amount", b."Insured_Amount", b."Patient_Amount", b."Appointment_ID"
+            FROM "Billing" b
+            WHERE b."Bill_ID" = ${billId}
         `;
 
         if (!billCheck || billCheck.length === 0) {
@@ -424,39 +555,43 @@ export const submitInsuranceClaim = async (billId, insuranceId, claimAmount) => 
 
         const bill = billCheck[0];
 
-        // Check if the insurance exists
+        // Get insurance details to calculate claim amount if not provided
         const insuranceCheck = await sql`
-            SELECT "Insurance_ID"
-            FROM "Insurance"
-            WHERE "Insurance_ID" = ${insuranceId}
+            SELECT i."Insurance_ID", i."Coverage_Percentage"
+            FROM "Insurance" i
+            WHERE i."Insurance_ID" = ${insuranceId}
         `;
 
         if (!insuranceCheck || insuranceCheck.length === 0) {
             throw new Error('Insurance not found');
         }
 
+        const insurance = insuranceCheck[0];
+
+        // Calculate claim amount if not provided
+        let finalClaimAmount = claimAmount;
+        if (!finalClaimAmount || finalClaimAmount === 0) {
+            // Use the insured amount from the bill, or calculate it
+            if (bill.Insured_Amount && parseFloat(bill.Insured_Amount) > 0) {
+                finalClaimAmount = parseFloat(bill.Insured_Amount);
+            } else {
+                // Calculate based on coverage percentage
+                const coveragePercentage = parseFloat(insurance.Coverage_Percentage) || 0;
+                finalClaimAmount = (parseFloat(bill.Total_Amount) * coveragePercentage) / 100;
+            }
+        }
+
         // Create the insurance claim
         const claimResult = await sql`
             INSERT INTO "Insurance_Claim" ("Bill_ID", "Insurance_ID", "Claim_Amount", "Claim_Status", "Submitted_Date")
-            VALUES (${billId}, ${insuranceId}, ${claimAmount}, 'Pending', CURRENT_DATE)
+            VALUES (${billId}, ${insuranceId}, ${finalClaimAmount}, 'Pending', CURRENT_DATE)
             RETURNING "Insurance_Claim_ID", "Bill_ID", "Insurance_ID", "Claim_Amount", "Claim_Status"
-        `;
-
-        // Update the billing table - reduce the total amount by the claim amount
-        const newTotalAmount = parseFloat(bill.Total_Amount) - parseFloat(claimAmount);
-        
-        const billingUpdate = await sql`
-            UPDATE "Billing"
-            SET "Total_Amount" = ${newTotalAmount}
-            WHERE "Bill_ID" = ${billId}
-            RETURNING "Bill_ID", "Total_Amount"
         `;
 
         return {
             claim: claimResult[0],
-            billing: billingUpdate[0],
             originalAmount: bill.Total_Amount,
-            newAmount: newTotalAmount
+            insuredAmount: finalClaimAmount
         };
     } catch (error) {
         console.error('Error submitting insurance claim:', error);
@@ -473,14 +608,27 @@ export const registerPatient = async (patientData) => {
         phone,
         dateOfBirth,
         gender,
-        address
+        address,
+        emergencyContact
     } = patientData;
 
     try {
+        // Hash the password before storing
+        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+        // Sanitize phone number to fit database constraint (VARCHAR 15)
+        // Remove formatting characters but keep the leading + for international numbers
+        let sanitizedPhone = phone.replace(/[\s\-\(\)]/g, '');
+        
+        // If phone is still too long, truncate to 15 characters
+        if (sanitizedPhone.length > 15) {
+            sanitizedPhone = sanitizedPhone.substring(0, 15);
+        }
+
         // Create the User record first
         const userResult = await sql`
-            INSERT INTO "User" (username, password_hash, name, contact_number, user_type)
-            VALUES (${username}, ${password}, ${name}, ${phone}, 'patient')
+            INSERT INTO "User" (username, password_hash, name, contact_number, address, user_type)
+            VALUES (${username}, ${hashedPassword}, ${name}, ${sanitizedPhone}, ${address || null}, 'patient')
             RETURNING user_id, username, name, contact_number
         `;
 
@@ -489,6 +637,15 @@ export const registerPatient = async (patientData) => {
         }
 
         const user = userResult[0];
+
+        // Sanitize emergency contact if provided (also VARCHAR 15)
+        let sanitizedEmergencyContact = null;
+        if (emergencyContact) {
+            sanitizedEmergencyContact = emergencyContact.replace(/[\s\-\(\)]/g, '');
+            if (sanitizedEmergencyContact.length > 15) {
+                sanitizedEmergencyContact = sanitizedEmergencyContact.substring(0, 15);
+            }
+        }
 
         // Then, create the Patient record
         const patientResult = await sql`
@@ -502,7 +659,7 @@ export const registerPatient = async (patientData) => {
                 ${user.user_id},
                 ${dateOfBirth},
                 ${gender},
-                ${address || ''}
+                ${sanitizedEmergencyContact}
             )
             RETURNING patient_id, user_id, date_of_birth, gender
         `;
@@ -664,6 +821,25 @@ export const getTreatmentAppointment = async (appointmentId) => {
     }
 };
 
+export const deleteLabReport = async (appointmentId) => {
+    try {
+        const result = await sql`
+            DELETE FROM "Treatment_Appointment"
+            WHERE "Appointment_ID" = ${appointmentId}
+            RETURNING "Appointment_ID"
+        `;
+        
+        if (!result || result.length === 0) {
+            throw new Error('Lab report not found or already deleted');
+        }
+        
+        return result[0];
+    } catch (error) {
+        console.error('Error deleting lab report:', error);
+        throw error;
+    }
+};
+
 export const getAllTreatmentAppointments = async () => {
     try {
         const result = await sql`
@@ -732,31 +908,24 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
         
         // Data is correct - appointment details fetched from database
 
-        // Try to find a doctor for this specialization
-        let doctorName = 'Dr. Available';
+        // Get the actual doctor assigned to this appointment
+        let doctorName = 'Dr. Not Assigned';
         try {
-            // First check what columns exist in Doctor table
-            const doctorColumns = await sql`
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'Doctor'
-            `;
-            console.log('Doctor table columns:', doctorColumns.map(c => c.column_name));
-            
-            // Try to find any available doctor (simplified approach)
+            // Get doctor from Doctor_Appointment table for this specific appointment
             const doctorResult = await sql`
                 SELECT u_doctor.name as doctor_name
-                FROM "Doctor" d
+                FROM "Doctor_Appointment" da
+                JOIN "Doctor" d ON da."Doctor_ID" = d."Doctor_ID"
                 JOIN "Staff" s ON d."Staff_ID" = s."Staff_ID"
                 JOIN "User" u_doctor ON s."User_ID" = u_doctor.user_id
-                LIMIT 1
+                WHERE da."Appointment_ID" = ${appointmentId}
             `;
             
             if (doctorResult && doctorResult.length > 0) {
                 doctorName = doctorResult[0].doctor_name;
-                console.log(`Found doctor: ${doctorName}`);
+                console.log(`Found doctor for appointment ${appointmentId}: ${doctorName}`);
             } else {
-                console.log(`No doctors found in database`);
+                console.log(`No doctor assigned to appointment ${appointmentId}`);
             }
         } catch (error) {
             console.log('Error finding doctor:', error.message);
@@ -871,7 +1040,6 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
                     FROM "Patient_Insurance" pi
                     JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
                     WHERE pi."Patient_ID" = ${patientId}
-                    AND pi."Status" = 'Approved'
                     ORDER BY pi."Insurance_ID" DESC
                     LIMIT 1
                 `;

@@ -150,7 +150,7 @@ export async function getBillsByPatient(patientId) {
             INNER JOIN "Appointment" a ON b."Appointment_ID" = a."Appointment_ID"
             INNER JOIN "Patient" p ON a."Patient_ID" = p.patient_id
             WHERE p.patient_id = ${patientId}
-            ORDER BY b."Due_Date" DESC;
+            ORDER BY b."Due_Date" ASC;
         `;
         return result;
     }

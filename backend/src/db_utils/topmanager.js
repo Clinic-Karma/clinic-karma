@@ -1,5 +1,8 @@
 // backend/src/models/topmanager.js
 import { sql } from './db.js';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 12;
 
 // Create
 export async function createTopManager(data) {
@@ -7,6 +10,7 @@ export async function createTopManager(data) {
     name,
     email,
     phone = null,
+    password = null,
     password_hash = null,
     address = null,
     NIC = null,
@@ -15,11 +19,17 @@ export async function createTopManager(data) {
     is_active = true,
   } = data;
 
+  // Hash the password if provided as plain text
+  let hashedPassword = password_hash;
+  if (password && !password_hash) {
+    hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+  }
+
   const rows = await sql`
     INSERT INTO "top_managers"
       ("name","email","phone","password_hash","address","NIC","username","user_type","is_active")
     VALUES
-      (${name},${email},${phone},${password_hash},${address},${NIC},${username},${user_type},${is_active})
+      (${name},${email},${phone},${hashedPassword},${address},${NIC},${username},${user_type},${is_active})
     RETURNING *;
   `;
   return rows[0];
@@ -60,7 +70,14 @@ export async function updateTopManager(id, fields = {}) {
   const entries = Object.entries(fields);
   if (!entries.length) return getTopManagerById(id);
 
-  const setClauses = entries.map(([k, v]) => sql`${sql.unsafe('"' + k + '"')} = ${v}`);
+  // Hash password if it's being updated
+  if (fields.password) {
+    fields.password_hash = await bcrypt.hash(fields.password, SALT_ROUNDS);
+    delete fields.password;
+  }
+
+  const updatedEntries = Object.entries(fields);
+  const setClauses = updatedEntries.map(([k, v]) => sql`${sql.unsafe('"' + k + '"')} = ${v}`);
 
   const rows = await sql`
     UPDATE "top_managers"
@@ -105,21 +122,27 @@ export async function getRevenueTrends() {
   return rows;
 }
 
-// Pending payments (half payments placeholder): bills with any pending insurance claims
+// Pending payments: bills where the patient amount is not equal to zero
 export async function getPendingPayments() {
   const rows = await sql`
     SELECT 
       u.name AS patient,
-      COALESCE(b."Total_Amount", 0) AS amount,
-      COALESCE(b."Total_Amount", 0) AS remaining,
-      a."Appointment_Date" AS due_date
+      p.patient_id,
+      u.contact_number AS patient_phone,
+      u.email AS patient_email,
+      COALESCE(b."Total_Amount", 0) AS total_amount,
+      COALESCE(b."Patient_Amount", b."Total_Amount", 0) AS amount,
+      COALESCE(b."Patient_Amount", b."Total_Amount", 0) AS remaining,
+      b."Due_Date" AS due_date,
+      b."Bill_ID" AS bill_id,
+      a."Appointment_ID" AS appointment_id,
+      a."Appointment_Date" AS appointment_date
     FROM "Billing" b
     JOIN "Appointment" a ON a."Appointment_ID" = b."Appointment_ID"
     JOIN "Patient" p ON a."Patient_ID" = p.patient_id
     JOIN "User" u ON p.user_id = u.user_id
-    LEFT JOIN "Insurance_Claim" ic ON ic."Bill_ID" = b."Bill_ID"
-    WHERE ic."Claim_Status" = 'Pending'
-    ORDER BY a."Appointment_Date" DESC
+    WHERE COALESCE(b."Patient_Amount", b."Total_Amount", 0) != 0
+    ORDER BY b."Due_Date" DESC, a."Appointment_Date" DESC
   `;
   return rows;
 }
