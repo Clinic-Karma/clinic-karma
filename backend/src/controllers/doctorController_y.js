@@ -1,4 +1,4 @@
-import { getUpcomingAppointments, getPatients, updateAppointmentDetails } from "../db_utils/doctor_y.js";
+import { getUpcomingAppointments, getPatients, updateAppointmentDetails, getSpecs } from "../db_utils/doctor_y.js";
 
 export async function fetchAppointments(req, res) {
     const doctorID = req.params.doctorID;
@@ -38,3 +38,15 @@ export async function updateAppointments(req, res) {
     }
 }
 
+export async function fetchSpecs(req, res) {
+    const did = req.params.did;
+
+    try {
+        const s = await getSpecs(did);
+        console.log(s);
+        return res.json(s);
+    }
+    catch (err) {
+        return res.status(500).json({ message: err.message || "Internal Server Error" });
+    }
+}

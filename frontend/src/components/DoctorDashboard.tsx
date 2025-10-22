@@ -12,8 +12,6 @@ import { useToast } from '@/hooks/use-toast';
   // Add these imports at the top
 import MedicalHistoryModal from './modals/MedicalHistoryModal';
 import LabReportsModal from './modals/LabReportsModal';
-import AppointmentsModal from './modals/AppointmentsModal';
-
 
 
   import { 
@@ -44,8 +42,6 @@ import axios from 'axios';
   
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
 
-
-
   const DoctorDashboard = () => {
     const [activeTab, setActiveTab] = useState('appointments');
     const [searchTerm, setSearchTerm] = useState('');
@@ -55,8 +51,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
 
     const [showMedicalHistory, setShowMedicalHistory] = useState(false);
     const [showLabReports, setShowLabReports] = useState(false);
-    const [showAppointments, setShowAppointments] = useState(false);
     const [selectedPatientForModal, setSelectedPatientForModal] = useState<any>(null);
+
+    const [Specs, setSpecs] = useState([]);
 
     const isMobile = useIsMobile();
     const { user, logout } = useAuth();
@@ -113,6 +110,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
       })
         .then(res => setPatients(res.data))
         .catch(err => console.error(err));
+      
+      axios.get(`${API_BASE_URL}/doctor/specs/${doctorId}`, {
+        withCredentials: true
+      })
+        .then(res => setSpecs(res.data))
+        .catch(err => console.error(err));
     }, []);
 
     const getStatusIcon = (status: string) => {
@@ -141,10 +144,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
       }
     };
 
-    const filteredPatients = patients.filter(patient =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.patientId.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredPatients = patients.filter(p =>
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.id?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     );
+
 
 
     return (
@@ -199,7 +203,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                   <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
                   <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
                 </div>
-                <nav className="space-y-3">
+                <nav className="space-y-3">appointments
                   <button
                     onClick={() => setActiveTab('appointments')}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
@@ -333,15 +337,19 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                       </div>
                       My Patients
                     </CardTitle>
-                    <div className="relative mt-4">
-                      <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder="Search patients by name or ID..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className={`${isMobile ? 'pl-12 text-base' : 'pl-12'} border-border/50 focus:border-primary bg-background/50 backdrop-blur-sm`}
-                      />
-                    </div>
+<div className="relative mt-4 w-full">
+  <Search 
+    className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} 
+  />
+  <Input
+    placeholder="Search patients by name or ID..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className={`w-full ${isMobile ? 'pl-10 text-sm' : 'pl-12'} pr-4 py-2 border border-border/50 focus:border-primary focus:ring-1 focus:ring-primary bg-background/70 text-foreground placeholder:text-muted-foreground rounded-lg`}
+  />
+</div>
+
+
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {filteredPatients.map((patient) => (
@@ -351,10 +359,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                             <h4 className="font-semibold text-lg">{patient.name}</h4>
                             <p className="text-sm text-muted-foreground">Patient ID: {patient.patient_id}</p>
                           </div>
-                          <Button size="sm" className="bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105">
-                            <Stethoscope className="w-4 h-4 mr-2" />
-                            View Profile
-                          </Button>
                         </div>
                         <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'md:grid-cols-3 gap-4'} text-sm`}>
                           <div className="space-y-1">
@@ -392,18 +396,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                                 <BarChart3 className="w-4 h-4 mr-2" />
                                 Lab Reports
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="flex-1 hover:bg-muted/50"
-                                onClick={() => {
-                                  setSelectedPatientForModal(patient);
-                                  setShowAppointments(true);
-                                }}
-                              >
-                                <Calendar className="w-4 h-4 mr-2" />
-                                Appointments
-                              </Button>
                         </div>
                       </div>
                     ))}
@@ -436,12 +428,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                           <p className="text-lg font-semibold">{name}</p>
                         </div>
                         <div className="p-4 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10">
-                          <label className="text-sm font-medium text-muted-foreground">License Number</label>
-                          <p className="text-lg">MD-CAR-2018-001234</p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10">
-                          <label className="text-sm font-medium text-muted-foreground">Department</label>
-                          <p className="text-lg">Cardiology Department</p>
+                          <label className="text-sm font-medium text-muted-foreground">Specializations</label>
+                          {Specs.map((s, i) => (
+                            <p key={i} className="text-lg">{s.Specialization_Name}</p>
+                          ))}
                         </div>
                         <div className="p-4 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10">
                           <label className="text-sm font-medium text-muted-foreground">Contact</label>
@@ -449,10 +439,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                             <p className="flex items-center gap-3">
                               <Phone className="w-4 h-4 text-primary" />
                               <span>+1 (555) 234-5678</span>
-                            </p>
-                            <p className="flex items-center gap-3">
-                              <Mail className="w-4 h-4 text-primary" />
-                              <span>{ name }@hospital.com</span>
                             </p>
                           </div>
                         </div>
@@ -574,14 +560,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
           open={showLabReports}
           onOpenChange={setShowLabReports}
         />
-
-        {/* Appointments Modal */}
-        <AppointmentsModal 
-          patient={selectedPatientForModal}
-          open={showAppointments}
-          onOpenChange={setShowAppointments}
-        />
-
       </div>
     );
   };

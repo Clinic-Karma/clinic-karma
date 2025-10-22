@@ -120,3 +120,21 @@ export async function updateAppointmentDetails(appointmentID, diagnosis, prescri
         throw err;
     }
 }
+
+export async function getSpecs(did) {
+    try {
+        const x = await sql`
+            SELECT "Specialization_Name"
+            FROM "Specialization"
+            INNER JOIN "Doctor_Specialization" USING("Specialization_ID")
+            WHERE "Doctor_ID" = ${did};
+        `;
+
+        console.log(x);
+        return x;
+    }
+    catch (err) {
+        console.error("Error while updating parients", err);
+        throw err;
+    }
+}

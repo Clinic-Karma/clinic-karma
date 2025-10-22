@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, MapPin, User, Clock, ArrowLeft, CheckCircle, Printer } from 'lucide-react';
 
 import axios from 'axios';
+import "../utils/printA4.css";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
 
@@ -21,6 +22,8 @@ const AppointmentBooking = () => {
     '11:00 AM', '1:00 PM', '2:00 PM',
     '3:00 PM', '4:00 PM'
   ]);
+
+  const [appointmentID, setAppointmentID] = useState(1);
 
     // Master time list in 24-hour format
   const allTimeSlots = [
@@ -165,12 +168,15 @@ useEffect(() => {
       }
 
       const res = await axios.post(`${BASE_URL}/patient/appointment`, payload);
+      setAppointmentID(res.data.appointment_id)
       setCurrentStep(4);
     }
     catch (error) {
       console.error("Error confirming booking:", error);
     }
   };
+
+  
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -276,7 +282,7 @@ useEffect(() => {
 
       case 4:
         return (
-          <div className="text-center space-y-6">
+          <div className="text-center space-y-6 content">
             <div className="w-20 h-20 bg-success rounded-full flex items-center justify-center mx-auto">
               <CheckCircle className="w-10 h-10 text-success-foreground" />
             </div>
@@ -353,8 +359,7 @@ useEffect(() => {
                     </div>
                     
                     <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
-                      <p className="text-sm text-muted-foreground">Appointment ID</p>
-                      <p className="font-mono text-lg font-bold text-primary">APT-{Date.now().toString().slice(-8)}</p>
+                      <p className="text-sm text-muted-foreground">Appointment ID: {appointmentID}</p>
                     </div>
                   </div>
                 </div>
@@ -383,7 +388,7 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-gradient-primary text-primary-foreground shadow-hero">
+      <header className="bg-gradient-primary text-primary-foreground shadow-hero no-print">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center gap-4">
             <Button 
@@ -405,7 +410,7 @@ useEffect(() => {
 
       {/* Progress Indicator */}
       {currentStep < 4 && (
-        <div className="container mx-auto px-6 py-6">
+        <div className="container mx-auto px-6 py-6 no-print">
           <div className="flex items-center justify-between mb-8">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
@@ -426,7 +431,7 @@ useEffect(() => {
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 pb-8">
+      <main className="container mx-auto px-6 pb-8 content">
         <Card className="max-w-2xl mx-auto shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -463,7 +468,7 @@ useEffect(() => {
 
             {/* Final Step Actions */}
             {currentStep === 4 && (
-              <div className="space-y-4 pt-6">
+              <div className="space-y-4 pt-6 no-print">
                 <Button 
                   onClick={() => window.print()}
                   className="w-full h-12 bg-gradient-primary hover:opacity-90 text-lg font-semibold shadow-button"

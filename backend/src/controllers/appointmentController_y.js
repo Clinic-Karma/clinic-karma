@@ -49,8 +49,8 @@ export async function storeAppointment(req, res) {
     }
 
     try {
-        const appointment = await addAppointment(patientId, doctorId, date, status, startTime, type, branch, specializationId);
-        return res.status(201).json(appointment);
+        const appointment_id = await addAppointment(patientId, doctorId, date, status, startTime, type, branch, specializationId);
+        return res.status(201).json({appointment_id: appointment_id});
     } catch (error) {
         return res.status(500).json({ message: error.message || "Internal Server Error" });
     }

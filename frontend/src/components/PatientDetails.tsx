@@ -34,6 +34,10 @@ export default function PatientDetails({ patient, appointmentId, open, onOpenCha
         description: "Doctor notes saved successfully.",
       });
 
+      setDiagnosis("");
+      setNotes("");
+      setPrescription("");
+
       onOpenChange(false);
     } catch (err) {
       console.error(err);

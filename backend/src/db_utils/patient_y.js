@@ -16,7 +16,7 @@ export async function addPatient(payLoad) {
                 VALUES (${name}, ${nic}, ${contact_number}, ${address}, ${username}, ${hash}, 'patient')
                 RETURNING user_id, username;
             `,
-                txn`
+                txn`    
                 INSERT INTO "Patient" (user_id, date_of_birth, gender, emergency_contact)
                 VALUES ((SELECT user_id FROM "User" WHERE username = ${username}), ${dob}, ${gender}, ${emmergency_contact_number})
                 RETURNING patient_id;`
@@ -71,7 +71,7 @@ export async function addAppointment(patientId, doctorId, date, status, startTim
                         )
                 , ${dueDate});`;
 
-        return;
+        return appintment_id;
     } catch (error) {
         console.error('Error adding appointment:', error);
         throw error;
@@ -156,6 +156,70 @@ export async function getBillsByPatient(patientId) {
     }
     catch (error) {
         console.error('Error fetching bills:', error);
+        throw error;
+    }
+}
+
+export async function getDetails(patientId) {
+    try {
+        const res = await sql`
+            SELECT u.name as "fullName", u.nic, p.date_of_birth as "dateOfBirth",
+            p.gender, u.contact_number as "contactNumber", u.address, p.emergency_contact as "emmergencyContact"
+            FROM "Patient" p
+            INNER JOIN "User" u ON p.user_id = u.user_id
+            WHERE p.patient_id = ${patientId};
+        `;
+
+        return res[0];
+    }
+    catch (error) {
+        console.error('Error fetching details:', error);
+        throw error;
+    }
+}
+
+export async function putDetails(patientID, contactNumber, emergency_contact, address) {
+    try {
+        const res = await sql`
+            UPDATE "Patient" 
+            SET emergency_contact = ${emergency_contact}
+            WHERE patient_id = ${patientID}
+            RETURNING user_id;
+        `;
+        
+        const userID = res[0].user_id;
+
+        await sql`
+            UPDATE "User"
+            SET contact_number = ${contactNumber},
+                address = ${address}
+            WHERE user_id = ${userID}
+        `;
+    }
+    catch (error) {
+        console.error('Error fetching details:', error);
+        throw error;
+    }
+}
+
+export async function getMedicalHistory(pid) {
+    try {
+        const history = await sql`
+            SELECT a."Appointment_ID" as appointment_id, da."Diagnosis" as diagnosis,
+            da."Prescription" as prescription, da."Additional_Notes" as notes,
+            u.name, a."Appointment_Date" as date
+            FROM "Appointment" a
+            INNER JOIN "Doctor_Appointment" da ON a."Appointment_ID" = da."Appointment_ID"
+            INNER JOIN "Doctor" d ON d."Doctor_ID" = da."Doctor_ID"
+            INNER JOIN "Staff" s ON s."Staff_ID" = d."Staff_ID"
+            INNER JOIN "User" u ON s."User_ID" = u.user_id
+            WHERE a."Patient_ID" = ${pid} AND a."Status" = 'Completed';
+        `;
+
+        return history;
+    }
+    catch (error) {
+        console.error('Error fetching details:', error);
         throw error;
     }
 }

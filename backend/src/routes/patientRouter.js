@@ -10,7 +10,10 @@ import {
     fetchLabReports,
     fetchAppointments,
     fetchPayments,
-    fetchBills
+    fetchBills,
+    fetchDetails,
+    updateDetails,
+    fetchMedicalHistory
 } from "../controllers/patientController_y.js";
 
 import { requireAuth, requireRole } from "../middlewares/authMiddleware.js";
@@ -28,5 +31,10 @@ router.get("/appointments/:patientId", requireAuth, requireRole('patient'), fetc
 router.get("/labreports/:patientId", requireAuth, requireRole('patient'), fetchLabReports);
 router.get("/payments/:patientId", requireAuth, requireRole('patient'), fetchPayments);
 router.get("/bills/:patientId", requireAuth, requireRole('patient'), fetchBills);
+
+router.get("/details/:patientId", requireAuth, requireRole("patient"), fetchDetails);
+router.put("/details/:patientId", requireAuth, requireRole("patient"), updateDetails);
+
+router.get(`/medical-history/:pid`, fetchMedicalHistory);
 
 export default router;

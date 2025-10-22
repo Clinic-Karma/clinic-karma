@@ -280,7 +280,7 @@ export async function createStaffForBranchManager(data) {
 
     // 2. Create staff record - let database handle auto-increment
     const staffResult = await sql`
-      INSERT INTO "Staff" ("User_ID", "Branch_Name")
+      INSERT INTO "Staff" ("User_ID", "Branch_Name", "")
       VALUES (${userId}, ${branch})
       RETURNING "Staff_ID"
     `;

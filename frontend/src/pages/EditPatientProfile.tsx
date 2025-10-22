@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, CreditCard, Shield, Save, UserCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '../contexts/AuthContext';
+import apiClient from "../utils/axiosConfig";
 
 const EditPatientProfile = () => {
   const [formData, setFormData] = useState({
@@ -17,11 +19,41 @@ const EditPatientProfile = () => {
     contactNumber: '+1 (555) 123-4567',
     gender: 'Male',
     dateOfBirth: '1985-01-15',
-    address: '123 Main Street, Anytown, ST 12345'
+    address: '123 Main Street, Anytown, ST 12345',
+    emmergencyContact: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const { user } = useAuth();
+  const patientId = user?.pid;
+  const name = user?.name || user?.username || "Patient";
+
+  const fetchDetails = async () => {
+    try {
+      const res = await apiClient.get(`/patient/details/${patientId}`); 
+      setFormData(res.data);
+    }
+    catch (err) {
+      console.error("Error");
+    }
+  };
+
+  const updateDetails = async () => {
+    const payLoad = {
+      emmergencyContact: formData.emmergencyContact,
+      contactNumber: formData.contactNumber,
+      address: formData.address
+    };
+    return apiClient.put(`/patient/details/${patientId}`, payLoad);
+  }; 
+
+  useEffect(() => {
+    if (patientId) {
+      fetchDetails();
+    }
+  }, [patientId]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -41,26 +73,47 @@ const EditPatientProfile = () => {
     }
 
     // Phone validation
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const phoneRegex = /^(?:\+94|0)\d{9}$/;
     if (!phoneRegex.test(formData.contactNumber.replace(/\s/g, ''))) {
       toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid contact number.",
-        variant: "destructive",
+        title: 'Invalid Contact Number',
+        description: 'Please enter a valid contact number (e.g., +94123456789 or 0123456789).',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // Validate emergencyContact only if provided
+    if (formData.emmergencyContact && !phoneRegex.test(formData.emmergencyContact.replace(/\s/g, ''))) {
+      toast({
+        title: 'Invalid Emergency Contact',
+        description: 'Please enter a valid emergency contact number (e.g., +94123456789 or 0123456789).',
+        variant: 'destructive',
       });
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      setIsLoading(true);
+      await updateDetails();
+
       toast({
-        title: "Profile Updated!",
-        description: "Your contact information has been successfully updated.",
+          title: "Profile Updated!",
+          description: "Your contact information has been successfully updated.",
+        });
+    }
+    catch (err) {
+        console.log(err);
+        toast({
+        title: "Error while updating data",
+        description: "",
+        variant: "destructive",
       });
+    }
+    finally {
       setIsLoading(false);
-    }, 1500);
+    }
+
   };
 
   return (
@@ -130,18 +183,6 @@ const EditPatientProfile = () => {
 
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-info/10 rounded-lg flex items-center justify-center">
-                      <Mail className="w-5 h-5 text-info" />
-                    </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Email Address</Label>
-                      <p className="font-semibold">{formData.email}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
                       <User className="w-5 h-5 text-success" />
                     </div>
@@ -189,6 +230,24 @@ const EditPatientProfile = () => {
                     className="h-12 text-base bg-background border-2 border-primary/20 focus:border-primary/50 transition-all duration-300"
                   />
                 </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Phone className="w-5 h-5 text-primary" />
+                    </div>
+                    <Label htmlFor="emmergencyContact" className="text-base font-medium">Emmergency Contact Number *</Label>
+                  </div>
+                  <Input
+                    id="emmergencyContact"
+                    value={formData.emmergencyContact}
+                    onChange={(e) => handleInputChange('emmergencyContact', e.target.value)}
+                    placeholder="Enter your contact number"
+                    className="h-12 text-base bg-background border-2 border-primary/20 focus:border-primary/50 transition-all duration-300"
+                  />
+                </div>
+
+                
 
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 mb-3">

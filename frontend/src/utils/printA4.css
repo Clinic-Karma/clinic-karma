@@ -1,0 +1,26 @@
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    width: 210mm;
+    height: 297mm;
+    box-sizing: border-box;
+  }
+
+  /* Ensure content fits within A4 */
+  .content {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Hide unnecessary elements during printing */
+  .no-print {
+    display: none;
+  }
+
+  /* Optional: Adjust font sizes or other elements */
+  * {
+    font-size: 12pt; /* Common font size for printing */
+  }
+}

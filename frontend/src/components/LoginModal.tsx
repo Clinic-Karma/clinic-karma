@@ -160,20 +160,6 @@ const LoginModal = ({ open, onOpenChange }: LoginModalProps) => {
             >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
-
-            <div className="text-center text-sm text-muted-foreground">
-              Forgot your password?{' '}
-              <button className="text-primary hover:text-primary-dark font-medium">
-                Reset it here
-              </button>
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground border-t pt-4">
-              Don&apos;t have an account?{' '}
-              <button className="text-primary hover:text-primary-dark font-medium">
-                Sign up
-              </button>
-            </div>
           </div>
         </div>
       </DialogContent>

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, Component } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,23 +11,22 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-
 import apiClient from "../utils/axiosConfig";
 
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
+  const [billStatusFilter, setBillStatusFilter] = useState('All');
   const isMobile = useIsMobile();
   const [appointments, setAppointments] = useState([]);
   const [labReports, setLabReports] = useState([]);
-  const [payments, setPayments] = useState([]); 
+  const [payments, setPayments] = useState([]);
   const [bills, setBills] = useState([]);
   
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Get the patient ID from authenticated user
   const patientId = user?.pid;
   const name = user?.name || user?.username || "Patient";
 
@@ -83,95 +83,20 @@ const PatientDashboard = () => {
       setBills(response.data);
     }  
     catch (error) {
-      console.error("Error while fetching bills");
+      console.error("Error while fetching bills", error);
     }
   }
 
   useEffect(() => {
-  if (patientId) {
-    fetchAppointments();
-    fetchLabReports();
-    fetchPayments();
-    fetchBills();
+    if (patientId) {
+      fetchAppointments();
+      fetchLabReports();
+      fetchPayments();
+      fetchBills();
+    }
+  }, [patientId]);
 
-    console.log(appointments);
-  }
-}, [patientId]);
-
-  const appointsments = [{
-    id: 1,
-    doctor: 'Dr. Priya Sharma',
-    specialization: 'Cardiologist',
-    date: '2024-09-15',
-    time: '10:30 AM',
-    status: 'confirmed',
-    branch: 'Main Hospital',
-    payment: 'Paid - $150'
-  }, {
-    id: 2,
-    doctor: 'Dr. Marcus Johnson',
-    specialization: 'Orthopedic Surgeon',
-    date: '2024-09-10',
-    time: '2:00 PM',
-    status: 'completed',
-    branch: 'Orthopedic Center',
-    payment: 'Paid - $200'
-  }, {
-    id: 3,
-    doctor: 'Dr. Carlos Rodriguez',
-    specialization: 'Neurologist',
-    date: '2024-09-05',
-    time: '9:00 AM',
-    status: 'cancelled',
-    branch: 'Neurology Wing',
-    payment: 'Refunded - $175'
-  }];
-
-  const labReportsw = [{
-    id: 1,
-    testName: 'Complete Blood Count',
-    date: '2024-09-08',
-    status: 'Ready',
-    doctor: 'Dr. Priya Sharma'
-  }, {
-    id: 2,
-    testName: 'Lipid Profile',
-    date: '2024-09-08',
-    status: 'Ready',
-    doctor: 'Dr. Priya Sharma'
-  }, {
-    id: 3,
-    testName: 'Thyroid Function Test',
-    date: '2024-08-25',
-    status: 'Ready',
-    doctor: 'Dr. Emily Wilson'
-  }];
-
-  const paymesnts = [{
-    id: 1,
-    description: 'Consultation - Dr. Priya Sharma',
-    amount: '$150',
-    date: '2024-09-15',
-    status: 'Paid',
-    method: 'Credit Card'
-  }, {
-    id: 2,
-    description: 'Lab Tests - Complete Blood Work',
-    amount: '$85',
-    date: '2024-09-08',
-    status: 'Paid',
-    method: 'Insurance'
-  }, {
-    id: 3,
-    description: 'Consultation - Dr. Marcus Johnson',
-    amount: '$200',
-    date: '2024-09-10',
-    status: 'Paid',
-    method: 'Cash'
-    }];
-  
-
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status) => {
     switch (status) {
       case 'confirmed':
       case 'Paid':
@@ -180,13 +105,14 @@ const PatientDashboard = () => {
       case 'cancelled':
         return <XCircle className="w-4 h-4 text-destructive" />;
       case 'pending':
+      case 'Pending':
         return <AlertCircle className="w-4 h-4 text-orange-500" />;
       default:
         return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'confirmed':
       case 'Paid':
@@ -195,501 +121,488 @@ const PatientDashboard = () => {
       case 'cancelled':
         return 'destructive';
       case 'pending':
+      case 'Pending':
         return 'secondary';
       default:
         return 'secondary';
-    };
+    }
   };
 
-  const getTime = (time: String) => {
-      const x = time.split("T")
-      return `${x[0]} ${x[1].slice(0,8)}`; 
-    };
+  const getTime = (time) => {
+    if (!time) return 'N/A';
+    try {
+      const x = time.split("T");
+      return `${x[0]} ${x[1].slice(0,8)}`;
+    } catch {
+      return 'N/A';
+    }
+  };
+  
+  const handleDownloadPDF = (pdfUrl, fileName) => {
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = `${fileName}.pdf`;
+    link.click();
+  };
+
+  const filteredBills = billStatusFilter === 'All'
+    ? bills
+    : bills.filter(bill => bill.status.toLowerCase() === billStatusFilter.toLowerCase());
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
-      {/* Header */}
-      <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
-        <div className={`relative container mx-auto ${isMobile ? 'px-4 py-4' : 'px-8 py-8'}`}>
-          <div className="flex justify-between items-center">
-            <div className="space-y-1">
-              <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Patient Dashboard</h1>
-              <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Welcome back, {name}</p>
-            </div>
-            <div className="flex gap-2 items-center">
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.href = '/'} 
-                className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : ''}`}
-              >
-                <User className="w-4 h-4 mr-2" />
-                Home
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : 'px-4'}`}
-                  >
-                    Profile
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
-                  <DropdownMenuItem onClick={() => window.location.href = '/edit-profile'} className="hover:bg-primary/10">
-                    <User className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem onClick={handleLogout} className="hover:bg-destructive/10 text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background ${isMobile ? 'pb-20' : ''}`}>
+        {/* Header */}
+        <header className="bg-gradient-hero text-primary-foreground shadow-hero relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10"></div>
+          <div className={`relative container mx-auto ${isMobile ? 'px-4 py-4' : 'px-8 py-8'}`}>
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h1 className={`font-bold tracking-tight ${isMobile ? 'text-xl' : 'text-3xl'}`}>Patient Dashboard</h1>
+                <p className={`text-primary-foreground/90 ${isMobile ? 'text-sm' : 'text-lg'}`}>Welcome back, {name}</p>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/'} 
+                  className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : ''}`}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Home
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className={`border-primary-foreground/20 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-300 shadow-button ${isMobile ? 'px-3' : 'px-4'}`}
+                    >
+                      Profile
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-sm border-border/50">
+                    <DropdownMenuItem onClick={() => window.location.href = '/edit-profile'} className="hover:bg-primary/10">
+                      <User className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="hover:bg-destructive/10 text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content with Sidebar */}
-      <div className="flex min-h-screen">
-        {/* Desktop Sidebar */}
-        {!isMobile && (
-          <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
-            <div className="p-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
-                <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
-              </div>
-              <nav className="space-y-3">
-                <button
-                  onClick={() => setActiveTab('echannel')}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'echannel' 
-                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === 'echannel' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <span className="font-medium">E-Channel</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('activities')}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'activities' 
-                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === 'activities' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <Activity className="w-5 h-5" />
-                  </div>
-                  <span className="font-medium">Activities</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('payments')}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'payments' 
-                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === 'payments' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <span className="font-medium">Payments</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('labreports')}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
-                    activeTab === 'labreports' 
-                      ? 'bg-gradient-primary text-primary-foreground shadow-button' 
-                      : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === 'labreports' ? 'bg-white/20' : 'bg-primary/10'}`}>
-                    <FlaskConical className="w-5 h-5" />
-                  </div>
-                  <span className="font-medium">Lab Reports</span>
-                </button>
-              </nav>
-            </div>
-          </aside>
-        )}
-
-        {/* Main Content */}
-        <main className={`flex-1 ${isMobile ? 'p-4' : 'p-8'} bg-gradient-to-br from-background to-muted/20`}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-
-          {/* E-Channel Tab */}
-          <TabsContent value="echannel" className="space-y-8">
-            <div className="space-y-8">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">E-Channel Services</h2>
-                  <p className="text-muted-foreground mt-1">Book appointments and manage your healthcare needs</p>
+        {/* Main Content with Sidebar */}
+        <div className="flex min-h-screen">
+          {/* Desktop Sidebar */}
+          {!isMobile && (
+            <aside className="w-72 bg-gradient-to-b from-card via-card/95 to-muted/20 border-r border-border/50 shadow-lg backdrop-blur-sm">
+              <div className="p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
+                  <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
                 </div>
-                <Select value={activeEChannelTab} onValueChange={setActiveEChannelTab}>
-                  <SelectTrigger className="w-56 bg-card/50 backdrop-blur-sm border-border/50 shadow-sm">
-                    <SelectValue placeholder="Select service" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card/95 backdrop-blur-sm border-border/50">
-                    <SelectItem value="book">Book Appointment</SelectItem>
-                    <SelectItem value="reschedule">Reschedule Request</SelectItem>
-                  </SelectContent>
-                </Select>
+                <nav className="space-y-3">
+                  <button
+                    onClick={() => setActiveTab('echannel')}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                      activeTab === 'echannel' 
+                        ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                        : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${activeTab === 'echannel' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <span className="font-medium">E-Channel</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('activities')}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                      activeTab === 'activities' 
+                        ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                        : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${activeTab === 'activities' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                      <Activity className="w-5 h-5" />
+                    </div>
+                    <span className="font-medium">Activities</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('payments')}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                      activeTab === 'payments' 
+                        ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                        : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${activeTab === 'payments' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <span className="font-medium">Payments</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('labreports')}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
+                      activeTab === 'labreports' 
+                        ? 'bg-gradient-primary text-primary-foreground shadow-button' 
+                        : 'hover:bg-gradient-to-r hover:from-muted/50 hover:to-accent/10 hover:shadow-md'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${activeTab === 'labreports' ? 'bg-white/20' : 'bg-primary/10'}`}>
+                      <FlaskConical className="w-5 h-5" />
+                    </div>
+                    <span className="font-medium">Lab Reports</span>
+                  </button>
+                </nav>
               </div>
+            </aside>
+          )}
 
-              {activeEChannelTab === 'book' && (
+          {/* Main Content */}
+          <main className={`flex-1 ${isMobile ? 'p-4' : 'p-8'} bg-gradient-to-br from-background to-muted/20`}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+              {/* E-Channel Tab */}
+              <TabsContent value="echannel" className="space-y-8">
+                <div className="space-y-8">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">E-Channel Services</h2>
+                      <p className="text-muted-foreground mt-1">Book appointments and manage your healthcare needs</p>
+                    </div>
+                  </div>
+                  {activeEChannelTab === 'book' && (
+                    <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                      <CardHeader className="pb-6">
+                        <CardTitle className="flex items-center gap-3 text-2xl">
+                          <div className="p-3 rounded-full bg-gradient-primary">
+                            <Calendar className="w-6 h-6 text-primary-foreground" />
+                          </div>
+                          Book New Appointment
+                        </CardTitle>
+                        <p className="text-muted-foreground ml-12">Follow these simple steps to book your appointment</p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'md:grid-cols-2 lg:grid-cols-4 gap-6'} mb-8`}>
+                          <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+                            <CardContent className="p-6 text-center">
+                              <div className="p-4 rounded-full bg-gradient-primary mx-auto mb-4 w-fit">
+                                <MapPin className="w-8 h-8 text-primary-foreground" />
+                              </div>
+                              <h3 className="font-semibold text-lg mb-2">Select Branch</h3>
+                              <p className="text-sm text-muted-foreground">Choose hospital location</p>
+                            </CardContent>
+                          </Card>
+                          <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20">
+                            <CardContent className="p-6 text-center">
+                              <div className="p-4 rounded-full bg-gradient-secondary mx-auto mb-4 w-fit">
+                                <FileText className="w-8 h-8 text-secondary-foreground" />
+                              </div>
+                              <h3 className="font-semibold text-lg mb-2">Specialization</h3>
+                              <p className="text-sm text-muted-foreground">Select medical specialty</p>
+                            </CardContent>
+                          </Card>
+                          <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-success/5 to-accent/5 border-success/20">
+                            <CardContent className="p-6 text-center">
+                              <div className="p-4 rounded-full bg-success mx-auto mb-4 w-fit">
+                                <User className="w-8 h-8 text-success-foreground" />
+                              </div>
+                              <h3 className="font-semibold text-lg mb-2">Choose Doctor</h3>
+                              <p className="text-sm text-muted-foreground">Select preferred doctor</p>
+                            </CardContent>
+                          </Card>
+                          <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-warning/5 to-accent/5 border-warning/20">
+                            <CardContent className="p-6 text-center">
+                              <div className="p-4 rounded-full bg-warning mx-auto mb-4 w-fit">
+                                <Calendar className="w-8 h-8 text-warning-foreground" />
+                              </div>
+                              <h3 className="font-semibold text-lg mb-2">Pick Date</h3>
+                              <p className="text-sm text-muted-foreground">Available time slots</p>
+                            </CardContent>
+                          </Card>
+                        </div>
+                        <Button className={`w-full ${isMobile ? 'h-12 text-base' : 'h-14 text-lg'} bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105`} onClick={() => window.location.href = '/appointment-booking'}>
+                          Start Booking Process
+                          <Calendar className="w-5 h-5 ml-2" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Activities Tab */}
+              <TabsContent value="activities" className="space-y-8">
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Recent Activities</h2>
+                  <p className="text-muted-foreground mb-8">View your recent appointments</p>
+                </div>
                 <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
                   <CardHeader className="pb-6">
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 rounded-full bg-gradient-primary">
-                        <Calendar className="w-6 h-6 text-primary-foreground" />
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="p-2 rounded-lg bg-gradient-primary">
+                        <Calendar className="w-5 h-5 text-primary-foreground" />
                       </div>
-                      Book New Appointment
+                      Recent Appointments
                     </CardTitle>
-                    <p className="text-muted-foreground ml-12">Follow these simple steps to book your appointment</p>
                   </CardHeader>
-                  <CardContent>
-                    <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'md:grid-cols-2 lg:grid-cols-4 gap-6'} mb-8`}>
-                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-                        <CardContent className="p-6 text-center">
-                          <div className="p-4 rounded-full bg-gradient-primary mx-auto mb-4 w-fit">
-                            <MapPin className="w-8 h-8 text-primary-foreground" />
+                  <CardContent className="space-y-4">
+                    {appointments.map(appointment => (
+                      <div key={appointment.Appointment_ID} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <h4 className="font-semibold text-lg">{appointment.name}</h4>
+                            <p className="text-sm text-muted-foreground">{appointment.Specialization_Name}</p>
                           </div>
-                          <h3 className="font-semibold text-lg mb-2">Select Branch</h3>
-                          <p className="text-sm text-muted-foreground">Choose hospital location</p>
-                        </CardContent>
-                      </Card>
-                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-secondary/5 to-accent/5 border-secondary/20">
-                        <CardContent className="p-6 text-center">
-                          <div className="p-4 rounded-full bg-gradient-secondary mx-auto mb-4 w-fit">
-                            <FileText className="w-8 h-8 text-secondary-foreground" />
-                          </div>
-                          <h3 className="font-semibold text-lg mb-2">Specialization</h3>
-                          <p className="text-sm text-muted-foreground">Select medical specialty</p>
-                        </CardContent>
-                      </Card>
-                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-success/5 to-accent/5 border-success/20">
-                        <CardContent className="p-6 text-center">
-                          <div className="p-4 rounded-full bg-success mx-auto mb-4 w-fit">
-                            <User className="w-8 h-8 text-success-foreground" />
-                          </div>
-                          <h3 className="font-semibold text-lg mb-2">Choose Doctor</h3>
-                          <p className="text-sm text-muted-foreground">Select preferred doctor</p>
-                        </CardContent>
-                      </Card>
-                      <Card className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-warning/5 to-accent/5 border-warning/20">
-                        <CardContent className="p-6 text-center">
-                          <div className="p-4 rounded-full bg-warning mx-auto mb-4 w-fit">
-                            <Calendar className="w-8 h-8 text-warning-foreground" />
-                          </div>
-                          <h3 className="font-semibold text-lg mb-2">Pick Date</h3>
-                          <p className="text-sm text-muted-foreground">Available time slots</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    <Button className={`w-full ${isMobile ? 'h-12 text-base' : 'h-14 text-lg'} bg-gradient-hero hover:opacity-90 transition-all duration-300 shadow-button transform hover:scale-105`} onClick={() => window.location.href = '/appointment-booking'}>
-                      Start Booking Process
-                      <Calendar className="w-5 h-5 ml-2" />
-                    </Button>
+                          <Badge variant={getStatusColor(appointment.Status) as any} className="flex items-center gap-1 px-3 py-1">
+                            {getStatusIcon(appointment.Status)}
+                            {appointment.Status}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                          <span className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            {appointment.Appointment_Date.slice(0, 10)} at {appointment.Start_Time.slice(0, 5)}
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            {appointment.Branch_Name}
+                          </span>
+                        </div>
+                        {appointment.status === 'confirmed' && (
+                          <Button size="sm" variant="outline" className="w-full mt-3 border-primary/30 hover:bg-primary/10">
+                            <RefreshCw className="w-3 h-3 mr-2" />
+                            Request Reschedule
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </CardContent>
                 </Card>
-              )}
+              </TabsContent>
 
-              {activeEChannelTab === 'reschedule' && (
+              {/* Payments Tab */}
+              <TabsContent value="payments" className="space-y-8">
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Payment History</h2>
+                  <p className="text-muted-foreground mb-8">Track all your medical payments and transactions</p>
+                </div>
+                <div className="mb-6">
+                  <Select value={billStatusFilter} onValueChange={setBillStatusFilter}>
+                    <SelectTrigger className="w-[180px] bg-gradient-to-r from-card to-muted/20 border-border/50">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All Bills</SelectItem>
+                      <SelectItem value="Paid">Paid</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 rounded-full bg-gradient-secondary">
-                        <RefreshCw className="w-6 h-6 text-secondary-foreground" />
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="p-2 rounded-lg bg-gradient-primary">
+                        <CreditCard className="w-5 h-5 text-primary-foreground" />
                       </div>
-                      Reschedule Requests
+                      Bills
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <div className="p-6 rounded-full bg-gradient-to-br from-muted/20 to-muted/10 mx-auto mb-6 w-fit">
-                        <AlertCircle className="w-16 h-16 text-muted-foreground" />
-                      </div>
-                      <h3 className="text-xl font-semibold mb-3">No Reschedule Requests</h3>
-                      <p className="text-muted-foreground max-w-md mx-auto">You don't have any pending reschedule requests at the moment. When you need to reschedule an appointment, it will appear here.</p>
-                    </div>
+                  <CardContent className="space-y-2">
+                    {filteredBills.length === 0 ? (
+                      <p className="text-muted-foreground text-center">No {billStatusFilter.toLowerCase()} bills found.</p>
+                    ) : (
+                      filteredBills.map(bill => (
+                        <div
+                          key={bill.id}
+                          className="border border-border/50 rounded-xl p-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300"
+                        >
+                          <div className="flex justify-between items-start">
+                            <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                              Appointment ID: {bill.appointment_id}
+                            </p>
+                            <div className="text-right space-y-1">
+
+                              {bill.status === 'Pending' && (
+                                <div className="font-bold text-2xl text-primary">Rs.{bill.total_amount - bill.insured_amount - bill.patient_amount}</div>
+                              )}
+                              <Badge
+                                variant={getStatusColor(bill.status) as any}
+                                className="flex items-center gap-1 px-3 py-1"
+                              >
+                                {getStatusIcon(bill.status)}
+                                {bill.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-start">
+                            <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                              Total Amount: {bill.total_amount}
+                            </p>
+                          </div>
+                          <div className="flex justify-between items-start">
+                            <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                              Insured Amount: {bill.insured_amount}
+                            </p>
+                          </div>
+                          <div className="flex justify-between items-start">
+                            <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                              Patient Amount: {bill.patient_amount}
+                            </p>
+                          </div>
+
+                          {bill.status === 'Pending' && (
+                          <div className="text-sm text-muted-foreground bg-muted/20 p-2.5 rounded-lg" style={{ marginTop: '-10px' }}>
+                            <Calendar className="w-4 h-4 inline mr-2" />
+                            Due Date: {getTime(bill.due_date)}
+                          </div>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </CardContent>
                 </Card>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Activities Tab */}
-          <TabsContent value="activities" className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Recent Activities</h2>
-              <p className="text-muted-foreground mb-8">View your recent appointments</p>
-            </div>
-            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 rounded-lg bg-gradient-primary">
-                    <Calendar className="w-5 h-5 text-primary-foreground" />
-                  </div>
-                  Recent Appointments
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {appointments.map(appointment => (
-                  <div key={appointment.Appointment_ID} className="border border-border/50 rounded-xl p-5 space-y-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <h4 className="font-semibold text-lg">{appointment.name}</h4>
-                        <p className="text-sm text-muted-foreground">{appointment.Specialization_Name}</p>
+                <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="p-2 rounded-lg bg-gradient-primary">
+                        <CreditCard className="w-5 h-5 text-primary-foreground" />
                       </div>
-                      <Badge variant={getStatusColor(appointment.Status) as any} className="flex items-center gap-1 px-3 py-1">
-                        {getStatusIcon(appointment.Status)}
-                        {appointment.Status}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
-                      <span className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {appointment.Appointment_Date.slice(0, 10)} at {appointment.Start_Time.slice(0, 5)}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        {appointment.Branch_Name}
-                      </span>
-                    </div>
-                    <div className="text-sm font-medium text-primary bg-primary/10 p-3 rounded-lg">
-                      <CreditCard className="w-4 h-4 inline mr-2" />
-                      {appointment.payment}
-                    </div>
-                    {appointment.status === 'confirmed' && (
-                      <Button size="sm" variant="outline" className="w-full mt-3 border-primary/30 hover:bg-primary/10">
-                        <RefreshCw className="w-3 h-3 mr-2" />
-                        Request Reschedule
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Payment History</h2>
-              <p className="text-muted-foreground mb-8">Track all your medical payments and transactions</p>
-              </div>
-                    <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-lg bg-gradient-primary">
-                  <CreditCard className="w-5 h-5 text-primary-foreground" />
-                </div>
-                Bills
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2"> {/* slightly less spacing between cards */}
-                  {bills.map(bill => (
-
-                <div
-                  key={bill.id} 
-                  className="border border-border/50 rounded-xl p-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="flex justify-between items-start" >
-                      <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
-                        Appointment ID: {bill.appointment_id}
-                        </p>
-                    <div className="text-right space-y-1">
-                      <Badge
-                        variant={getStatusColor(bill.status) as any}
-                        className="flex items-center gap-1 px-3 py-1"
+                      Transaction History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {payments.map(payment => (
+                      <div
+                        key={payment.id}
+                        className="border border-border/50 rounded-xl p-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300"
                       >
-                        {getStatusIcon(bill.status)}
-                        {bill.status}
-                      </Badge>
-                    </div>
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
+                            Payment Method: {payment.method}
+                          </p>
+                          <div className="text-right space-y-1">
+                            <div className="font-bold text-2xl text-primary">Rs.{payment.amount}</div>
+                            <Badge
+                              variant={getStatusColor(payment.status) as any}
+                              className="flex items-center gap-1 px-3 py-1"
+                            >
+                              {getStatusIcon("Paid")}
+                              {"Paid"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground bg-muted/20 p-2.5 rounded-lg" style={{ marginTop: '-10px' }}>
+                          <Calendar className="w-4 h-4 inline mr-2" />
+                          Transaction Date: {payment.date}
+                        </div>
                       </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  <div className="flex justify-between items-start" >
-                    <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
-                        Total Amount: {bill.total_amount}
-                      </p>
-                  </div>
-                  <div className="flex justify-between items-start" >
-                    <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
-                        Insured Amount: {bill.insured_amount}
-                        </p>
+              {/* Lab Reports Tab */}
+              <TabsContent value="labreports" className="space-y-8">
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Lab Reports</h2>
+                  <p className="text-muted-foreground mb-8">Access and download your medical test results</p>
+                </div>
+                <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="p-2 rounded-lg bg-gradient-secondary">
+                        <FlaskConical className="w-5 h-5 text-secondary-foreground" />
                       </div>
-                  <div className="flex justify-between items-start" >
-                    <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
-                        Patient Amount: {bill.patient_amount}
-                        </p>
-                  </div>
-
-                  {bill.status === "pending" && (
-                    <div
-                      className="text-sm text-muted-foreground bg-muted/20 p-2.5 rounded-lg"
-                      style={{ marginTop: "-10px" }}
-                    >
-                      <Calendar className="w-4 h-4 inline mr-2" />
-                      Transaction Date: {getTime(bill.date)}
-                    </div>
-                  )}
-
-                </div>
-              ))}
-            </CardContent>
-            </Card>
-
-
-
-          <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-lg bg-gradient-primary">
-                  <CreditCard className="w-5 h-5 text-primary-foreground" />
-                </div>
-                Transaction History
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2"> {/* slightly less spacing between cards */}
-              {payments.map(payment => (
-                <div
-                  key={payment.id}
-                  className="border border-border/50 rounded-xl p-3 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="flex justify-between items-start" >
-                      <p className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full inline-block">
-                        Payment Method: {payment.method}
-                      </p>
-                    <div className="text-right space-y-1">
-                      <div className="font-bold text-2xl text-primary">{payment.amount}</div>
-                      <Badge
-                        variant={getStatusColor(payment.status) as any}
-                        className="flex items-center gap-1 px-3 py-1"
-                      >
-                        {getStatusIcon("Paid")}
-                        {"Paid"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground bg-muted/20 p-2.5 rounded-lg" style={{ marginTop: '-10px' }}>
-                    <Calendar className="w-4 h-4 inline mr-2" />
-                    Transaction Date: {getTime(payment.date)}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-            </Card>
-            
-          </TabsContent>
-
-          {/* Lab Reports Tab */}
-          <TabsContent value="labreports" className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">Lab Reports</h2>
-              <p className="text-muted-foreground mb-8">Access and download your medical test results</p>
-            </div>
-            <Card className="shadow-hero bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-border/50">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 rounded-lg bg-gradient-secondary">
-                    <FlaskConical className="w-5 h-5 text-secondary-foreground" />
-                  </div>
-                  Available Reports
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {labReports.map(report => (
-                  <div key={report.appintment_id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-lg">{report.name}</h4>
+                      Available Reports
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {labReports.map(report => (
+                      <div key={report.appointment_id} className="border border-border/50 rounded-xl p-6 space-y-4 bg-gradient-to-r from-background to-muted/10 hover:shadow-lg transition-all duration-300">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-lg">{report.name}</h4>
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                          <Calendar className="w-4 h-4 inline mr-2" />
+                          Test Date: {getTime(report.date)}
+                        </div>
+                        <div className="flex gap-3">
+                          <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90"
+                            onClick={() => handleDownloadPDF(report.link, report.name)}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Download PDF
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex-1 border-primary/30 hover:bg-primary/10">
+                            <FileText className="w-4 h-4 mr-2" />
+                            View Online
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
-                      <Calendar className="w-4 h-4 inline mr-2" />
-                      Test Date: {getTime(report.date)}
-                    </div>
-                    <div className="flex gap-3">
-                      <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download PDF
-                      </Button>
-                      <Button size="sm" variant="outline" className="flex-1 border-primary/30 hover:bg-primary/10">
-                        <FileText className="w-4 h-4 mr-2" />
-                        View Online
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          </Tabs>
-        </main>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 shadow-lg z-50">
-          <div className="flex items-center justify-around px-2 py-3">
-            <button
-              onClick={() => setActiveTab('echannel')}
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
-                activeTab === 'echannel' 
-                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
-                  : 'hover:bg-muted/50'
-              }`}
-            >
-              <Calendar className="w-5 h-5 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">E-Channel</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('activities')}
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
-                activeTab === 'activities' 
-                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
-                  : 'hover:bg-muted/50'
-              }`}
-            >
-              <Activity className="w-5 h-5 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">Activities</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('payments')}
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
-                activeTab === 'payments' 
-                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
-                  : 'hover:bg-muted/50'
-              }`}
-            >
-              <CreditCard className="w-5 h-5 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">Payments</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('labreports')}
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
-                activeTab === 'labreports' 
-                  ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
-                  : 'hover:bg-muted/50'
-              }`}
-            >
-              <FlaskConical className="w-5 h-5 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">Lab Reports</span>
-            </button>
-          </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </main>
         </div>
-      )}
 
-      {/* Edit Profile Modal */}
+        {/* Mobile Bottom Navigation */}
+        {isMobile && (
+          <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 shadow-lg z-50">
+            <div className="flex items-center justify-around px-2 py-3">
+              <button
+                onClick={() => setActiveTab('echannel')}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                  activeTab === 'echannel' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                    : 'hover:bg-muted/50'
+                }`}
+              >
+                <Calendar className="w-5 h-5 flex-shrink-0" />
+                <span className="text-xs font-medium truncate">E-Channel</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('activities')}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                  activeTab === 'activities' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                    : 'hover:bg-muted/50'
+                }`}
+              >
+                <Activity className="w-5 h-5 flex-shrink-0" />
+                <span className="text-xs font-medium truncate">Activities</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                  activeTab === 'payments' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                    : 'hover:bg-muted/50'
+                }`}
+              >
+                <CreditCard className="w-5 h-5 flex-shrink-0" />
+                <span className="text-xs font-medium truncate">Payments</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('labreports')}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
+                  activeTab === 'labreports' 
+                    ? 'bg-gradient-primary text-primary-foreground shadow-md transform scale-105' 
+                    : 'hover:bg-muted/50'
+                }`}
+              >
+                <FlaskConical className="w-5 h-5 flex-shrink-0" />
+                <span className="text-xs font-medium truncate">Lab Reports</span>
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 };
