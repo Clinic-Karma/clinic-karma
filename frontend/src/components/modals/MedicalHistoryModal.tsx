@@ -11,7 +11,6 @@ const MedicalHistoryModal = ({ patient, open, onOpenChange }: any) => {
   const fetch = async () => {
     if (patient?.patient_id) {
       const res = await apiClient.get(`/patient/medical-history/${patient.patient_id}`)
-      console.log(res.data);
       setMedicalHistory(res.data);
     }
   }

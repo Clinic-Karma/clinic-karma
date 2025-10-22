@@ -28,7 +28,7 @@ router.get("/available-timeslots/:doctorId/:date", fetchAvailableTimeSlots);
 // Protected routes - require authentication and patient role
 router.post("/appointment", requireAuth, requireRole('patient'), storeAppointment);
 router.get("/appointments/:patientId", requireAuth, requireRole('patient'), fetchAppointments);
-router.get("/labreports/:patientId", requireAuth, requireRole('patient'), fetchLabReports);
+router.get("/labreports/:patientId", requireAuth, requireRole('patient', 'doctor'), fetchLabReports);
 router.get("/payments/:patientId", requireAuth, requireRole('patient'), fetchPayments);
 router.get("/bills/:patientId", requireAuth, requireRole('patient'), fetchBills);
 

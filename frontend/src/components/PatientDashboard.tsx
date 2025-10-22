@@ -13,6 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import apiClient from "../utils/axiosConfig";
 
+const VITE_UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL; // For Vite
+
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('echannel');
   const [activeEChannelTab, setActiveEChannelTab] = useState('book');
@@ -533,15 +535,44 @@ const PatientDashboard = () => {
                           Test Date: {getTime(report.date)}
                         </div>
                         <div className="flex gap-3">
-                          <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90"
-                            onClick={() => handleDownloadPDF(report.link, report.name)}>
-                            <Download className="w-4 h-4 mr-2" />
-                            Download PDF
-                          </Button>
-                          <Button size="sm" variant="outline" className="flex-1 border-primary/30 hover:bg-primary/10">
-                            <FileText className="w-4 h-4 mr-2" />
-                            View Online
-                          </Button>
+                        <div className="flex flex-col gap-2">
+                          {report.link && (
+                            <>
+                              {report.link.startsWith('/uploads/') ? (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const directUrl = `${VITE_UPLOAD_URL}${report.link}`;
+                                      console.log('Opening file:', directUrl);
+                                      window.open(directUrl, '_blank');
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    View Report
+                                  </Button>
+                                </>
+                              ) : (
+                                <div className="flex flex-col gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled
+                                    className="flex items-center gap-2 opacity-50"
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    Report Not Available
+                                  </Button>
+                                  <p className="text-xs text-muted-foreground">
+                                    This report was uploaded with an old system
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
                         </div>
                       </div>
                     ))}
