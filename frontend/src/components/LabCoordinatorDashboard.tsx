@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import apiClient from "@/utils/axiosConfig";
 
+const VITE_UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL; // For Vite
+
 const LabCoordinatorDashboard = () => {
   const [activeTab, setActiveTab] = useState("upload");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -424,7 +426,7 @@ const LabCoordinatorDashboard = () => {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => {
-                                      const directUrl = `http://localhost:5000${report.Report_Links}`;
+                                      const directUrl = `${VITE_UPLOAD_URL}${report.Report_Links}`;
                                       console.log('Opening file:', directUrl);
                                       window.open(directUrl, '_blank');
                                     }}
