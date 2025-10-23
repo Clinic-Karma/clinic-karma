@@ -203,7 +203,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                   <h3 className="text-lg font-semibold text-foreground mb-2">Navigation</h3>
                   <div className="h-1 w-12 bg-gradient-primary rounded-full"></div>
                 </div>
-                <nav className="space-y-3">appointments
+                <nav className="space-y-3">
                   <button
                     onClick={() => setActiveTab('appointments')}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-105 ${
@@ -375,8 +375,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                           <Button 
                               size="sm" 
                               variant="outline" 
-                              className="flex-1 hover:bg-muted/50"
-                              onClick={() => {
+                              className="flex-1 hover:bg-blue-700"
+                            onClick={() => {
+                                
                                 setSelectedPatientForModal(patient);
                                 setShowMedicalHistory(true);
                               }}
@@ -387,7 +388,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // For Vite
                             <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="flex-1 hover:bg-muted/50"
+                                className="flex-1 hover:bg-blue-700"
                                 onClick={() => {
                                   setSelectedPatientForModal(patient);
                                   setShowLabReports(true);
