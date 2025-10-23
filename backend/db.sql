@@ -315,177 +315,231 @@ EXECUTE FUNCTION log_audit_changes();
 
 -- Nisal Wilochana
 
--- Procedure to get branch statistics for branch manager dashboard
-CREATE OR REPLACE PROCEDURE get_branch_statistics(
+-- Procedure for complete staff registration with role validation
+CREATE OR REPLACE PROCEDURE register_staff_complete(
+    IN p_name VARCHAR(100),
+    IN p_username VARCHAR(50),
+    IN p_password VARCHAR(255),
+    IN p_contact_number VARCHAR(15),
+    IN p_nic VARCHAR(15),
+    IN p_address VARCHAR(255),
+    IN p_email VARCHAR(100),
     IN p_branch_name VARCHAR(50),
-    OUT total_appointments INT,
-    OUT completed_appointments INT,
-    OUT pending_appointments INT,
-    OUT total_doctors INT,
-    OUT total_staff INT,
-    OUT total_patients INT
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    -- Total appointments
-    SELECT COUNT(*) INTO total_appointments
-    FROM "Appointment"
-    WHERE "Branch_Name" = p_branch_name;
-
-    -- Completed appointments
-    SELECT COUNT(*) INTO completed_appointments
-    FROM "Appointment"
-    WHERE "Branch_Name" = p_branch_name AND "Status" = 'Completed';
-
-    -- Pending appointments
-    SELECT COUNT(*) INTO pending_appointments
-    FROM "Appointment"
-    WHERE "Branch_Name" = p_branch_name AND "Status" = 'Pending';
-
-    -- Total doctors in branch
-    SELECT COUNT(*) INTO total_doctors
-    FROM "Doctor" d
-    JOIN "Staff" s ON d."Staff_ID" = s."Staff_ID"
-    WHERE s."Branch_Name" = p_branch_name;
-
-    -- Total staff in branch
-    SELECT COUNT(*) INTO total_staff
-    FROM "Staff"
-    WHERE "Branch_Name" = p_branch_name;
-
-    -- Total patients (patients who have appointments at this branch)
-    SELECT COUNT(DISTINCT "Patient_ID") INTO total_patients
-    FROM "Appointment"
-    WHERE "Branch_Name" = p_branch_name;
-END;
-$$;
-
--- Procedure to get branch manager dashboard data
-CREATE OR REPLACE PROCEDURE get_branch_manager_dashboard(
-    IN p_branch_name VARCHAR(50),
-    OUT dashboard_data JSONB
+    IN p_role VARCHAR(20),
+    IN p_salary DECIMAL(10,2) DEFAULT 0.00,
+    IN p_created_by_user_id INT DEFAULT NULL,
+    OUT p_user_id INT,
+    OUT p_staff_id INT,
+    OUT p_status VARCHAR(50),
+    OUT p_message TEXT
 )
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    stats RECORD;
-    recent_appointments JSONB;
-    upcoming_appointments JSONB;
-    staff_list JSONB;
+    v_password_hash VARCHAR(255);
+    v_existing_user_id INT;
+    v_valid_roles TEXT[] := ARRAY['receptionist', 'lab-assistant', 'lab-coordinator', 'nurse', 'pharmacist'];
 BEGIN
-    -- Get statistics
-    CALL get_branch_statistics(p_branch_name, 
-        stats.total_appointments, 
-        stats.completed_appointments, 
-        stats.pending_appointments, 
-        stats.total_doctors, 
-        stats.total_staff, 
-        stats.total_patients);
-
-    -- Get recent appointments (last 7 days)
-    SELECT jsonb_agg(
-        jsonb_build_object(
-            'appointment_id', "Appointment_ID",
-            'patient_name', u.name,
-            'appointment_date', "Appointment_Date",
-            'status', "Status",
-            'type', "Type"
-        )
-    ) INTO recent_appointments
-    FROM "Appointment" a
-    JOIN "Patient" p ON a."Patient_ID" = p.patient_id
-    JOIN "User" u ON p.user_id = u.user_id
-    WHERE a."Branch_Name" = p_branch_name
-    AND a."Appointment_Date" >= CURRENT_DATE - INTERVAL '7 days'
-    ORDER BY a."Appointment_Date" DESC
-    LIMIT 10;
-
-    -- Get upcoming appointments (next 7 days)
-    SELECT jsonb_agg(
-        jsonb_build_object(
-            'appointment_id', "Appointment_ID",
-            'patient_name', u.name,
-            'appointment_date', "Appointment_Date",
-            'start_time', da."Start_Time",
-            'doctor_name', du.name,
-            'status', "Status"
-        )
-    ) INTO upcoming_appointments
-    FROM "Appointment" a
-    JOIN "Patient" p ON a."Patient_ID" = p.patient_id
-    JOIN "User" u ON p.user_id = u.user_id
-    JOIN "Doctor_Appointment" da ON a."Appointment_ID" = da."Appointment_ID"
-    JOIN "Doctor" d ON da."Doctor_ID" = d."Doctor_ID"
-    JOIN "Staff" s ON d."Staff_ID" = s."Staff_ID"
-    JOIN "User" du ON s."User_ID" = du.user_id
-    WHERE a."Branch_Name" = p_branch_name
-    AND a."Appointment_Date" BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
-    AND a."Status" = 'Pending'
-    ORDER BY a."Appointment_Date", da."Start_Time"
-    LIMIT 10;
-
-    -- Get staff list
-    SELECT jsonb_agg(
-        jsonb_build_object(
-            'staff_id', s."Staff_ID",
-            'name', u.name,
-            'role', u.user_type,
-            'username', u.username
-        )
-    ) INTO staff_list
-    FROM "Staff" s
-    JOIN "User" u ON s."User_ID" = u.user_id
-    WHERE s."Branch_Name" = p_branch_name;
-
-    -- Combine all data
-    dashboard_data := jsonb_build_object(
-        'statistics', jsonb_build_object(
-            'total_appointments', stats.total_appointments,
-            'completed_appointments', stats.completed_appointments,
-            'pending_appointments', stats.pending_appointments,
-            'total_doctors', stats.total_doctors,
-            'total_staff', stats.total_staff,
-            'total_patients', stats.total_patients
-        ),
-        'recent_appointments', COALESCE(recent_appointments, '[]'::jsonb),
-        'upcoming_appointments', COALESCE(upcoming_appointments, '[]'::jsonb),
-        'staff_list', COALESCE(staff_list, '[]'::jsonb)
-    );
-END;
-$$;
-
--- Nisal Wilochana
-CREATE OR REPLACE FUNCTION assign_default_salary()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_user_type VARCHAR(20);
-    v_default_salary DECIMAL(10,2);
-BEGIN
-    -- Get user type
-    SELECT user_type INTO v_user_type
-    FROM "User"
-    WHERE user_id = NEW."User_ID";
+    p_status := 'SUCCESS';
+    p_message := 'Staff registered successfully';
     
-    -- Set default salary based on role
-    CASE v_user_type
-        WHEN 'doctor' THEN v_default_salary := 80000.00;
-        WHEN 'nurse' THEN v_default_salary := 40000.00;
-        WHEN 'pharmacist' THEN v_default_salary := 50000.00;
-        WHEN 'lab-coordinator' THEN v_default_salary := 45000.00;
-        WHEN 'lab-assistant' THEN v_default_salary := 30000.00;
-        WHEN 'receptionist' THEN v_default_salary := 25000.00;
-        ELSE v_default_salary := 25000.00;
-    END CASE;
-    
-    -- Set salary if not provided or is 0
-    IF NEW."Salary" IS NULL OR NEW."Salary" = 0 THEN
-        NEW."Salary" := v_default_salary;
+    -- Validate required fields
+    IF p_name IS NULL OR p_username IS NULL OR p_password IS NULL OR p_contact_number IS NULL OR p_nic IS NULL OR p_role IS NULL THEN
+        p_status := 'ERROR';
+        p_message := 'Required fields missing: name, username, password, contact_number, nic, role';
+        RETURN;
     END IF;
     
-    RETURN NEW;
+    -- Validate role
+    IF NOT (p_role = ANY(v_valid_roles)) THEN
+        p_status := 'ERROR';
+        p_message := 'Invalid role. Valid roles: ' || array_to_string(v_valid_roles, ', ');
+        RETURN;
+    END IF;
+    
+    -- Check if username already exists
+    SELECT user_id INTO v_existing_user_id
+    FROM "User"
+    WHERE username = p_username;
+    
+    IF v_existing_user_id IS NOT NULL THEN
+        p_status := 'ERROR';
+        p_message := 'Username already exists: ' || p_username;
+        RETURN;
+    END IF;
+    
+    -- Check if NIC already exists
+    SELECT user_id INTO v_existing_user_id
+    FROM "User"
+    WHERE nic = p_nic;
+    
+    IF v_existing_user_id IS NOT NULL THEN
+        p_status := 'ERROR';
+        p_message := 'NIC already registered: ' || p_nic;
+        RETURN;
+    END IF;
+    
+    -- Validate branch exists
+    IF NOT EXISTS (SELECT 1 FROM "Branch" WHERE "Branch_Name" = p_branch_name) THEN
+        p_status := 'ERROR';
+        p_message := 'Branch not found: ' || p_branch_name;
+        RETURN;
+    END IF;
+    
+    -- Hash password
+    v_password_hash := crypt(p_password, gen_salt('bf', 12));
+    
+    -- Create user record
+    INSERT INTO "User" (name, nic, contact_number, address, username, password_hash, user_type, email)
+    VALUES (p_name, p_nic, p_contact_number, p_address, p_username, v_password_hash, p_role, p_email)
+    RETURNING user_id INTO p_user_id;
+    
+    -- Create staff record
+    INSERT INTO "Staff" ("User_ID", "Branch_Name", "Role", "Salary")
+    VALUES (p_user_id, p_branch_name, p_role, p_salary)
+    RETURNING "Staff_ID" INTO p_staff_id;
+    
+    -- Log the registration
+    INSERT INTO audit_log (table_name, record_id, operation_type, changed_by, new_values)
+    VALUES ('Staff_Registration', p_staff_id::TEXT, 'INSERT', p_created_by_user_id::TEXT, 
+            jsonb_build_object('staff_id', p_staff_id, 'name', p_name, 'role', p_role, 'branch', p_branch_name));
+    
+EXCEPTION WHEN OTHERS THEN
+    p_status := 'ERROR';
+    p_message := 'Registration failed: ' || SQLERRM;
+    p_user_id := NULL;
+    p_staff_id := NULL;
+END;
+$$;
+
+-- Nisal Wilochana 
+-- Procedure for complete doctor registration with validation and specialization handling
+CREATE OR REPLACE PROCEDURE register_doctor_complete(
+    IN p_name VARCHAR(100),
+    IN p_username VARCHAR(50),
+    IN p_password VARCHAR(255),
+    IN p_contact_number VARCHAR(15),
+    IN p_nic VARCHAR(15),
+    IN p_address VARCHAR(255),
+    IN p_email VARCHAR(100),
+    IN p_branch_name VARCHAR(50),
+    IN p_specialization_names TEXT[], -- Array of specialization names
+    IN p_consultation_fees DECIMAL(10,2)[] DEFAULT NULL, -- Optional custom fees
+    IN p_created_by_user_id INT DEFAULT NULL,
+    OUT p_user_id INT,
+    OUT p_staff_id INT,
+    OUT p_doctor_id INT,
+    OUT p_status VARCHAR(50),
+    OUT p_message TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_password_hash VARCHAR(255);
+    v_specialization_id INT;
+    v_specialization_name VARCHAR(50);
+    v_consultation_fee DECIMAL(10,2);
+    v_i INT;
+    v_existing_user_id INT;
+    v_existing_username VARCHAR(50);
+BEGIN
+    p_status := 'SUCCESS';
+    p_message := 'Doctor registered successfully';
+    
+    -- Validate required fields
+    IF p_name IS NULL OR p_username IS NULL OR p_password IS NULL OR p_contact_number IS NULL OR p_nic IS NULL THEN
+        p_status := 'ERROR';
+        p_message := 'Required fields missing: name, username, password, contact_number, nic';
+        RETURN;
+    END IF;
+    
+    -- Check if username already exists
+    SELECT user_id INTO v_existing_user_id
+    FROM "User"
+    WHERE username = p_username;
+    
+    IF v_existing_user_id IS NOT NULL THEN
+        p_status := 'ERROR';
+        p_message := 'Username already exists: ' || p_username;
+        RETURN;
+    END IF;
+    
+    -- Check if NIC already exists
+    SELECT user_id INTO v_existing_user_id
+    FROM "User"
+    WHERE nic = p_nic;
+    
+    IF v_existing_user_id IS NOT NULL THEN
+        p_status := 'ERROR';
+        p_message := 'NIC already registered: ' || p_nic;
+        RETURN;
+    END IF;
+    
+    -- Validate branch exists
+    IF NOT EXISTS (SELECT 1 FROM "Branch" WHERE "Branch_Name" = p_branch_name) THEN
+        p_status := 'ERROR';
+        p_message := 'Branch not found: ' || p_branch_name;
+        RETURN;
+    END IF;
+    
+    -- Hash password
+    v_password_hash := crypt(p_password, gen_salt('bf', 12));
+    
+    -- Create user record
+    INSERT INTO "User" (name, nic, contact_number, address, username, password_hash, user_type, email)
+    VALUES (p_name, p_nic, p_contact_number, p_address, p_username, v_password_hash, 'doctor', p_email)
+    RETURNING user_id INTO p_user_id;
+    
+    -- Create staff record
+    INSERT INTO "Staff" ("User_ID", "Branch_Name", "Role", "Salary")
+    VALUES (p_user_id, p_branch_name, 'Doctor', 0.00) -- Salary can be updated later
+    RETURNING "Staff_ID" INTO p_staff_id;
+    
+    -- Create doctor record
+    INSERT INTO "Doctor" ("Staff_ID")
+    VALUES (p_staff_id)
+    RETURNING "Doctor_ID" INTO p_doctor_id;
+    
+    -- Add specializations
+    IF p_specialization_names IS NOT NULL AND array_length(p_specialization_names, 1) > 0 THEN
+        FOR v_i IN 1..array_length(p_specialization_names, 1) LOOP
+            v_specialization_name := p_specialization_names[v_i];
+            
+            -- Check if specialization exists, create if not
+            SELECT "Specialization_ID" INTO v_specialization_id
+            FROM "Specialization"
+            WHERE "Specialization_Name" = v_specialization_name;
+            
+            IF v_specialization_id IS NULL THEN
+                -- Create new specialization
+                v_consultation_fee := 100.00; -- Default fee
+                IF p_consultation_fees IS NOT NULL AND v_i <= array_length(p_consultation_fees, 1) THEN
+                    v_consultation_fee := p_consultation_fees[v_i];
+                END IF;
+                
+                INSERT INTO "Specialization" ("Specialization_Name", "Consultation_Fee")
+                VALUES (v_specialization_name, v_consultation_fee)
+                RETURNING "Specialization_ID" INTO v_specialization_id;
+            END IF;
+            
+            -- Link doctor to specialization
+            INSERT INTO "Doctor_Specialization" ("Doctor_ID", "Specialization_ID")
+            VALUES (p_doctor_id, v_specialization_id)
+            ON CONFLICT ("Doctor_ID", "Specialization_ID") DO NOTHING;
+        END LOOP;
+    END IF;
+    
+    -- Log the registration
+    INSERT INTO audit_log (table_name, record_id, operation_type, changed_by, new_values)
+    VALUES ('Doctor_Registration', p_doctor_id::TEXT, 'INSERT', p_created_by_user_id::TEXT, 
+            jsonb_build_object('doctor_id', p_doctor_id, 'name', p_name, 'branch', p_branch_name));
+    
+EXCEPTION WHEN OTHERS THEN
+    p_status := 'ERROR';
+    p_message := 'Registration failed: ' || SQLERRM;
+    p_user_id := NULL;
+    p_staff_id := NULL;
+    p_doctor_id := NULL;
 END;
 $$;
 
