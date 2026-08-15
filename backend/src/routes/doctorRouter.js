@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { fetchAppointments, fetchPatients, updateAppointments, fetchSpecs } from "../controllers/doctorController_y.js";
+import { fetchAppointments, fetchPatients, updateAppointments, fetchSpecs } from '../controllers/doctorController.js';
 import { requireAuth, requireRole } from "../middlewares/authMiddleware.js";
 
 export const router = Router();

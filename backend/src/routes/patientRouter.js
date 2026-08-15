@@ -3,10 +3,7 @@ import {
     fetchSpecializations,
     fetchDoctorsBySpecializationAndBranch,
     fetchAvailableTimeSlots,
-    storeAppointment
-} from "../controllers/appointmentController_y.js";
-
-import {
+    storeAppointment,
     fetchLabReports,
     fetchAppointments,
     fetchPayments,
@@ -14,7 +11,7 @@ import {
     fetchDetails,
     updateDetails,
     fetchMedicalHistory
-} from "../controllers/patientController_y.js";
+} from '../controllers/patientController.js';
 
 import { requireAuth, requireRole } from "../middlewares/authMiddleware.js";
 

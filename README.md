@@ -3,6 +3,11 @@
 Clinic Karma is a comprehensive full-stack healthcare management system built using **React (Vite)** and **Node.js (Express)** with a PostgreSQL database.  
 It supports multiple user roles such as patients, doctors, receptionists, branch managers, and top managers with complete authentication and authorization.
 
+## Architecture documentation
+
+- [Application architecture](docs/ARCHITECTURE.md)
+- [Definitive database model](docs/DATABASE_MODEL.md)
+
 ---
 
 ## 🚀 Tech Stack

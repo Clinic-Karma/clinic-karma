@@ -1,4 +1,4 @@
-import { sql } from "./db.js"
+import { sql } from './db.js';
 import crypto from 'crypto';
 
 function hashToken(token) {
@@ -7,7 +7,8 @@ function hashToken(token) {
 
 export async function checkUser(username) {
     try {
-        const result = await sql`SELECT User_ID, Username, Password_Hash, User_type FROM "User"
+        const result = await sql`SELECT User_ID, Username, Password_Hash, User_type, name
+                                 FROM "User"
                                  WHERE username = ${username}`;
         
         const user = result[0];
