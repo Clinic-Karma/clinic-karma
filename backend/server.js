@@ -1,17 +1,26 @@
 import express from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
-import { router as authRouter } from "./src/routes/authRouter.js"
-import { router as patientRouter } from "./src/routes/patientRouter.js"
-import { router as doctorRouter } from "./src/routes/doctorRouter.js"
-import { router as appointmentRouter } from "./src/routes/appointmentRouter.js"
-import topmanagerRouter from "./src/routes/topmanagerRouter.js"
-import branchmanagerRouter from "./src/routes/branchmanagerRouter.js"
+import { validateEnvironment } from './src/config/env.js';
 
-// Load environment variables
-dotenv.config();
+const environment = validateEnvironment();
+
+// Validate configuration before importing route modules that initialize the DB client.
+const [
+  { router: authRouter },
+  { router: patientRouter },
+  { router: doctorRouter },
+  { router: appointmentRouter },
+  { default: topmanagerRouter },
+  { default: branchmanagerRouter },
+] = await Promise.all([
+  import('./src/routes/authRouter.js'),
+  import('./src/routes/patientRouter.js'),
+  import('./src/routes/doctorRouter.js'),
+  import('./src/routes/appointmentRouter.js'),
+  import('./src/routes/topmanagerRouter.js'),
+  import('./src/routes/branchmanagerRouter.js'),
+]);
 
 const app = express();
 
@@ -23,8 +32,8 @@ const allowedOrigins = [
   'http://localhost:8081',
   "https://clinic-karma.vercel.app",              // your final production frontend
    /\.vercel\.app$/,                               // any temporary vercel deployment
-  "http://localhost:5173",                        // local dev
-  "https://clinic-karma-production.up.railway.app" // backend itself (optional)
+  "https://clinic-karma-production.up.railway.app", // backend itself (optional)
+  environment.frontendUrl
 ];
 
 app.use(
@@ -48,12 +57,12 @@ app.use(
 
 
 app.use(cookieParser());
-app.use(bodyParser.json());
+app.use(express.json());
   
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
 
-const PORT = process.env.PORT || 5000; // Changed to 5000 to match frontend expectation
+const PORT = environment.port;
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -87,8 +96,8 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
-  console.log(`CORS enabled for origins: http://localhost:5173, http://localhost:8080, http://localhost:8081, http://192.168.209.1:8080, http://192.168.209.1:8081, http://192.168.209.1:5173, ${process.env.FRONTEND_URL}`);
-  console.log(`Database URL configured: ${process.env.DATABASE_URL ? 'Yes' : 'No (Missing DATABASE_URL)'}`);
+  console.log(`Configured frontend origin: ${environment.frontendUrl}`);
+  console.log('Database URL configured: Yes');
   // Warm up Neon connection (non-blocking)
   import('./src/db_utils/db.js').then(async ({ sql }) => {
     try {

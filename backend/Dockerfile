@@ -2,7 +2,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 FROM node:20-alpine AS builder
 WORKDIR /app
@@ -21,5 +21,5 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app ./
 RUN chown -R app:app /app
 USER app
-EXPOSE 3000
+EXPOSE 5000
 CMD ["node", "server.js"]
