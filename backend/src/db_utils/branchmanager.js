@@ -21,18 +21,33 @@ export async function createBranchManager(data) {
   } = data;
 
   try {
-    // Hash the password if provided as plain text
-    let hashedPassword = password_hash;
-    if (password && !password_hash) {
-      hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    }
+    const hashedPassword = password_hash || (password ? await bcrypt.hash(password, SALT_ROUNDS) : null);
+    if (!hashedPassword) throw new Error('A password is required');
+    const managerUsername = username || email;
+    const managerBranch = branch_id || data.branch || data.branch_name;
+    if (!managerBranch) throw new Error('A branch is required');
 
     const result = await sql`
-      INSERT INTO "branch_managers" 
-        ("name", "email", "phone", "password_hash", "address", "NIC", "username", "user_type", "branch_id", "is_active")
-      VALUES 
-        (${name}, ${email}, ${phone}, ${hashedPassword}, ${address}, ${NIC}, ${username}, ${user_type}, ${branch_id}, ${is_active})
-      RETURNING *;
+      WITH new_user AS (
+        INSERT INTO "User" (
+          name, email, contact_number, password_hash, address, nic,
+          username, user_type, is_active
+        ) VALUES (
+          ${name}, ${email}, ${phone}, ${hashedPassword}, ${address}, ${NIC},
+          ${managerUsername}, 'branch-manager', ${is_active}
+        )
+        RETURNING *
+      ),
+      new_staff AS (
+        INSERT INTO "Staff" ("User_ID", "Branch_Name")
+        SELECT user_id, ${managerBranch} FROM new_user
+        RETURNING "Branch_Name"
+      )
+      SELECT user_id AS id, name, email, contact_number AS phone, address,
+             nic AS "NIC", username, user_type, is_active,
+             (SELECT "Branch_Name" FROM new_staff) AS branch_id,
+             created_at, updated_at
+      FROM new_user
     `;
     return result[0];
   } catch (error) {
@@ -45,8 +60,14 @@ export async function createBranchManager(data) {
 export async function getBranchManagerById(id) {
   try {
     const result = await sql`
-      SELECT * FROM "branch_managers"
-      WHERE "id" = ${id}
+      SELECT user_account.user_id AS id, user_account.name, user_account.email,
+             user_account.contact_number AS phone, user_account.address,
+             user_account.nic AS "NIC", user_account.username, user_account.user_type,
+             staff."Branch_Name" AS branch_id, user_account.is_active,
+             user_account.created_at, user_account.updated_at
+      FROM "User" user_account
+      JOIN "Staff" staff ON staff."User_ID" = user_account.user_id
+      WHERE user_account.user_id = ${id} AND user_account.user_type = 'branch-manager'
       LIMIT 1;
     `;
     return result[0] || null;
@@ -59,28 +80,23 @@ export async function getBranchManagerById(id) {
 // Get all branch managers (optional filters)
 export async function getAllBranchManagers({ search = '', branch_id = null, is_active = null } = {}) {
   try {
-    let whereClauses = sql``;
-
-    if (branch_id !== null) {
-      whereClauses = sql`${whereClauses} AND "branch_id" = ${branch_id}`;
-    }
-
-    if (is_active !== null) {
-      whereClauses = sql`${whereClauses} AND "is_active" = ${is_active}`;
-    }
-
-    if (search) {
-      whereClauses = sql`${whereClauses} AND (
-        "name" ILIKE ${'%' + search + '%'} OR
-        "email" ILIKE ${'%' + search + '%'} OR
-        "phone" ILIKE ${'%' + search + '%'}
-      )`;
-    }
-
     const result = await sql`
-      SELECT * FROM "branch_managers"
-      WHERE TRUE ${whereClauses}
-      ORDER BY "created_at" DESC;
+      SELECT user_account.user_id AS id, user_account.name, user_account.email,
+             user_account.contact_number AS phone, user_account.address,
+             user_account.nic AS "NIC", user_account.username, user_account.user_type,
+             staff."Branch_Name" AS branch_id, user_account.is_active,
+             user_account.created_at, user_account.updated_at
+      FROM "User" user_account
+      JOIN "Staff" staff ON staff."User_ID" = user_account.user_id
+      WHERE user_account.user_type = 'branch-manager'
+        AND (${branch_id}::text IS NULL OR staff."Branch_Name" = ${branch_id})
+        AND (${is_active}::boolean IS NULL OR user_account.is_active = ${is_active})
+        AND (
+          ${search} = '' OR user_account.name ILIKE ${`%${search}%`}
+          OR user_account.email ILIKE ${`%${search}%`}
+          OR user_account.contact_number ILIKE ${`%${search}%`}
+        )
+      ORDER BY user_account.created_at DESC;
     `;
     return result;
   } catch (error) {
@@ -91,26 +107,39 @@ export async function getAllBranchManagers({ search = '', branch_id = null, is_a
 
 // Update branch manager
 export async function updateBranchManager(id, data) {
-  const fields = Object.entries(data);
-  if (fields.length === 0) return getBranchManagerById(id);
-
   try {
-    // Hash password if it's being updated
-    if (data.password) {
-      data.password_hash = await bcrypt.hash(data.password, SALT_ROUNDS);
-      delete data.password;
-    }
-
-    const updatedFields = Object.entries(data);
-    const setClauses = updatedFields.map(
-      ([key, value], index) => sql`${sql.unsafe('"' + key + '"')} = ${value}`
-    );
-
+    if (Object.keys(data).length === 0) return getBranchManagerById(id);
+    const hashedPassword = data.password
+      ? await bcrypt.hash(data.password, SALT_ROUNDS)
+      : data.password_hash;
+    const branch = data.branch_id ?? data.branch ?? data.branch_name;
     const result = await sql`
-      UPDATE "branch_managers"
-      SET ${sql.join(setClauses, sql`, `)}, "updated_at" = NOW()
-      WHERE "id" = ${id}
-      RETURNING *;
+      WITH updated_user AS (
+        UPDATE "User"
+        SET name = CASE WHEN ${Object.hasOwn(data, 'name')} THEN ${data.name ?? null} ELSE name END,
+            email = CASE WHEN ${Object.hasOwn(data, 'email')} THEN ${data.email ?? null} ELSE email END,
+            contact_number = CASE WHEN ${Object.hasOwn(data, 'phone') || Object.hasOwn(data, 'contact_number')}
+                                  THEN ${data.phone ?? data.contact_number ?? null} ELSE contact_number END,
+            address = CASE WHEN ${Object.hasOwn(data, 'address')} THEN ${data.address ?? null} ELSE address END,
+            nic = CASE WHEN ${Object.hasOwn(data, 'NIC') || Object.hasOwn(data, 'nic')}
+                       THEN ${data.NIC ?? data.nic ?? null} ELSE nic END,
+            username = CASE WHEN ${Object.hasOwn(data, 'username')} THEN ${data.username ?? null} ELSE username END,
+            is_active = CASE WHEN ${Object.hasOwn(data, 'is_active')} THEN ${data.is_active ?? null} ELSE is_active END,
+            password_hash = CASE WHEN ${Boolean(hashedPassword)} THEN ${hashedPassword ?? null} ELSE password_hash END
+        WHERE user_id = ${id} AND user_type = 'branch-manager'
+        RETURNING *
+      ),
+      updated_staff AS (
+        UPDATE "Staff"
+        SET "Branch_Name" = CASE WHEN ${branch !== undefined} THEN ${branch ?? null} ELSE "Branch_Name" END
+        WHERE "User_ID" = ${id}
+        RETURNING "Branch_Name"
+      )
+      SELECT user_id AS id, name, email, contact_number AS phone, address,
+             nic AS "NIC", username, user_type, is_active,
+             (SELECT "Branch_Name" FROM updated_staff) AS branch_id,
+             created_at, updated_at
+      FROM updated_user;
     `;
     return result[0] || null;
   } catch (error) {
@@ -123,10 +152,11 @@ export async function updateBranchManager(id, data) {
 export async function softDeleteBranchManager(id) {
   try {
     const result = await sql`
-      UPDATE "branch_managers"
-      SET "is_active" = false, "updated_at" = NOW()
-      WHERE "id" = ${id}
-      RETURNING *;
+      UPDATE "User"
+      SET is_active = false
+      WHERE user_id = ${id} AND user_type = 'branch-manager'
+      RETURNING user_id AS id, name, email, contact_number AS phone, address,
+                nic AS "NIC", username, user_type, is_active, created_at, updated_at;
     `;
     return result[0] || null;
   } catch (error) {
@@ -138,11 +168,11 @@ export async function softDeleteBranchManager(id) {
 // Hard delete (permanent)
 export async function deleteBranchManager(id) {
   try {
-    await sql`
-      DELETE FROM "branch_managers"
-      WHERE "id" = ${id};
-    `;
-    return true;
+    const [, userRows] = await sql.transaction((transaction) => [
+      transaction`DELETE FROM "Staff" WHERE "User_ID" = ${id}`,
+      transaction`DELETE FROM "User" WHERE user_id = ${id} AND user_type = 'branch-manager' RETURNING user_id`,
+    ]);
+    return userRows.length > 0;
   } catch (error) {
     console.error('Error deleting branch manager:', error);
     throw error;
@@ -265,12 +295,12 @@ export async function getAllStaffForBranchManager() {
         s."Branch_Name" as branch,
         CASE 
           WHEN u.user_type = 'receptionist' THEN 'Receptionist'
-          WHEN u.user_type = 'lab-assistant' THEN 'Lab Coordinator'
+          WHEN u.user_type = 'lab-coordinator' THEN 'Lab Coordinator'
           ELSE u.user_type
         END as role
       FROM "Staff" s
       JOIN "User" u ON s."User_ID" = u.user_id
-      WHERE u.user_type IN ('receptionist', 'lab-assistant')
+      WHERE u.user_type IN ('receptionist', 'lab-coordinator')
       ORDER BY u.name
     `;
     return result;

@@ -39,6 +39,12 @@ Responsibilities are deliberately separated:
 Simple reads may call a repository directly from a controller. Any operation
 that writes multiple tables must use a service and a database transaction.
 
+During the current migration stage, consultation booking calls the PostgreSQL
+`book_consultation` function. It atomically validates the patient, doctor,
+branch, specialization, patient-per-day rule, and slot capacity before creating
+the appointment, doctor assignment, and initial bill. A later service-layer
+refactor may own the orchestration, but it must retain this transaction boundary.
+
 ## Backend modules
 
 Each API area has one canonical controller and repository module. Suffixed
@@ -54,8 +60,9 @@ copies such as `_y.js` are prohibited.
 | Top management | `topmanagerRouter.js` | `topmanagerController.js` | `topmanager.js` |
 
 `appointmentController.js` still contains legacy direct SQL and several debug
-or schema-repair handlers. Those are known migration items, not examples to
-copy. They will be moved into services/repositories or removed in later phases.
+handlers. Those are known migration items, not examples to copy. Runtime schema
+mutation is no longer required because changes are owned by the migration
+runner under `backend/database/`.
 
 ## Identity and roles
 
@@ -115,12 +122,12 @@ documents required names without containing credentials.
 
 ## Current migration boundaries
 
-The following are intentionally deferred to subsequent phases:
+The database schema, constraints, migration ledger, reference seed, and
+verification commands are implemented. The following are intentionally
+deferred to subsequent phases:
 
-1. Replacing the invalid legacy `db.sql` with migrations matching the database
-   model document.
-2. Enforcing ownership and role authorization on all routes.
-3. Moving multi-table booking and payment logic into transactional services.
-4. Removing debug/schema mutation endpoints.
-5. Securing lab-report storage and downloads.
-
+1. Enforcing ownership and role authorization on all routes.
+2. Moving remaining multi-table workflows into transactional services while
+   retaining the atomic booking boundary.
+3. Removing debug/schema mutation endpoints.
+4. Securing lab-report storage and downloads.

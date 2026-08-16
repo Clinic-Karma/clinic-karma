@@ -13,21 +13,10 @@ export const getBillAmountBySpecialization = async (specialization) => {
         let result = await sql`
             SELECT "Consultation_Fee" 
             FROM "Specialization" 
-            WHERE "Specialization_Name" = ${specialization}
+            WHERE LOWER("Specialization_Name") = LOWER(${specialization})
         `;
         
         console.log(`Query result from "Specialization" table:`, result);
-        
-        // If no results, try the misspelled version (Specilization)
-        if (!result || result.length === 0) {
-            console.log(`Trying alternative table name "Specilization" for specialization: ${specialization}`);
-            result = await sql`
-                SELECT "Consultation_Fee" 
-                FROM "Specilization" 
-                WHERE "Specialization_Name" = ${specialization}
-            `;
-            console.log(`Query result from "Specilization" table:`, result);
-        }
         
         if (result && result.length > 0) {
             const consultationFee = result[0].Consultation_Fee;
@@ -56,118 +45,43 @@ export const createAppointment = async (appointmentData) => {
         branch
     } = appointmentData;
 
-    // First, get the patient ID from the username
-    const patientResult = await sql`
-        SELECT p.patient_id 
-        FROM "Patient" p
-        JOIN "User" u ON p.user_id = u.user_id
-        WHERE u.username = ${patientUsername}
-    `;
-    
-    if (!patientResult || patientResult.length === 0) {
-        throw new Error('Patient not found');
-    }
-    
-    const patientId = patientResult[0].patient_id;
-
-    // Ensure Type fits into varchar(10) per schema
-    const typeValue = (specialization ?? '').toString().slice(0, 10);
-
-    const result = await sql`
-        INSERT INTO "Appointment" (
-            "Patient_ID",
-            "Appointment_Date",
-            "Status",
-            "Type",
-            "Branch_Name"
-        )
-        VALUES (
-            ${patientId},
+    const bookingResult = await sql`
+        SELECT booking.*
+        FROM book_consultation(
+            (
+                SELECT patient.patient_id
+                FROM "Patient" patient
+                JOIN "User" user_account ON user_account.user_id = patient.user_id
+                WHERE user_account.username = ${patientUsername}
+                  AND user_account.user_type = 'patient'
+            ),
+            ${doctorId},
             ${appointmentDate},
-            'Scheduled',
-            ${typeValue},
-            ${branch}
-        )
-        RETURNING *
+            ${timeSlot},
+            ${branch},
+            (
+                SELECT "Specialization_ID"
+                FROM "Specialization"
+                WHERE LOWER("Specialization_Name") = LOWER(${specialization})
+            ),
+            'Scheduled'
+        ) booking
     `;
 
-    const appointment = result[0];
+    if (!bookingResult[0]) throw new Error('Patient or specialization was not found');
 
-    // Auto-generate bill based on appointment type/specialization
-    console.log(`=== Creating bill for appointment ${appointment.Appointment_ID} ===`);
-    console.log(`Specialization passed to getBillAmountBySpecialization: "${specialization}"`);
-    const billAmount = await getBillAmountBySpecialization(specialization);
-    console.log(`Final bill amount determined: $${billAmount}`);
-    
-    // Calculate insurance amounts
-    let insuredAmount = 0;
-    let patientAmount = billAmount;
-    let insuranceId = null;
-    
-    // Check if patient has approved insurance
-    const insuranceResult = await sql`
-        SELECT 
-            pi."Insurance_ID",
-            pi."Policy_Number",
-            pi."Status" as insurance_status,
-            i."Provider_Name",
-            i."Coverage_Percentage"
-        FROM "Patient_Insurance" pi
-        JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
-        WHERE pi."Patient_ID" = ${patientId}
-        ORDER BY pi."Insurance_ID" DESC
-        LIMIT 1
-    `;
-    
-    if (insuranceResult && insuranceResult.length > 0) {
-        const insurance = insuranceResult[0];
-        const coveragePercentage = parseFloat(insurance.Coverage_Percentage) || 0;
-        insuredAmount = (billAmount * coveragePercentage) / 100;
-        patientAmount = billAmount - insuredAmount;
-        insuranceId = insurance.Insurance_ID;
-        
-        console.log(`✅ Found insurance: ${insurance.Provider_Name} (${coveragePercentage}% coverage)`);
-        console.log(`💰 Total: $${billAmount}, Insured: $${insuredAmount.toFixed(2)}, Patient pays: $${patientAmount.toFixed(2)}`);
-    } else {
-        console.log(`❌ No approved insurance found for patient ${patientId}`);
-    }
-    
-    const billResult = await sql`
-        INSERT INTO "Billing" (
-            "Appointment_ID", 
-            "Total_Amount", 
-            "Insured_Amount", 
-            "Patient_Amount", 
-            "Insurance_ID"
-        )
-        VALUES (
-            ${appointment.Appointment_ID}, 
-            ${billAmount}, 
-            ${insuredAmount}, 
-            ${patientAmount}, 
-            ${insuranceId}
-        )
-        RETURNING "Bill_ID", "Appointment_ID", "Total_Amount", "Insured_Amount", "Patient_Amount", "Insurance_ID"
-    `;
-    
-    // Ensure Status column exists and set initial status based on patient responsibility
-    await sql`
-        ALTER TABLE "Billing"
-        ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
-    `;
-    const initialStatus = (parseFloat(patientAmount) <= 0) ? 'Done' : 'Pending';
-    await sql`
-        UPDATE "Billing"
-        SET "Status" = ${initialStatus}
-        WHERE "Bill_ID" = ${billResult[0].Bill_ID}
-    `;
+    const [appointmentRows, billRows] = await Promise.all([
+        sql`
+            SELECT * FROM "Appointment"
+            WHERE "Appointment_ID" = ${bookingResult[0].appointment_id}
+        `,
+        sql`
+            SELECT * FROM "Billing"
+            WHERE "Bill_ID" = ${bookingResult[0].bill_id}
+        `,
+    ]);
 
-    console.log(`✅ Bill created successfully:`, billResult[0]);
-
-    return {
-        appointment: appointment,
-        bill: billResult[0]
-    };
+    return { appointment: appointmentRows[0], bill: billRows[0] };
 };
 
 export const updateAppointment = async (appointmentId, updates) => {
@@ -186,13 +100,21 @@ export const updateAppointment = async (appointmentId, updates) => {
 
     // Handle different update scenarios
     if (updateFields.appointment_date && updateFields.time_slot) {
-        const result = await sql`
-            UPDATE "Appointment"
-            SET "Appointment_Date" = ${updateFields.appointment_date}, "Time_Slot" = ${updateFields.time_slot}
-            WHERE "Appointment_ID" = ${appointmentId}
-            RETURNING *
-        `;
-        return result[0];
+        const [appointmentRows, assignmentRows] = await sql.transaction((transaction) => [
+            transaction`
+                UPDATE "Appointment"
+                SET "Appointment_Date" = ${updateFields.appointment_date}
+                WHERE "Appointment_ID" = ${appointmentId}
+                RETURNING *
+            `,
+            transaction`
+                UPDATE "Doctor_Appointment"
+                SET "Start_Time" = ${updateFields.time_slot}
+                WHERE "Appointment_ID" = ${appointmentId}
+                RETURNING "Start_Time"
+            `,
+        ]);
+        return { ...appointmentRows[0], ...assignmentRows[0] };
     } else if (updateFields.appointment_date) {
         const result = await sql`
             UPDATE "Appointment"
@@ -203,8 +125,8 @@ export const updateAppointment = async (appointmentId, updates) => {
         return result[0];
     } else if (updateFields.time_slot) {
         const result = await sql`
-            UPDATE "Appointment"
-            SET "Time_Slot" = ${updateFields.time_slot}
+            UPDATE "Doctor_Appointment"
+            SET "Start_Time" = ${updateFields.time_slot}
             WHERE "Appointment_ID" = ${appointmentId}
             RETURNING *
         `;
@@ -240,11 +162,13 @@ export const getAppointmentById = async (appointmentId) => {
     const result = await sql`
         SELECT 
             a.*,
+            da."Start_Time",
             u.name as patient_name,
             u.contact_number as patient_contact
         FROM "Appointment" a
         JOIN "Patient" p ON a."Patient_ID" = p.patient_id
         JOIN "User" u ON p.user_id = u.user_id
+        LEFT JOIN "Doctor_Appointment" da ON da."Appointment_ID" = a."Appointment_ID"
         WHERE a."Appointment_ID" = ${appointmentId}
     `;
     
@@ -259,30 +183,33 @@ export const getAppointmentsByDate = async (date) => {
     const result = await sql`
         SELECT 
             a.*,
+            da."Start_Time",
             u.name as patient_name,
             u.contact_number as patient_contact
         FROM "Appointment" a
         JOIN "Patient" p ON a."Patient_ID" = p.patient_id
         JOIN "User" u ON p.user_id = u.user_id
+        LEFT JOIN "Doctor_Appointment" da ON da."Appointment_ID" = a."Appointment_ID"
         WHERE a."Appointment_Date" = ${date}
-        ORDER BY a."Time_Slot"
+        ORDER BY da."Start_Time"
     `;
     
     return result;
 };
 
 export const getAppointmentsByDoctorAndDate = async (doctorId, date) => {
-    // Schema does not contain Doctor reference; return appointments by date only
     const result = await sql`
         SELECT 
             a.*,
+            da."Start_Time",
             u.name as patient_name,
             u.contact_number as patient_contact
         FROM "Appointment" a
         JOIN "Patient" p ON a."Patient_ID" = p.patient_id
         JOIN "User" u ON p.user_id = u.user_id
-        WHERE a."Appointment_Date" = ${date}
-        ORDER BY a."Appointment_Date"
+        JOIN "Doctor_Appointment" da ON da."Appointment_ID" = a."Appointment_ID"
+        WHERE a."Appointment_Date" = ${date} AND da."Doctor_ID" = ${doctorId}
+        ORDER BY da."Start_Time"
     `;
     
     return result;
@@ -291,12 +218,14 @@ export const getAppointmentsByDoctorAndDate = async (doctorId, date) => {
 export const getAppointmentsByPatient = async (patientUsername) => {
     const result = await sql`
         SELECT 
-            a.*
+            a.*,
+            da."Start_Time"
         FROM "Appointment" a
         JOIN "Patient" p ON a."Patient_ID" = p.patient_id
         JOIN "User" u ON p.user_id = u.user_id
+        LEFT JOIN "Doctor_Appointment" da ON da."Appointment_ID" = a."Appointment_ID"
         WHERE u.username = ${patientUsername}
-        ORDER BY a."Appointment_Date", a."Time_Slot"
+        ORDER BY a."Appointment_Date", da."Start_Time"
     `;
     
     return result;
@@ -365,7 +294,8 @@ export const getPendingInsurances = async () => {
     // Fetch patient insurances with Pending status only
     const result = await sql`
         SELECT 
-            pi."Insurance_ID" as insurance_id,
+            pi."Patient_Insurance_ID" as insurance_id,
+            pi."Insurance_ID" as provider_id,
             u.username as patient_username,
             pi."Status" as status,
             pi."Policy_Number" as policy_number,
@@ -376,20 +306,20 @@ export const getPendingInsurances = async () => {
         JOIN "User" u ON p.user_id = u.user_id
         JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
         WHERE pi."Status" = 'Pending'
-        ORDER BY pi."Insurance_ID" DESC
+        ORDER BY pi."Patient_Insurance_ID" DESC
     `;
     
     return result;
 };
 
-export const updateInsuranceStatus = async (insuranceId, status) => {
+export const updateInsuranceStatus = async (patientInsuranceId, status) => {
     // Update the Status in Patient_Insurance table
     try {
         // First, check if the record exists
         const checkResult = await sql`
-            SELECT pi."Insurance_ID", pi."Patient_ID"
+            SELECT pi."Patient_Insurance_ID", pi."Patient_ID"
             FROM "Patient_Insurance" pi
-            WHERE pi."Insurance_ID" = ${insuranceId}
+            WHERE pi."Patient_Insurance_ID" = ${patientInsuranceId}
         `;
 
         if (!checkResult || checkResult.length === 0) {
@@ -400,16 +330,17 @@ export const updateInsuranceStatus = async (insuranceId, status) => {
         const result = await sql`
             UPDATE "Patient_Insurance"
             SET "Status" = ${status}
-            WHERE "Insurance_ID" = ${insuranceId}
+            WHERE "Patient_Insurance_ID" = ${patientInsuranceId}
             RETURNING 
-                "Insurance_ID" as insurance_id,
+                "Patient_Insurance_ID" as insurance_id,
                 "Status" as status
         `;
 
         // Get the updated record with patient username
         const updatedRecord = await sql`
             SELECT 
-                pi."Insurance_ID" as insurance_id,
+                pi."Patient_Insurance_ID" as insurance_id,
+                pi."Insurance_ID" as provider_id,
                 u.username as patient_username,
                 pi."Status" as status,
                 pi."Policy_Number" as policy_number,
@@ -418,7 +349,7 @@ export const updateInsuranceStatus = async (insuranceId, status) => {
             JOIN "Patient" p ON pi."Patient_ID" = p.patient_id
             JOIN "User" u ON p.user_id = u.user_id
             JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
-            WHERE pi."Insurance_ID" = ${insuranceId}
+            WHERE pi."Patient_Insurance_ID" = ${patientInsuranceId}
         `;
 
         return updatedRecord[0];
@@ -488,7 +419,7 @@ export const addPatientInsurance = async (patientUsername, insuranceId, policyNu
         // Add patient insurance
         const patientInsuranceResult = await sql`
             INSERT INTO "Patient_Insurance" ("Patient_ID", "Insurance_ID", "Policy_Number", "Status")
-            VALUES (${patientId}, ${insuranceId}, ${policyNumber}, 'waiting')
+            VALUES (${patientId}, ${insuranceId}, ${policyNumber}, 'Pending')
             RETURNING "Patient_ID", "Insurance_ID", "Policy_Number", "Status"
         `;
 
@@ -517,7 +448,8 @@ export const getPatientInsurancesByBillId = async (billId) => {
 
         // Get all approved insurances for this patient
         const insurancesResult = await sql`
-            SELECT 
+            SELECT
+                pi."Patient_Insurance_ID",
                 pi."Insurance_ID",
                 pi."Policy_Number",
                 pi."Status",
@@ -527,7 +459,7 @@ export const getPatientInsurancesByBillId = async (billId) => {
             JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
             WHERE pi."Patient_ID" = ${patientId}
             AND pi."Status" = 'Approved'
-            ORDER BY pi."Insurance_ID" DESC
+            ORDER BY pi."Patient_Insurance_ID" DESC
         `;
 
         return {
@@ -583,10 +515,26 @@ export const submitInsuranceClaim = async (billId, insuranceId, claimAmount = nu
 
         // Create the insurance claim
         const claimResult = await sql`
-            INSERT INTO "Insurance_Claim" ("Bill_ID", "Insurance_ID", "Claim_Amount", "Claim_Status", "Submitted_Date")
-            VALUES (${billId}, ${insuranceId}, ${finalClaimAmount}, 'Pending', CURRENT_DATE)
-            RETURNING "Insurance_Claim_ID", "Bill_ID", "Insurance_ID", "Claim_Amount", "Claim_Status"
+            INSERT INTO "Insurance_Claim" (
+                "Bill_ID", "Patient_Insurance_ID", "Insurance_ID",
+                "Claim_Amount", "Claim_Status", "Submitted_Date"
+            )
+            SELECT
+                ${billId}, patient_insurance."Patient_Insurance_ID", ${insuranceId},
+                ${finalClaimAmount}, 'Pending', CURRENT_DATE
+            FROM "Billing" billing
+            JOIN "Appointment" appointment
+              ON appointment."Appointment_ID" = billing."Appointment_ID"
+            JOIN "Patient_Insurance" patient_insurance
+              ON patient_insurance."Patient_ID" = appointment."Patient_ID"
+             AND patient_insurance."Insurance_ID" = ${insuranceId}
+             AND patient_insurance."Status" = 'Approved'
+            WHERE billing."Bill_ID" = ${billId}
+            RETURNING "Insurance_Claim_ID", "Bill_ID", "Patient_Insurance_ID",
+                      "Insurance_ID", "Claim_Amount", "Claim_Status"
         `;
+
+        if (!claimResult[0]) throw new Error('Approved patient insurance was not found for this bill');
 
         return {
             claim: claimResult[0],
@@ -889,14 +837,18 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
             SELECT 
                 a."Appointment_ID",
                 a."Appointment_Date",
-                a."Type" as specialization,
+                COALESCE(specialization."Specialization_Name", a."Type") as specialization,
                 a."Branch_Name" as branch_name,
                 u_patient.username as patient_username,
                 u_patient.name as patient_name,
-                '10:00 AM' as time_slot
+                doctor_appointment."Start_Time" as time_slot
             FROM "Appointment" a
             JOIN "Patient" p ON a."Patient_ID" = p.patient_id
             JOIN "User" u_patient ON p.user_id = u_patient.user_id
+            LEFT JOIN "Doctor_Appointment" doctor_appointment
+              ON doctor_appointment."Appointment_ID" = a."Appointment_ID"
+            LEFT JOIN "Specialization" specialization
+              ON specialization."Specialization_ID" = doctor_appointment."Specialization_ID"
             WHERE a."Appointment_ID" = ${appointmentId}
         `;
 
@@ -943,16 +895,6 @@ export const getBillDetailsByAppointment = async (appointmentId) => {
                 FROM "Specialization" 
                 WHERE "Specialization_Name" = ${appointment.specialization}
             `;
-            
-            // If no results, try the misspelled version (Specilization)
-            if (!feeResult || feeResult.length === 0) {
-                console.log(`Trying alternative table name "Specilization" for specialization: ${appointment.specialization}`);
-                feeResult = await sql`
-                    SELECT "Consultation_Fee" 
-                    FROM "Specilization" 
-                    WHERE "Specialization_Name" = ${appointment.specialization}
-                `;
-            }
             
             if (feeResult && feeResult.length > 0) {
                 consultationFee = parseFloat(feeResult[0].Consultation_Fee) || 100.00;

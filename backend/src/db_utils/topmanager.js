@@ -1,194 +1,176 @@
-// backend/src/models/topmanager.js
 import { sql } from './db.js';
 import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 12;
 
-// Create
 export async function createTopManager(data) {
   const {
-    name,
-    email,
-    phone = null,
-    password = null,
-    password_hash = null,
-    address = null,
-    NIC = null,
-    username = null,
-    user_type = 'top_manager',
-    is_active = true,
+    name, email, phone = null, password = null, password_hash = null,
+    address = null, NIC = null, nic = NIC, username = email, is_active = true,
   } = data;
-
-  // Hash the password if provided as plain text
-  let hashedPassword = password_hash;
-  if (password && !password_hash) {
-    hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  }
+  const hashedPassword = password_hash || (password ? await bcrypt.hash(password, SALT_ROUNDS) : null);
+  if (!hashedPassword) throw new Error('A password is required');
 
   const rows = await sql`
-    INSERT INTO "top_managers"
-      ("name","email","phone","password_hash","address","NIC","username","user_type","is_active")
-    VALUES
-      (${name},${email},${phone},${hashedPassword},${address},${NIC},${username},${user_type},${is_active})
-    RETURNING *;
+    WITH new_user AS (
+      INSERT INTO "User" (
+        name, email, contact_number, password_hash, address, nic,
+        username, user_type, is_active
+      ) VALUES (
+        ${name}, ${email}, ${phone}, ${hashedPassword}, ${address}, ${nic},
+        ${username}, 'top-manager', ${is_active}
+      )
+      RETURNING *
+    ),
+    new_staff AS (
+      INSERT INTO "Staff" ("User_ID", "Branch_Name")
+      SELECT user_id, NULL FROM new_user
+    )
+    SELECT
+      user_id AS id, name, email, contact_number AS phone, address,
+      nic AS "NIC", username, user_type, is_active, created_at, updated_at
+    FROM new_user
   `;
   return rows[0];
 }
 
-// Read by id
 export async function getTopManagerById(id) {
   const rows = await sql`
-    SELECT * FROM "top_managers"
-    WHERE "id" = ${id}
-    LIMIT 1;
+    SELECT user_account.user_id AS id, user_account.name, user_account.email,
+           user_account.contact_number AS phone, user_account.address,
+           user_account.nic AS "NIC", user_account.username, user_account.user_type,
+           user_account.is_active, user_account.created_at, user_account.updated_at
+    FROM "User" user_account
+    WHERE user_account.user_id = ${id} AND user_account.user_type = 'top-manager'
+    LIMIT 1
   `;
   return rows[0] || null;
 }
 
-// Read all (with optional filters)
 export async function getAllTopManagers({ search = '', is_active = null } = {}) {
-  let where = sql``;
-
-  if (is_active !== null) where = sql`${where} AND "is_active" = ${is_active}`;
-  if (search)
-    where = sql`${where} AND (
-      "name" ILIKE ${'%' + search + '%'}
-      OR "email" ILIKE ${'%' + search + '%'}
-      OR "phone" ILIKE ${'%' + search + '%'}
-    )`;
-
-  const rows = await sql`
-    SELECT * FROM "top_managers"
-    WHERE TRUE ${where}
-    ORDER BY "created_at" DESC;
+  return sql`
+    SELECT user_account.user_id AS id, user_account.name, user_account.email,
+           user_account.contact_number AS phone, user_account.address,
+           user_account.nic AS "NIC", user_account.username, user_account.user_type,
+           user_account.is_active, user_account.created_at, user_account.updated_at
+    FROM "User" user_account
+    WHERE user_account.user_type = 'top-manager'
+      AND (${is_active}::boolean IS NULL OR user_account.is_active = ${is_active})
+      AND (
+        ${search} = '' OR user_account.name ILIKE ${`%${search}%`}
+        OR user_account.email ILIKE ${`%${search}%`}
+        OR user_account.contact_number ILIKE ${`%${search}%`}
+      )
+    ORDER BY user_account.created_at DESC
   `;
-  return rows;
 }
 
-// Update (partial)
 export async function updateTopManager(id, fields = {}) {
-  const entries = Object.entries(fields);
-  if (!entries.length) return getTopManagerById(id);
+  const updates = [];
+  const mapping = {
+    name: 'name', email: 'email', phone: 'contact_number', contact_number: 'contact_number',
+    address: 'address', NIC: 'nic', nic: 'nic', username: 'username', is_active: 'is_active',
+  };
 
-  // Hash password if it's being updated
-  if (fields.password) {
-    fields.password_hash = await bcrypt.hash(fields.password, SALT_ROUNDS);
-    delete fields.password;
+  if (fields.password) fields.password_hash = await bcrypt.hash(fields.password, SALT_ROUNDS);
+  if (fields.password_hash) updates.push(sql`password_hash = ${fields.password_hash}`);
+  for (const [inputName, columnName] of Object.entries(mapping)) {
+    if (Object.hasOwn(fields, inputName)) {
+      updates.push(sql`${sql.unsafe(columnName)} = ${fields[inputName]}`);
+    }
   }
-
-  const updatedEntries = Object.entries(fields);
-  const setClauses = updatedEntries.map(([k, v]) => sql`${sql.unsafe('"' + k + '"')} = ${v}`);
+  if (!updates.length) return getTopManagerById(id);
 
   const rows = await sql`
-    UPDATE "top_managers"
-    SET ${sql.join(setClauses, sql`, `)}, "updated_at" = NOW()
-    WHERE "id" = ${id}
-    RETURNING *;
+    UPDATE "User"
+    SET ${sql.join(updates, sql`, `)}
+    WHERE user_id = ${id} AND user_type = 'top-manager'
+    RETURNING user_id AS id, name, email, contact_number AS phone, address,
+              nic AS "NIC", username, user_type, is_active, created_at, updated_at
   `;
   return rows[0] || null;
 }
 
-// Soft delete
 export async function softDeleteTopManager(id) {
-  const rows = await sql`
-    UPDATE "top_managers"
-    SET "is_active" = false, "updated_at" = NOW()
-    WHERE "id" = ${id}
-    RETURNING *;
-  `;
-  return rows[0] || null;
+  return updateTopManager(id, { is_active: false });
 }
 
-// Hard delete
 export async function deleteTopManager(id) {
-  await sql`DELETE FROM "top_managers" WHERE "id" = ${id};`;
-  return true;
+  const [staffRows, userRows] = await sql.transaction((transaction) => [
+    transaction`DELETE FROM "Staff" WHERE "User_ID" = ${id}`,
+    transaction`DELETE FROM "User" WHERE user_id = ${id} AND user_type = 'top-manager' RETURNING user_id`,
+  ]);
+  void staffRows;
+  return userRows.length > 0;
 }
 
-// ====== Top Manager Dashboard Data Queries ======
-
-// Revenue trends by month (sum of Billing amounts per month from Appointment dates)
 export async function getRevenueTrends() {
-  const rows = await sql`
-    SELECT 
-      TO_CHAR(a."Appointment_Date", 'Mon') AS month_short,
-      DATE_TRUNC('month', a."Appointment_Date") AS month_start,
-      COALESCE(SUM(b."Total_Amount"), 0) AS monthly_total
-    FROM "Appointment" a
-    LEFT JOIN "Billing" b ON b."Appointment_ID" = a."Appointment_ID"
+  return sql`
+    SELECT
+      TO_CHAR(appointment."Appointment_Date", 'Mon') AS month_short,
+      DATE_TRUNC('month', appointment."Appointment_Date") AS month_start,
+      COALESCE(SUM(billing."Total_Amount"), 0) AS monthly_total
+    FROM "Appointment" appointment
+    LEFT JOIN "Billing" billing ON billing."Appointment_ID" = appointment."Appointment_ID"
     GROUP BY month_short, month_start
     ORDER BY month_start
   `;
-  return rows;
 }
 
-// Pending payments: bills where the patient amount is not equal to zero
 export async function getPendingPayments() {
-  const rows = await sql`
-    SELECT 
-      u.name AS patient,
-      p.patient_id,
-      u.contact_number AS patient_phone,
-      u.email AS patient_email,
-      COALESCE(b."Total_Amount", 0) AS total_amount,
-      COALESCE(b."Patient_Amount", b."Total_Amount", 0) AS amount,
-      COALESCE(b."Patient_Amount", b."Total_Amount", 0) AS remaining,
-      b."Due_Date" AS due_date,
-      b."Bill_ID" AS bill_id,
-      a."Appointment_ID" AS appointment_id,
-      a."Appointment_Date" AS appointment_date
-    FROM "Billing" b
-    JOIN "Appointment" a ON a."Appointment_ID" = b."Appointment_ID"
-    JOIN "Patient" p ON a."Patient_ID" = p.patient_id
-    JOIN "User" u ON p.user_id = u.user_id
-    WHERE COALESCE(b."Patient_Amount", b."Total_Amount", 0) != 0
-    ORDER BY b."Due_Date" DESC, a."Appointment_Date" DESC
+  return sql`
+    SELECT
+      user_account.name AS patient,
+      patient.patient_id,
+      user_account.contact_number AS patient_phone,
+      user_account.email AS patient_email,
+      billing."Total_Amount" AS total_amount,
+      billing."Patient_Amount" AS amount,
+      GREATEST(billing."Patient_Amount" - COALESCE(SUM(payment."Amount"), 0), 0) AS remaining,
+      billing."Due_Date" AS due_date,
+      billing."Bill_ID" AS bill_id,
+      appointment."Appointment_ID" AS appointment_id,
+      appointment."Appointment_Date" AS appointment_date
+    FROM "Billing" billing
+    JOIN "Appointment" appointment ON appointment."Appointment_ID" = billing."Appointment_ID"
+    JOIN "Patient" patient ON appointment."Patient_ID" = patient.patient_id
+    JOIN "User" user_account ON patient.user_id = user_account.user_id
+    LEFT JOIN "Payment" payment ON payment."Bill_ID" = billing."Bill_ID"
+    GROUP BY billing."Bill_ID", appointment."Appointment_ID", patient.patient_id, user_account.user_id
+    HAVING GREATEST(billing."Patient_Amount" - COALESCE(SUM(payment."Amount"), 0), 0) > 0
+    ORDER BY billing."Due_Date", appointment."Appointment_Date"
   `;
-  return rows;
 }
 
-// Bills list for top manager view
 export async function getAllBillsForTopManager() {
-  const rows = await sql`
-    SELECT 
-      b."Bill_ID" AS bill_id,
-      b."Total_Amount" AS total_amount,
-      a."Appointment_ID" AS appointment_id,
-      a."Appointment_Date" AS appointment_date,
-      u.name AS patient_name
-    FROM "Billing" b
-    JOIN "Appointment" a ON b."Appointment_ID" = a."Appointment_ID"
-    JOIN "Patient" p ON a."Patient_ID" = p.patient_id
-    JOIN "User" u ON p.user_id = u.user_id
-    ORDER BY a."Appointment_Date" DESC
+  return sql`
+    SELECT billing."Bill_ID" AS bill_id, billing."Total_Amount" AS total_amount,
+           appointment."Appointment_ID" AS appointment_id,
+           appointment."Appointment_Date" AS appointment_date,
+           user_account.name AS patient_name
+    FROM "Billing" billing
+    JOIN "Appointment" appointment ON billing."Appointment_ID" = appointment."Appointment_ID"
+    JOIN "Patient" patient ON appointment."Patient_ID" = patient.patient_id
+    JOIN "User" user_account ON patient.user_id = user_account.user_id
+    ORDER BY appointment."Appointment_Date" DESC
   `;
-  return rows;
 }
 
-// Appointments list for top manager view
 export async function getAllAppointmentsForTopManager() {
-  const rows = await sql`
-    SELECT 
-      a."Appointment_ID",
-      a."Appointment_Date",
-      a."Status",
-      u.name AS patient_name
-    FROM "Appointment" a
-    JOIN "Patient" p ON a."Patient_ID" = p.patient_id
-    JOIN "User" u ON p.user_id = u.user_id
-    ORDER BY a."Appointment_Date" DESC
+  return sql`
+    SELECT appointment."Appointment_ID", appointment."Appointment_Date", appointment."Status",
+           user_account.name AS patient_name
+    FROM "Appointment" appointment
+    JOIN "Patient" patient ON appointment."Patient_ID" = patient.patient_id
+    JOIN "User" user_account ON patient.user_id = user_account.user_id
+    ORDER BY appointment."Appointment_Date" DESC
   `;
-  return rows;
 }
 
-// Insurance claims summary by status
 export async function getInsuranceClaimsSummary() {
-  const rows = await sql`
-    SELECT 
-      COALESCE(ic."Claim_Status", 'Pending') AS status,
-      COUNT(*)::int AS count
-    FROM "Insurance_Claim" ic
-    GROUP BY COALESCE(ic."Claim_Status", 'Pending')
+  return sql`
+    SELECT COALESCE("Claim_Status", 'Pending') AS status, COUNT(*)::int AS count
+    FROM "Insurance_Claim"
+    GROUP BY COALESCE("Claim_Status", 'Pending')
   `;
-  return rows;
 }

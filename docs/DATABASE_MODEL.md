@@ -1,7 +1,11 @@
 # Clinic Karma Definitive Database Model
 
-This is the target relational model for the schema rebuild. `backend/db.sql` is
-currently legacy input and must not override this contract.
+This model is implemented by `backend/database/schema.sql` and the ordered SQL
+files under `backend/database/migrations/`.
+
+The repaired database retains the original quoted PostgreSQL identifiers, such
+as `"Appointment_ID"`, so existing API queries remain compatible. Those
+physical names do not change the logical model described below.
 
 ## Identity and organization
 
@@ -161,4 +165,3 @@ Audit triggers and application logging must target these exact column names.
 - Hard deletion is limited to test data or explicit administrative maintenance.
 - Appointments, bills, payments, diagnoses, claims, and audit records must be
   retained according to the clinic's legal retention requirements.
-

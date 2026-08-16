@@ -49,29 +49,17 @@ export async function getPatientID(userID) {
 
 export async function addAppointment(patientId, doctorId, date, status, startTime, type, branch, specializationId) {
     try {
+        const canonicalStatus = status === 'Scheduled' ? 'Scheduled' : 'Confirmed';
+        const result = await sql`
+            SELECT appointment_id AS id
+            FROM book_consultation(
+                ${patientId}, ${doctorId}, ${date}, ${startTime},
+                ${branch}, ${specializationId}, ${canonicalStatus}
+            )
+        `;
 
-        const res = await sql`
-                    INSERT INTO "Appointment" ("Patient_ID", "Appointment_Date", "Status", "Type", "Branch_Name")
-                    VALUES (${patientId}, ${date}, ${status}, ${type}, ${branch})
-                    RETURNING "Appointment_ID" as id;`;
-
-        const appintment_id = res[0].id;
-        const dueDate = new Date(date);
-        dueDate.setDate(dueDate.getDate() + 30);
-
-        await sql`INSERT INTO "Doctor_Appointment" ("Appointment_ID", "Doctor_ID", "Start_Time", "Is_Emergency", "Specialization_ID")
-                    VALUES (${appintment_id}, ${doctorId}, ${startTime}, ${false}, ${specializationId});`;
-
-        await sql`INSERT INTO "Billing" ("Appointment_ID", "Total_Amount", "Due_Date")
-                    VALUES (${appintment_id},
-                        (
-                            SELECT "Consultation_Fee"
-                            FROM "Specialization"
-                            WHERE "Specialization_ID" = ${specializationId}
-                        )
-                , ${dueDate});`;
-
-        return appintment_id;
+        if (!result[0]) throw new Error('Appointment could not be created');
+        return result[0].id;
     } catch (error) {
         console.error('Error adding appointment:', error);
         throw error;

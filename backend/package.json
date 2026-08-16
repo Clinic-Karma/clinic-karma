@@ -12,7 +12,14 @@
     "dev": "nodemon server.js",
     "setup:env": "node scripts/setup-env.js",
     "check:syntax": "node scripts/check-syntax.js",
-    "test": "node --test"
+    "db:status": "node scripts/db-status.js",
+    "db:migrate": "node scripts/db-migrate.js",
+    "db:migrate:dry": "node scripts/db-migrate.js --dry-run",
+    "db:seed": "node scripts/db-seed.js",
+    "db:check": "node scripts/db-check.js",
+    "db:smoke": "node scripts/db-smoke.js",
+    "db:verify": "node scripts/db-verify.js",
+    "test": "node --test --test-isolation=none"
   },
   "author": "",
   "license": "ISC",

@@ -20,7 +20,7 @@ import {
       const { search = '', branch_id, is_active } = req.query;
       const managers = await getAllBranchManagers({
         search,
-        branch_id: branch_id ? Number(branch_id) : null,
+        branch_id: branch_id || null,
         is_active: typeof is_active === 'string' ? is_active === 'true' : null,
       });
   
@@ -30,7 +30,6 @@ import {
       res.status(500).json({ success: false, message: 'Server error' });
     }
   };
-  
   // GET /api/branchmanagers/:id
   export const getById = async (req, res) => {
     try {
@@ -211,8 +210,7 @@ import {
         });
       }
 
-      // Map lab-coordinator to lab-assistant for database consistency
-      const dbRole = role === 'lab-coordinator' ? 'lab-assistant' : role;
+      const dbRole = role === 'lab-assistant' ? 'lab-coordinator' : role;
 
       const result = await createStaffForBranchManager({
         name,
@@ -249,4 +247,3 @@ import {
       res.status(500).json({ success: false, message: 'Server error' });
     }
   };
-  

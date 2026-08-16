@@ -159,9 +159,9 @@ useEffect(() => {
         doctorId: doctorId,
         date: bookingData.date,
         startTime: bookingData.time,
-        status: "Confimed",
+        status: "Confirmed",
         branch: bookingData.branch,
-        type: "doctor",
+        type: "Consultation",
         specializationId: specializations.find(
           spec => spec.Specialization_Name === bookingData.specialization
         )?.Specialization_ID

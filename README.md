@@ -84,7 +84,7 @@ clinic-karma-main/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher)
+- Node.js (v20 or higher)
 - PostgreSQL database
 - Git
 
@@ -99,8 +99,13 @@ clinic-karma-main/
 2. **Backend Setup**
    ```bash
    cd backend
-   npm install
-   # Configure your database connection in .env
+   npm ci
+   npm run setup:env
+   # Add your Neon/PostgreSQL URL to backend/.env, then initialize the DB:
+   npm run db:migrate
+   npm run db:seed
+   npm run db:check
+   npm run db:verify
    npm run dev
    ```
 
@@ -116,7 +121,8 @@ clinic-karma-main/
 Create a `.env` file in the backend directory:
 ```env
 DATABASE_URL=your_postgresql_connection_string
-JWT_SECRET=your_jwt_secret_key
+ACCESS_TOKEN_SECRET=your_generated_access_token_secret
+REFRESH_TOKEN_SECRET=your_generated_refresh_token_secret
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 ```

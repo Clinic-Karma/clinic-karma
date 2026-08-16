@@ -43,3 +43,13 @@ test('each API router imports its canonical controller', () => {
     assert.match(routerSource, new RegExp(`controllers/${controller.replace('.', '\\.')}`));
   }
 });
+
+test('runtime application code does not mutate the database schema', () => {
+  const files = collectJavaScriptFiles(sourceRoot);
+  const schemaMutation = /\b(?:ALTER|CREATE|DROP)\s+TABLE\b/i;
+  const offenders = files
+    .filter((file) => schemaMutation.test(readFileSync(file, 'utf8')))
+    .map((file) => path.relative(backendRoot, file));
+
+  assert.deepEqual(offenders, []);
+});

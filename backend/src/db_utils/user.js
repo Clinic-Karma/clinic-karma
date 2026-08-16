@@ -25,7 +25,7 @@ export async function storeRefreshToken(user_id, refreshToken, jti) {
         const hashedToken = hashToken(refreshToken);
 
         await sql`
-            INSERT INTO refresh_tokens (user_id, token, jti, expires_at, revoked)
+            INSERT INTO refresh_tokens (user_id, token_hash, jti, expires_at, revoked)
             VALUES (${user_id}, ${hashedToken}, ${jti}, NOW() + interval '30 days', false)
         `;
     }
@@ -38,7 +38,11 @@ export async function storeRefreshToken(user_id, refreshToken, jti) {
 export async function checkRefreshToken(refreshToken) {
     try {
         const hashedToken = hashToken(refreshToken);
-        const result = await sql`SELECT * FROM refresh_tokens WHERE token = ${hashedToken}`;
+        const result = await sql`
+            SELECT *
+            FROM refresh_tokens
+            WHERE token_hash = ${hashedToken} AND revoked = false AND expires_at > NOW()
+        `;
         return result;
     }
     catch (err) {

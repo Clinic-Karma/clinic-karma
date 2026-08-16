@@ -78,12 +78,12 @@ export const getAllStaff = async (req, res) => {
                 u.user_type,
                 CASE 
                   WHEN u.user_type = 'receptionist' THEN 'Receptionist'
-                  WHEN u.user_type = 'lab-assistant' THEN 'Lab Coordinator'
+                  WHEN u.user_type = 'lab-coordinator' THEN 'Lab Coordinator'
                   ELSE u.user_type
                 END as role
             FROM "Staff" s
             JOIN "User" u ON s."User_ID" = u.user_id
-            WHERE u.user_type IN ('receptionist', 'lab-assistant')
+            WHERE u.user_type IN ('receptionist', 'lab-coordinator')
             ORDER BY s."Staff_ID"
         `;
         
@@ -131,8 +131,7 @@ export const createStaff = async (req, res) => {
             });
         }
 
-        // Map lab-coordinator to lab-assistant for database consistency
-        const dbRole = role === 'lab-coordinator' ? 'lab-assistant' : role;
+        const dbRole = role === 'lab-assistant' ? 'lab-coordinator' : role;
 
         // Hash the password before storing
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -953,6 +952,13 @@ export const getPendingInsurances = async (req, res) => {
 export const updateInsuranceStatus = async (req, res) => {
     const { insuranceId, status } = req.body;
 
+    if (!Number.isInteger(Number(insuranceId)) || Number(insuranceId) < 1) {
+        return res.status(400).json({ success: false, message: 'Valid patient insurance ID is required' });
+    }
+    if (!['Pending', 'Approved', 'Rejected'].includes(status)) {
+        return res.status(400).json({ success: false, message: 'Invalid insurance status' });
+    }
+
     try {
         const updatedInsurance = await appointmentDb.updateInsuranceStatus(insuranceId, status);
 
@@ -1228,19 +1234,19 @@ export const getSpecializationData = async (req, res) => {
         
         try {
             result = await sql`
-                SELECT "Specialization_ID", "Specialization_Name", "Consultation_Fee" 
+                SELECT "Specialization_ID", "Specialization_Name", "Consultation_Fee"
                 FROM "Specialization"
                 ORDER BY "Specialization_Name"
             `;
             tableName = 'Specialization';
         } catch (error) {
-            console.log('Specialization table not found, trying Specilization...');
+            console.log('Specialization query failed; retrying once...');
             result = await sql`
-                SELECT "Specialization_ID", "Specialization_Name", "Consultation_Fee" 
-                FROM "Specilization"
+                SELECT "Specialization_ID", "Specialization_Name", "Consultation_Fee"
+                FROM "Specialization"
                 ORDER BY "Specialization_Name"
             `;
-            tableName = 'Specilization';
+            tableName = 'Specialization';
         }
         
         res.json({
@@ -1257,7 +1263,6 @@ export const getSpecializationData = async (req, res) => {
         });
     }
 };
-
 export const testSpecializationFee = async (req, res) => {
     try {
         const { specialization } = req.query;
@@ -1962,35 +1967,16 @@ export const updatePaymentAmount = async (req, res) => {
             });
         }
 
-        // Insert payment record with generated Payment_ID
-        const paymentId = parseInt(`${billId}${Date.now().toString().slice(-6)}`);
+        // Patient_Amount is the original responsibility. Payments are immutable
+        // ledger rows; the database trigger derives Billing.Status.
         const paymentResult = await sql`
-            INSERT INTO "Payment" ("Payment_ID", "Bill_ID", "Amount", "Date_Time", "Payment_Method")
-            VALUES (${paymentId}, ${billId}, ${paidAmount}, CURRENT_TIMESTAMP, 'Cash')
+            INSERT INTO "Payment" ("Bill_ID", "Amount", "Date_Time", "Payment_Method")
+            VALUES (${billId}, ${paidAmount}, CURRENT_TIMESTAMP, 'Cash')
             RETURNING "Payment_ID", "Amount", "Date_Time"
         `;
 
-        // Update the Patient_Amount in the Billing table by subtracting the amount paid
-        const newPatientAmount = patientAmount - paidAmount;
-        await sql`
-            UPDATE "Billing" 
-            SET "Patient_Amount" = ${newPatientAmount}
-            WHERE "Bill_ID" = ${billId}
-        `;
-
-        const remainingAmount = newPatientAmount;
-
-        // Ensure Status column exists, then update it based on remaining amount
-        await sql`
-            ALTER TABLE "Billing"
-            ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
-        `;
-        const newStatus = remainingAmount <= 0 ? 'Done' : 'Pending';
-        await sql`
-            UPDATE "Billing"
-            SET "Status" = ${newStatus}
-            WHERE "Bill_ID" = ${billId}
-        `;
+        const remainingAmount = patientAmount - newTotalPaid;
+        const newStatus = remainingAmount <= 0 ? 'Paid' : 'Partial';
 
         res.json({
             success: true,
@@ -2001,7 +1987,7 @@ export const updatePaymentAmount = async (req, res) => {
                 paymentDate: paymentResult[0].Date_Time,
                 totalPaidSoFar: newTotalPaid,
                 remainingAmount: remainingAmount,
-                updatedPatientAmount: newPatientAmount,
+                patientAmount: patientAmount,
                 isFullyPaid: remainingAmount <= 0,
                 status: newStatus
             }
@@ -2115,7 +2101,8 @@ export const generateBill = async (req, res) => {
                 u.address as patient_address,
                 d."Doctor_ID",
                 u_doctor.name as doctor_name,
-                da."Start_Time"
+                da."Start_Time",
+                specialization."Specialization_Name" as specialization_name
             FROM "Appointment" a
             JOIN "Patient" p ON a."Patient_ID" = p.patient_id
             JOIN "User" u ON p.user_id = u.user_id
@@ -2123,6 +2110,8 @@ export const generateBill = async (req, res) => {
             LEFT JOIN "Doctor" d ON da."Doctor_ID" = d."Doctor_ID"
             LEFT JOIN "Staff" s ON d."Staff_ID" = s."Staff_ID"
             LEFT JOIN "User" u_doctor ON s."User_ID" = u_doctor.user_id
+            LEFT JOIN "Specialization" specialization
+              ON specialization."Specialization_ID" = da."Specialization_ID"
             WHERE a."Appointment_ID" = ${appointmentId}
         `;
 
@@ -2171,7 +2160,9 @@ export const generateBill = async (req, res) => {
                     FROM "Patient_Insurance" pi
                     JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
                     WHERE pi."Patient_ID" = ${appointment.patient_id}
-                    ORDER BY pi."Insurance_ID" DESC
+                      AND pi."Status" = 'Approved'
+                      AND i."Is_Active" = true
+                    ORDER BY pi."Patient_Insurance_ID" DESC
                     LIMIT 1
                 `;
 
@@ -2221,11 +2212,7 @@ export const generateBill = async (req, res) => {
             const patientAmount = parseFloat(bill.Patient_Amount || bill.Total_Amount);
             const remainingAmount = patientAmount - totalPaid;
 
-            await sql`
-                ALTER TABLE "Billing"
-                ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
-            `;
-            const billStatus = remainingAmount <= 0 ? 'Done' : 'Pending';
+            const billStatus = remainingAmount <= 0 ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Pending');
             await sql`
                 UPDATE "Billing"
                 SET "Status" = ${billStatus}
@@ -2249,7 +2236,7 @@ export const generateBill = async (req, res) => {
         }
 
         // Generate new bill
-        const specialization = appointment.Type || appointment.Specialization || 'General Medicine';
+        const specialization = appointment.specialization_name || 'General Medicine';
         const billAmount = await appointmentDb.getBillAmountBySpecialization(specialization);
 
         // Check for insurance coverage
@@ -2265,10 +2252,12 @@ export const generateBill = async (req, res) => {
                 pi."Status" as insurance_status,
                 i."Provider_Name",
                 i."Coverage_Percentage"
-            FROM "Patient_Insurance" pi
-            JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
-            WHERE pi."Patient_ID" = ${appointment.patient_id}
-            ORDER BY pi."Insurance_ID" DESC
+        FROM "Patient_Insurance" pi
+        JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
+        WHERE pi."Patient_ID" = ${appointment.patient_id}
+          AND pi."Status" = 'Approved'
+          AND i."Is_Active" = true
+        ORDER BY pi."Patient_Insurance_ID" DESC
             LIMIT 1
         `;
 
@@ -2315,12 +2304,7 @@ export const generateBill = async (req, res) => {
         const billPatientAmount = parseFloat(newBill.Patient_Amount || newBill.Total_Amount);
         const remainingAmount = billPatientAmount - totalPaid;
 
-        // Ensure Status column exists and set it according to remaining amount
-        await sql`
-            ALTER TABLE "Billing"
-            ADD COLUMN IF NOT EXISTS "Status" VARCHAR(20) DEFAULT 'Pending'
-        `;
-        const billStatus = remainingAmount <= 0 ? 'Done' : 'Pending';
+        const billStatus = remainingAmount <= 0 ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Pending');
         await sql`
             UPDATE "Billing"
             SET "Status" = ${billStatus}
@@ -2391,7 +2375,7 @@ export const createTestInsuranceData = async (req, res) => {
         // Link patient to insurance
         const patientInsuranceResult = await sql`
             INSERT INTO "Patient_Insurance" ("Patient_ID", "Insurance_ID", "Policy_Number", "Status")
-            VALUES (${patient.patient_id}, ${insurance.Insurance_ID}, 'POL-${Date.now()}', 'Active')
+            VALUES (${patient.patient_id}, ${insurance.Insurance_ID}, 'POL-${Date.now()}', 'Approved')
             RETURNING "Patient_ID", "Insurance_ID", "Policy_Number", "Status"
         `;
 
@@ -2459,7 +2443,7 @@ export const testInsuranceCalculation = async (req, res) => {
             FROM "Patient_Insurance" pi
             JOIN "Insurance" i ON pi."Insurance_ID" = i."Insurance_ID"
             WHERE pi."Patient_ID" = ${patient.patient_id}
-            AND pi."Status" = 'Active'
+            AND pi."Status" = 'Approved'
             ORDER BY pi."Insurance_ID" DESC
             LIMIT 1
         `;
@@ -2609,45 +2593,6 @@ export const debugPatientInsurance = async (req, res) => {
     }
 };
 
-// Add insured amount column to billing table
-export const addInsuredAmountColumn = async (req, res) => {
-    try {
-        // Add Insured_Amount column
-        await sql`
-            ALTER TABLE "Billing" 
-            ADD COLUMN IF NOT EXISTS "Insured_Amount" DECIMAL(10,2) DEFAULT 0.00
-        `;
-
-        // Add Amount_To_Be_Paid column
-        await sql`
-            ALTER TABLE "Billing" 
-            ADD COLUMN IF NOT EXISTS "Amount_To_Be_Paid" DECIMAL(10,2) DEFAULT 0.00
-        `;
-
-        // Add Insurance_ID column to link to insurance
-        await sql`
-            ALTER TABLE "Billing" 
-            ADD COLUMN IF NOT EXISTS "Insurance_ID" INTEGER
-        `;
-
-        res.json({
-            success: true,
-            message: 'Insured amount columns added to billing table',
-            data: {
-                addedColumns: ['Insured_Amount', 'Amount_To_Be_Paid', 'Insurance_ID']
-            }
-        });
-
-    } catch (error) {
-        console.error('Error adding insured amount column:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to add insured amount column',
-            error: error.message
-        });
-    }
-};
-
 // Add insurance provider
 export const addInsuranceProvider = async (req, res) => {
     try {
@@ -2684,33 +2629,11 @@ export const addInsuranceProvider = async (req, res) => {
             });
         }
 
-        // Insert new insurance provider with manual ID generation if needed
-        let result;
-        try {
-            // Try inserting without specifying Insurance_ID (for auto-increment)
-            result = await sql`
-                INSERT INTO "Insurance" ("Provider_Name", "Coverage_Percentage", "Type")
-                VALUES (${providerName}, ${coverage}, 'Health')
-                RETURNING "Insurance_ID", "Provider_Name", "Coverage_Percentage", "Type"
-            `;
-        } catch (error) {
-            // If auto-increment fails, generate a manual ID
-            if (error.code === '23502' && error.column === 'Insurance_ID') {
-                const maxIdResult = await sql`
-                    SELECT COALESCE(MAX("Insurance_ID"), 0) + 1 as next_id
-                    FROM "Insurance"
-                `;
-                const nextId = maxIdResult[0].next_id;
-                
-                result = await sql`
-                    INSERT INTO "Insurance" ("Insurance_ID", "Provider_Name", "Coverage_Percentage", "Type")
-                    VALUES (${nextId}, ${providerName}, ${coverage}, 'Health')
-                    RETURNING "Insurance_ID", "Provider_Name", "Coverage_Percentage", "Type"
-                `;
-            } else {
-                throw error;
-            }
-        }
+        const result = await sql`
+            INSERT INTO "Insurance" ("Provider_Name", "Coverage_Percentage", "Type")
+            VALUES (${providerName}, ${coverage}, 'Health')
+            RETURNING "Insurance_ID", "Provider_Name", "Coverage_Percentage", "Type"
+        `;
 
         res.json({
             success: true,
@@ -2725,127 +2648,6 @@ export const addInsuranceProvider = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to add insurance provider',
-            error: error.message
-        });
-    }
-};
-
-// Fix Insurance table schema to make Insurance_ID auto-increment
-export const fixInsuranceTableSchema = async (req, res) => {
-    try {
-        // First, check if the table exists and get its current structure
-        const tableCheck = await sql`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'Insurance'
-            )
-        `;
-
-        if (!tableCheck[0].exists) {
-            // Create the Insurance table if it doesn't exist
-            await sql`
-                CREATE TABLE "Insurance" (
-                    "Insurance_ID" SERIAL PRIMARY KEY,
-                    "Provider_Name" VARCHAR(255) NOT NULL UNIQUE,
-                    "Coverage_Percentage" DECIMAL(5,2) NOT NULL CHECK ("Coverage_Percentage" >= 0 AND "Coverage_Percentage" <= 100),
-                    "Type" VARCHAR(50) DEFAULT 'Health',
-                    "Created_At" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    "Updated_At" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `;
-
-            res.json({
-                success: true,
-                message: 'Insurance table created successfully with proper schema',
-                action: 'created'
-            });
-        } else {
-            // Check if Insurance_ID is already SERIAL
-            const columnInfo = await sql`
-                SELECT column_name, data_type, is_nullable, column_default
-                FROM information_schema.columns 
-                WHERE table_name = 'Insurance' AND table_schema = 'public'
-                AND column_name = 'Insurance_ID'
-            `;
-
-            if (columnInfo.length === 0) {
-                // Add Insurance_ID column as SERIAL PRIMARY KEY
-                await sql`
-                    ALTER TABLE "Insurance" 
-                    ADD COLUMN "Insurance_ID" SERIAL PRIMARY KEY
-                `;
-                res.json({
-                    success: true,
-                    message: 'Insurance_ID column added as SERIAL PRIMARY KEY',
-                    action: 'added_column'
-                });
-            } else if (!columnInfo[0].column_default || !columnInfo[0].column_default.includes('nextval')) {
-                // Modify existing column to be SERIAL
-                await sql`
-                    ALTER TABLE "Insurance" 
-                    ALTER COLUMN "Insurance_ID" SET DEFAULT nextval('"Insurance_Insurance_ID_seq"'::regclass)
-                `;
-                res.json({
-                    success: true,
-                    message: 'Insurance_ID column updated to auto-increment',
-                    action: 'updated_column'
-                });
-            } else {
-                res.json({
-                    success: true,
-                    message: 'Insurance table schema is already correct',
-                    action: 'no_change_needed'
-                });
-            }
-        }
-
-    } catch (error) {
-        console.error('Error fixing Insurance table schema:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fix Insurance table schema',
-            error: error.message
-        });
-    }
-};
-
-// Add Status column to Patient_Insurance table if it doesn't exist
-export const addPatientInsuranceStatusColumn = async (req, res) => {
-    try {
-        // Check if Status column exists
-        const columnCheck = await sql`
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'Patient_Insurance' 
-            AND table_schema = 'public'
-            AND column_name = 'Status'
-        `;
-
-        if (columnCheck.length === 0) {
-            // Column doesn't exist, add it
-            await sql`
-                ALTER TABLE "Patient_Insurance"
-                ADD COLUMN "Status" VARCHAR(20) DEFAULT 'Approved'
-            `;
-            
-            res.json({
-                success: true,
-                message: 'Status column added to Patient_Insurance table successfully',
-                action: 'added_column'
-            });
-        } else {
-            res.json({
-                success: true,
-                message: 'Status column already exists in Patient_Insurance table',
-                action: 'no_change_needed'
-            });
-        }
-    } catch (error) {
-        console.error('Error adding Status column to Patient_Insurance:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to add Status column to Patient_Insurance table',
             error: error.message
         });
     }

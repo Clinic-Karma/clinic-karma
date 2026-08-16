@@ -138,10 +138,7 @@ router.post('/create-test-insurance', appointmentController.createTestInsuranceD
 router.get('/test-insurance-calculation/:patientUsername', appointmentController.testInsuranceCalculation);
 router.get('/debug-insurance/:patientUsername', appointmentController.debugPatientInsurance);
 router.get('/billing-structure', appointmentController.checkBillingTableStructure);
-router.post('/add-insured-amount-column', appointmentController.addInsuredAmountColumn);
 router.post('/add-insurance-provider', appointmentController.addInsuranceProvider);
-router.post('/fix-insurance-schema', appointmentController.fixInsuranceTableSchema);
-router.post('/add-patient-insurance-status-column', appointmentController.addPatientInsuranceStatusColumn);
 
 // Lab Report endpoints - require authentication
 router.post('/upload-lab-report', requireAuth, upload.single('reportFile'), appointmentController.uploadLabReport);
